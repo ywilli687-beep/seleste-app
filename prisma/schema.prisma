@@ -1,0 +1,309 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  name          String?
+  password      String?
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+
+  // A user can own/manage multiple businesses
+  businesses    Business[]
+}
+
+model Business {
+  id               String   @id @default(uuid())
+  user_id          String
+  name             String
+  industry         String
+  location         String?
+  services         String[]
+  revenue_range    String?
+  target_audience  String?
+  service_radius   Int?
+  website_url      String?
+  // Intelligence Layer Fields
+  pricing_range           String?
+  average_job_value       Decimal?
+  customer_lifetime_value Decimal?
+  marketing_budget        Decimal?
+  team_size               Int?
+  growth_goals            String[]
+  
+  has_unlocked_report Boolean @default(false)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  user             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  audits                   Audit[]
+  marketing_plans          MarketingPlan[]
+  agent_tasks              AgentTask[]
+  campaigns                Campaign[]
+  analytics                AnalyticsMetric[]
+  competitors              CompetitorInfo[]
+  recommendations          GrowthRecommendation[]
+  paid_media_performance   PaidMediaPerformance[]
+  revenue_intelligence     RevenueIntelligence[]
+  longitudinal_performance LongitudinalPerformance[]
+}
+
+model Audit {
+  id                 String   @id @default(uuid())
+  business_id        String
+  preparedness_score Int
+  seo_score          Int?
+  social_score       Int?
+  raw_data           Json?
+  created_at         DateTime @default(now())
+
+  business           Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  
+  website_performance WebsitePerformanceData?
+  seo_performance     SEOPerformanceData?
+}
+
+// -----------------------------------------
+// Pillar 2: Website & SEO Performance Data
+// -----------------------------------------
+model WebsitePerformanceData {
+  id                        String   @id @default(uuid())
+  audit_id                  String   @unique
+  page_load_speed_ms        Int?
+  mobile_optimization_score Int?
+  cta_count                 Int?
+  bounce_rate               Float?
+  conversion_rate           Float?
+  scroll_depth              Float?
+  page_structure_score      Int?
+
+  audit                     Audit    @relation(fields: [audit_id], references: [id], onDelete: Cascade)
+}
+
+model SEOPerformanceData {
+  id                        String   @id @default(uuid())
+  audit_id                  String   @unique
+  keywords_ranking          Int?
+  domain_authority          Int?
+  backlink_count            Int?
+  local_seo_signals         Float?
+  competitor_keyword_overlap Float?
+
+  audit                     Audit    @relation(fields: [audit_id], references: [id], onDelete: Cascade)
+}
+
+enum PlanTimeframe {
+  THIRTY_DAYS   @map("30_days")
+  SIXTY_DAYS    @map("60_days")
+  NINETY_DAYS   @map("90_days")
+}
+
+model MarketingPlan {
+  id            String   @id @default(uuid())
+  business_id   String
+  timeframe     PlanTimeframe
+  action_items  Json
+  status        String   @default("active")
+  created_at    DateTime @default(now())
+  
+  business      Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+}
+
+enum AgentType {
+  SEO
+  PAID_MEDIA
+  CREATIVE
+  OFFER
+  SOCIAL
+  INTEL
+  DIRECTOR
+  OPS
+  ANALYTICS
+  SETUP
+  GA4
+  LOOP
+}
+
+enum TaskStatus {
+  QUEUED              @map("queued")
+  PROCESSING          @map("processing")
+  DRAFT_GENERATED     @map("draft_generated")
+  VALIDATION_FAILED   @map("validation_failed")
+  AWAITING_APPROVAL   @map("awaiting_approval")
+  APPROVED            @map("approved")
+  COMPLETED           @map("completed")
+}
+
+model AgentTask {
+  id                  String     @id @default(uuid())
+  business_id         String
+  recommendation_id   String?
+  agent_type          AgentType
+  execution_type      String?
+  action_description  String
+  
+  input_payload       Json?
+  output_payload      Json?
+  confidence_score    Float?
+  validation_status   String?
+  
+  status              TaskStatus @default(QUEUED)
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
+
+  business            Business   @relation(fields: [business_id], references: [id], onDelete: Cascade)
+}
+
+model Campaign {
+  id            String   @id @default(uuid())
+  business_id   String
+  platform      String
+  daily_budget  Decimal
+  status        String
+  roi_metric    Decimal?
+  created_at    DateTime @default(now())
+
+  business      Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+}
+
+enum MetricType {
+  TRAFFIC           @map("traffic")
+  LEADS             @map("leads")
+  CONVERSION_RATE   @map("conversion_rate")
+  ROI               @map("roi")
+}
+
+model AnalyticsMetric {
+  id            String   @id @default(uuid())
+  business_id   String
+  metric_type   MetricType
+  value         Decimal
+  recorded_at   DateTime @default(now())
+
+  business      Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+}
+
+model CompetitorInfo {
+  id                  String   @id @default(uuid())
+  business_id         String
+  competitor_domain   String
+  estimated_traffic   Int
+  market_share_est    Float
+  ad_presence         Boolean
+  last_analyzed       DateTime @default(now())
+
+  business            Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+}
+
+model IndustryBenchmark {
+  id                      String   @id @default(uuid())
+  industry_slug           String   @unique
+  avg_preparedness        Float
+  top_10_percentile       Float
+  avg_seo_score           Float
+  avg_conversion          Float
+  
+  // New metrics derived from intelligence layer
+  avg_cpl                 Decimal?
+  top_25_percentile_cpl   Decimal?
+  avg_job_value           Decimal?
+  
+  updated_at              DateTime @updatedAt
+}
+
+// -----------------------------------------
+// Pillar 3: Paid Media Performance Database
+// -----------------------------------------
+model PaidMediaPerformance {
+  id                   String   @id @default(uuid())
+  business_id          String
+  campaign_id          String
+  platform             String
+  ad_creative_type     String
+  creative_description String?
+  targeting_parameters Json?
+  cpc                  Decimal?
+  cpm                  Decimal?
+  ctr                  Float?
+  cpa                  Decimal?
+  roas                 Float?
+  conversion_rate      Float?
+  geographic_region    String?
+  industry_category    String?
+  recorded_at          DateTime @default(now())
+
+  business             Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------
+// Pillar 4: Conversion & Revenue Intelligence
+// -----------------------------------------
+model RevenueIntelligence {
+  id                        String   @id @default(uuid())
+  business_id               String
+  period_start              DateTime
+  period_end                DateTime
+  leads_generated           Int
+  calls_booked              Int
+  jobs_sold                 Int
+  revenue_generated         Decimal
+  repeat_customers          Int
+  customer_acquisition_cost Decimal
+  lifetime_value            Decimal
+  recorded_at               DateTime @default(now())
+
+  business                  Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------
+// Pillar 5: Longitudinal Performance Tracking
+// -----------------------------------------
+model LongitudinalPerformance {
+  id                   String   @id @default(uuid())
+  business_id          String
+  period_type          String   // "MONTHLY", "QUARTERLY", "YEARLY"
+  period_start         DateTime
+  period_end           DateTime
+  revenue_growth_pct   Float?
+  lead_growth_pct      Float?
+  cpa_change_pct       Float?
+  recorded_at          DateTime @default(now())
+
+  business             Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+}
+
+model GrowthRecommendation {
+  id                  String   @id @default(uuid())
+  business_id         String
+  audit_id            String?
+  problem_detected    String
+  suggested_action    String
+  impact_score        Int      // 1-10
+  difficulty_level    Int      // 1-10
+  est_revenue_impact  String   // e.g. "$1k - 3k MRR"
+  is_completed        Boolean  @default(false)
+  created_at          DateTime @default(now())
+
+  business            Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+}
+
+model AIMemoryBank {
+  id                  String   @id @default(uuid())
+  industry            String
+  action_taken        String   
+  // Pgvector extension required for unsupported types in postgres: Unsupported("vector(1536)")
+  // We'll store as JSON array for now to avoid breaking local env if pgvector isn't installed
+  vector_embedding    Json     
+  outcome_metric      String   
+  outcome_delta       Float    
+  confidence_score    Float    
+  created_at          DateTime @default(now())
+}

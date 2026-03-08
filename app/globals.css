@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-serif bg-paper text-ink;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+}
+
+/* Animations from tokens.css */
+@keyframes s-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes s-fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes s-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-pulse-slow {
+  animation: s-pulse 2s infinite;
+}
+
+.animate-fade-up {
+  animation: s-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Base utility classes for gradients etc */
+.bg-sc-gradient {
+  background: linear-gradient(135deg, #7c6cfc, #00d4a0);
+}
+
+/* =========================================================
+   LIGHT THEME OVERRIDES (Retro/Print aesthetic from design)
+   ========================================================= */
+.theme-light {
+  --bg-color: #f2efe9;
+  --text-main: #111111;
+  --text-dim: #444444;
+  --border-color: #111111;
+
+  --c-teal: #2a7a6f;
+  --c-rust: #c64e32;
+  --c-gold: #e2a938;
+
+  background-color: var(--bg-color) !important;
+  color: var(--text-main) !important;
+}
+
+.theme-light .bg-dark-bg,
+.theme-light .bg-dark-s1,
+.theme-light .bg-dark-s2,
+.theme-light .bg-dark-s3 {
+  background-color: var(--bg-color) !important;
+}
+
+.theme-light .border-dark-s3,
+.theme-light .border-dark-s4 {
+  border-color: var(--border-color) !important;
+  border-width: 2px !important;
+}
+
+.theme-light .text-dark-text,
+.theme-light .text-white {
+  color: var(--text-main) !important;
+}
+
+.theme-light .text-dim {
+  color: var(--text-dim) !important;
+}
+
+.theme-light .text-teal,
+.theme-light .text-blue-400 {
+  color: var(--c-teal) !important;
+}
+
+.theme-light .bg-teal,
+.theme-light .bg-blue-400 {
+  background-color: var(--c-teal) !important;
+  color: var(--bg-color) !important;
+}
+
+.theme-light .bg-teal\/10 {
+  background-color: rgba(42, 122, 111, 0.1) !important;
+}
+
+.theme-light .bg-teal\/5 {
+  background-color: rgba(42, 122, 111, 0.05) !important;
+}
+
+.theme-light .border-teal,
+.theme-light .border-teal\/20,
+.theme-light .border-teal\/30 {
+  border-color: var(--c-teal) !important;
+}
+
+.theme-light .text-gold {
+  color: var(--c-gold) !important;
+}
+
+.theme-light .bg-gold\/10 {
+  background-color: rgba(226, 169, 56, 0.1) !important;
+}
+
+.theme-light .border-gold,
+.theme-light .border-gold\/20,
+.theme-light .border-gold\/30 {
+  border-color: var(--c-gold) !important;
+}
+
+.theme-light .text-rust {
+  color: var(--c-rust) !important;
+}
+
+.theme-light .bg-rust\/10,
+.theme-light .bg-rust\/20 {
+  background-color: rgba(198, 78, 50, 0.1) !important;
+}
+
+.theme-light .border-rust,
+.theme-light .border-rust\/20,
+.theme-light .border-rust\/30 {
+  border-color: var(--c-rust) !important;
+}
+
+/* Sharp borders everywhere */
+.theme-light .rounded,
+.theme-light .rounded-md,
+.theme-light .rounded-lg,
+.theme-light .rounded-xl,
+.theme-light .rounded-2xl,
+.theme-light .rounded-tl-sm,
+.theme-light .rounded-br-sm,
+.theme-light .rounded-bl-xl {
+  border-radius: 0 !important;
+}
+
+/* Remove glowing/shadow effects and default to strict borders */
+.theme-light [class*="shadow"] {
+  box-shadow: none !important;
+}
+
+.theme-light [class*="bg-gradient-to"] {
+  background: var(--bg-color) !important;
+  border: 2px solid var(--border-color) !important;
+}
+
+/* Hard outlines */
+.theme-light .border,
+.theme-light .border-t,
+.theme-light .border-b,
+.theme-light .border-l,
+.theme-light .border-r {
+  border-color: var(--border-color) !important;
+}
+
+.theme-light hr {
+  border-color: var(--border-color) !important;
+}
