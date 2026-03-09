@@ -74,7 +74,7 @@ ${liveDataSection}
         } else {
             // Modern Vercel AI SDK wrapper: Enforces Zod schema on Claude so it doesn't break JSON parsing
             const { object: generatedObj } = await generateObject({
-                model: anthropic('claude-3-5-sonnet-latest'),
+                model: anthropic('claude-sonnet-4-6'),
                 system: AUDIT_SYSTEM_PROMPT,
                 prompt: promptString,
                 schema: auditSchema,

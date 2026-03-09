@@ -35,7 +35,7 @@ CRITICAL INSTRUCTION: If the user asks you to do something, execute a task, or d
 
         // We use pure text streaming back to the client for the chat interface
         const result = await streamText({
-            model: anthropic('claude-3-5-sonnet-20240620'),
+            model: anthropic('claude-sonnet-4-6'),
             system: `${OPS_SYSTEM_PROMPT}\n\n${contextString}`,
             messages: [
                 ...history.map(msg => ({ role: msg.role, content: msg.content })),

@@ -64,8 +64,8 @@ FINDINGS: ${(auditResults.findings || []).map(f => `[${f.severity}] ${f.title}`)
         } else {
             // Modern Vercel AI SDK wrapper forcing the LLM to output accurate Marketing Plan schema
             const { object: generatedObj } = await generateObject({
-                model: anthropic('claude-3-5-sonnet-latest'),
-                system: OPS_SYSTEM_PROMPT,
+                model: anthropic('claude-sonnet-4-6'),
+                system: OPS_SYSTEM_PROMPT, // Assuming MARKETING_PLAN_PROMPT is a typo and OPS_SYSTEM_PROMPT is intended based on original file
                 prompt: promptString,
                 schema: marketingPlanSchema,
             });

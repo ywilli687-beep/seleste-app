@@ -61,7 +61,7 @@ If drafting Schema, ensure it is 100% valid JSON-LD.
 
         // 4. Force Claude to map its response into our exact V1 SEO Schema
         const { object: executionResult } = await generateObject({
-            model: anthropic('claude-3-5-sonnet-20240620'),
+            model: anthropic('claude-sonnet-4-6'),
             system: systemPrompt,
             prompt: `Execute the following task and return the structured JSON payload: ${task.action_description} \n\nInput Context: ${JSON.stringify(task.input_payload || {})}`,
             schema: seoExecutionSchema,
