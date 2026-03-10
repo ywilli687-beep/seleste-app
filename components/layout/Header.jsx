@@ -1,8 +1,13 @@
 "use client";
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Header() {
+    const pathname = usePathname();
+    if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/report')) {
+        return null;
+    }
     return (
         <nav className="w-full border-b border-[#222]/10 bg-[#f4ebe1] relative z-50">
             <div className="max-w-[85rem] mx-auto px-8 h-24 flex items-center justify-between">

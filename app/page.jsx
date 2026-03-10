@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, BarChart3, Bot, Zap, ShieldCheck } from 'lucide-react';
+import { ArrowRight, BarChart3, Bot, Zap, ShieldCheck, Key } from 'lucide-react';
 import PricingSection from '../components/layout/PricingSection';
 
 export default function LandingPage() {
@@ -344,6 +344,122 @@ export default function LandingPage() {
                         >
                             Run Free Growth Audit <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                         </a>
+                    </div>
+                </div>
+            </section>
+
+            {/* THE FULL SUITE SECTION (PART B) */}
+            <section className="py-32 bg-[#fffcf8] border-b border-[#222]/10 relative">
+                <div className="max-w-[85rem] mx-auto px-8">
+                    <div className="text-center mb-16">
+                        <span className="font-mono text-[11px] font-bold text-[#2a7a6f] tracking-[0.25em] uppercase block mb-4">The Full Suite</span>
+                        <h2 className="font-sans text-4xl md:text-5xl font-bold mb-4 text-[#111]">Every product your business needs. <span className="italic font-serif text-[#2a7a6f] tracking-normal">Built to work as one system.</span></h2>
+                        <p className="text-[#555] font-serif text-xl italic max-w-3xl mx-auto">
+                            From weekly audits to live ad campaigns — Seleste covers every part of your digital growth. Here's what's inside.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col gap-16">
+                        {/* ROW 1 — CORE PLATFORM (4 Cards) */}
+                        <div>
+                            <h3 className="font-mono text-[10px] font-bold text-[#111] tracking-widest uppercase mb-6 border-b-2 border-[#111] pb-2 inline-block">Core Platform</h3>
+                            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {/* Card 1 */}
+                                <div className="bg-white border-[2px] border-[#111] p-6 shadow-[4px_4px_0px_#111] flex flex-col hover:-translate-y-1 transition-transform">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-2xl">🔍</span>
+                                        <span className="px-2 py-0.5 bg-[#111] text-[#fffcf8] text-[8px] font-mono tracking-widest uppercase font-bold">All Plans</span>
+                                    </div>
+                                    <h4 className="font-sans font-bold text-[#111] text-lg mb-2">Digital Presence Audit</h4>
+                                    <p className="text-[#555] text-sm font-serif leading-relaxed flex-1">Weekly Quality Score across 6 domains. Plain-English findings, ranked by impact.</p>
+                                </div>
+                                {/* Card 2 */}
+                                <div className="bg-white border-[2px] border-[#111] p-6 shadow-[4px_4px_0px_#111] flex flex-col hover:-translate-y-1 transition-transform">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-2xl">🗺️</span>
+                                        <span className="px-2 py-0.5 bg-[#111] text-[#fffcf8] text-[8px] font-mono tracking-widest uppercase font-bold">All Plans</span>
+                                    </div>
+                                    <h4 className="font-sans font-bold text-[#111] text-lg mb-2">90-Day Roadmap</h4>
+                                    <p className="text-[#555] text-sm font-serif leading-relaxed flex-1">A personalised, live action plan built from your audit and updated as you grow.</p>
+                                </div>
+                                {/* Card 3 */}
+                                <div className="bg-white border-[2px] border-[#111] p-6 shadow-[4px_4px_0px_#111] flex flex-col hover:-translate-y-1 transition-transform">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-2xl">✅</span>
+                                        <span className="px-2 py-0.5 bg-[#111] text-[#fffcf8] text-[8px] font-mono tracking-widest uppercase font-bold">All Plans</span>
+                                    </div>
+                                    <h4 className="font-sans font-bold text-[#111] text-lg mb-2">Approval Queue & Dashboard</h4>
+                                    <p className="text-[#555] text-sm font-serif leading-relaxed flex-1">Every agent action reviewed by you before it goes live. Full visibility, always.</p>
+                                </div>
+                                {/* Card 4 */}
+                                <div className="bg-white border-[2px] border-[#111] p-6 shadow-[4px_4px_0px_#111] flex flex-col hover:-translate-y-1 transition-transform">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-2xl">🧠</span>
+                                        <span className="px-2 py-0.5 bg-[#111] text-[#fffcf8] text-[8px] font-mono tracking-widest uppercase font-bold">All Plans</span>
+                                    </div>
+                                    <h4 className="font-sans font-bold text-[#111] text-lg mb-2">Living Memory Bank</h4>
+                                    <p className="text-[#555] text-sm font-serif leading-relaxed flex-1">Seleste learns your business continuously — and never asks for the same thing twice.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ROW 2 — THE AI AGENTS (5 Cards) */}
+                        <div>
+                            <h3 className="font-mono text-[10px] font-bold text-[#d97706] tracking-widest uppercase mb-6 border-b-2 border-[#d97706] pb-2 inline-block">The AI Agents</h3>
+                            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+                                {/* Agent 1 */}
+                                <div className="bg-[#f0f9f8] border-[2px] border-[#111] p-6 shadow-[4px_4px_0px_#111] flex flex-col hover:-translate-y-1 transition-transform">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-2xl">🔍</span>
+                                        <span className="px-2 py-0.5 border border-[#ccc] text-[#555] text-[8px] font-mono tracking-widest uppercase font-bold">All Plans</span>
+                                    </div>
+                                    <h4 className="font-sans font-bold text-[#111] text-lg mb-2">Audit Agent</h4>
+                                    <p className="text-[#555] text-sm font-serif leading-relaxed flex-1">Runs every Monday. Catches problems before they cost you calls.</p>
+                                </div>
+                                {/* Agent 2 */}
+                                <div className="bg-[#fff8f0] border-[2px] border-[#111] p-6 shadow-[4px_4px_0px_#111] flex flex-col hover:-translate-y-1 transition-transform">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-2xl">🎯</span>
+                                        <span className="px-2 py-0.5 border border-[#ccc] text-[#555] text-[8px] font-mono tracking-widest uppercase font-bold">All Plans</span>
+                                    </div>
+                                    <h4 className="font-sans font-bold text-[#111] text-lg mb-2">Opportunity Agent</h4>
+                                    <p className="text-[#555] text-sm font-serif leading-relaxed flex-1">Scans every Wednesday for gaps your competitors are missing.</p>
+                                </div>
+                                {/* Agent 3 */}
+                                <div className="bg-[#f5eeff] border-[2px] border-[#111] p-6 shadow-[4px_4px_0px_#111] flex flex-col hover:-translate-y-1 transition-transform">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-2xl">📡</span>
+                                        <span className="px-2 py-0.5 bg-[#111] text-[#00e5c7] text-[8px] font-mono tracking-widest uppercase font-bold flex items-center gap-1"><Key size={10} /> Grow+</span>
+                                    </div>
+                                    <h4 className="font-sans font-bold text-[#111] text-lg mb-2">Campaign Agent</h4>
+                                    <p className="text-[#555] text-sm font-serif leading-relaxed flex-1">Drafts and launches Google & Meta campaigns. Waits for your approval first.</p>
+                                </div>
+                                {/* Agent 4 */}
+                                <div className="bg-[#fdf0ed] border-[2px] border-[#111] p-6 shadow-[4px_4px_0px_#111] flex flex-col hover:-translate-y-1 transition-transform">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-2xl">💰</span>
+                                        <span className="px-2 py-0.5 bg-[#111] text-[#00e5c7] text-[8px] font-mono tracking-widest uppercase font-bold flex items-center gap-1"><Key size={10} /> Grow+</span>
+                                    </div>
+                                    <h4 className="font-sans font-bold text-[#111] text-lg mb-2">Budget Agent</h4>
+                                    <p className="text-[#555] text-sm font-serif leading-relaxed flex-1">Watches your ad spend every morning. Rebalances before it becomes a problem.</p>
+                                </div>
+                                {/* Agent 5 */}
+                                <div className="bg-[#eff6ff] border-[2px] border-[#111] p-6 shadow-[4px_4px_0px_#111] flex flex-col hover:-translate-y-1 transition-transform">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-2xl">🎨</span>
+                                        <span className="px-2 py-0.5 bg-[#111] text-[#3b82f6] text-[8px] font-mono tracking-widest uppercase font-bold flex items-center gap-1"><Key size={10} /> Dominate</span>
+                                    </div>
+                                    <h4 className="font-sans font-bold text-[#111] text-lg mb-2">Creative Agent</h4>
+                                    <p className="text-[#555] text-sm font-serif leading-relaxed flex-1">Writes your ads, runs A/B tests, and scales what converts.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-16 text-center">
+                        <Link href="/products" className="inline-flex items-center gap-3 px-8 py-4 bg-transparent border-[2px] border-[#111] text-[#111] font-bold font-mono text-[11px] tracking-widest uppercase hover:bg-[#111] hover:text-[#f4ebe1] hover:shadow-[4px_4px_0px_#111] transition-all">
+                            See everything that's included <ArrowRight size={14} />
+                        </Link>
                     </div>
                 </div>
             </section>

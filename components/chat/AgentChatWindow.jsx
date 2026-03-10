@@ -8,7 +8,7 @@ const AgentChatWindow = forwardRef(({ agent, businessId, businessData, auditResu
     const bottomRef = useRef(null);
 
     // Vercel AI SDK useChat Hook handles all state, history, and streaming chunks automatically
-    const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
+    const { messages, input, handleInputChange, handleSubmit, isLoading, append, setInput } = useChat({
         api: '/api/chat',
         body: {
             businessId,
@@ -21,6 +21,51 @@ const AgentChatWindow = forwardRef(({ agent, businessId, businessData, auditResu
             { id: '1', role: 'assistant', content: `Ops Orchestrator online for ${businessData?.businessName || 'your business'}. I've reviewed your audit data and 90-day plan. What should we tackle first?` }
         ]
     });
+
+    const customHandleSubmit = (e) => {
+        e.preventDefault();
+
+        const userText = input.toLowerCase().trim();
+        if (userText === 'unlock full report' || userText === 'unlock') {
+            // Append user message
+            append({ role: 'user', content: input });
+
+            // Clear input manually
+            setInput('');
+
+            // Fake an immediate assistant response suggesting page options
+            append({
+                role: 'assistant',
+                content: "Generating your secure checkout link..."
+            });
+
+            fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ businessId })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.url) {
+                        window.location.href = data.url;
+                    } else {
+                        throw new Error("No checkout URL returned");
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    append({
+                        role: 'assistant',
+                        content: "Sorry, I couldn't reach the billing server to unlock the report right now. Please try again later or visit the [Pricing Page](/pricing)."
+                    });
+                });
+
+            return;
+        }
+
+        // Standard submission
+        handleSubmit(e);
+    };
 
     useImperativeHandle(ref, () => ({
         triggerTask: (msg) => {
@@ -71,6 +116,7 @@ const AgentChatWindow = forwardRef(({ agent, businessId, businessData, auditResu
                                             p: ({ node, ...props }) => <p className="mb-3 last:mb-0" {...props} />,
                                             ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 space-y-2" {...props} />,
                                             ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 space-y-2" {...props} />,
+                                            a: ({ node, ...props }) => <a className="text-[#2a7a6f] font-bold underline hover:text-[#111]" {...props} />
                                         }}
                                     >
                                         {m.content}
@@ -110,7 +156,7 @@ const AgentChatWindow = forwardRef(({ agent, businessId, businessData, auditResu
             </div>
 
             {/* Input Area */}
-            <form onSubmit={handleSubmit} className="p-5 bg-white border-t-[2px] border-[#111] shrink-0 flex gap-3 items-center">
+            <form onSubmit={customHandleSubmit} className="p-5 bg-white border-t-[2px] border-[#111] shrink-0 flex gap-3 items-center">
                 <input
                     type="text"
                     className="flex-1 bg-white border border-[#ccc] px-4 py-3 text-[15px] font-sans text-[#111] outline-none focus:border-[#111] transition-colors placeholder:text-[#999]"

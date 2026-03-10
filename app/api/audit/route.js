@@ -8,6 +8,7 @@ import { auditSchema } from '../../../lib/agents/schemas';
 import { sendWelcomeEmail } from '../../../lib/email';
 import { scrapeWebsiteMetrics } from '../../../lib/seo/scraper';
 import { getPageSpeedMetrics } from '../../../lib/seo/pagespeed';
+import { getGooglePlacesMetrics } from '../../../lib/seo/places';
 
 export const maxDuration = 60; // Allow 60 seconds for LLM generation
 
@@ -23,6 +24,12 @@ export async function POST(req) {
         const goalMap = { 'leads': 'Generate more leads', 'visibility': 'Improve local visibility', 'conversion': 'Increase conversion rate', 'retention': 'Retain & upsell customers', 'expand': 'Expand to new markets', 'compete': 'Outrank competitors' };
 
         let liveDataSection = "";
+        let placesData = null;
+
+        // Fetch Google Places data regardless of website existence (since they only need a name and location)
+        if (businessData.businessName && businessData.location) {
+            placesData = await getGooglePlacesMetrics(businessData.businessName, businessData.location);
+        }
 
         if (businessData.website && businessData.website !== 'None') {
             const [seoData, speedData] = await Promise.all([
@@ -31,12 +38,20 @@ export async function POST(req) {
             ]);
 
             liveDataSection = `
-[LIVE WEBSITE DATA]
+[LIVE WEBSITE & LOCAL DATA]
 Target URL: ${businessData.website}
 SEO Extraction: ${seoData ? JSON.stringify(seoData) : 'Failed to fetch'}
 Mobile PageSpeed Insights: ${speedData ? JSON.stringify(speedData) : 'Failed to fetch'}
+Google Places Status: ${placesData ? JSON.stringify(placesData) : 'Not found or missing configuration'}
 
-INSTRUCTION: You must base your audit findings and growth recommendations heavily around the errors or successes found in this LIVE WEBSITE DATA. If they are missing an H1, write a task to fix it. If their mobile score is under 50, write a task to fix it.
+INSTRUCTION: Base your audit findings heavily around the LIVE WEBSITE & LOCAL DATA. If they are missing an H1, write a task to fix it. If their mobile score is under 50, write a task to fix it. If their Google Places rating is below 4.5 or review count is low, generate an urgent reputation playbook finding. If they are 'NOT_FOUND', tell them claiming their Google Business Profile is critical.
+`;
+        } else if (placesData) {
+            liveDataSection = `
+[LIVE LOCAL REPUTATION DATA]
+Google Places Status: ${placesData ? JSON.stringify(placesData) : 'Not found or missing configuration'}
+
+INSTRUCTION: The client has no website, but we found their Google Places signature. If their rating is below 4.5 or review count is low, generate an urgent reputation playbook finding. If they are 'NOT_FOUND', tell them claiming their Google Business Profile and building a basic lead-capture landing page is their highest priority.
 `;
         }
 
@@ -48,11 +63,12 @@ ${liveDataSection}
 `;
 
         let parsedData;
-        if (!process.env.ANTHROPIC_API_KEY) {
-            console.warn("No Anthropic API key found. Returning mock audit data for local testing.");
+        if (!process.env.ANTHROPIC_API_KEY || process.env.MOCK_LLM === 'true') {
+            console.warn("MOCK_LLM is true or missing API key. Returning mock audit data for local testing.");
             parsedData = {
                 qualityScore: 42,
                 scoreLabel: "Fair",
+                executiveSummary: "Your website has foundational technical issues preventing it from ranking locally. Furthermore, your lack of verifiable social proof is actively harming your conversion rate for the traffic you do get. Fixing your on-page structure and adding reviews will create an immediate lift in qualified leads.",
                 headline: "Your digital presence is unoptimized, leaving significant revenue on the table.",
                 winOpportunity: "Add an explicit CTA above the fold to capture abandoning traffic.",
                 findings: [
@@ -74,7 +90,7 @@ ${liveDataSection}
         } else {
             // Modern Vercel AI SDK wrapper: Enforces Zod schema on Claude so it doesn't break JSON parsing
             const { object: generatedObj } = await generateObject({
-                model: anthropic('claude-sonnet-4-6'),
+                model: anthropic('claude-3-5-sonnet-latest'),
                 system: AUDIT_SYSTEM_PROMPT,
                 prompt: promptString,
                 schema: auditSchema,

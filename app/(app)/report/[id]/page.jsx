@@ -74,34 +74,7 @@ export default function AuditReportPage() {
 
     return (
         <div className="min-h-screen bg-dark-bg text-dark-text pb-32">
-            {/* Header */}
-            <nav className="w-full border-b border-dark-s3 bg-dark-bg/80 backdrop-blur-md sticky top-0 z-50">
-                <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <span className="font-display font-bold">Seleste</span>
-                        <span className="text-dark-s3">/</span>
-                        <span className="font-mono text-xs text-dim truncate max-w-[200px]">{biz?.name || 'Audit Report'}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        {isUnlocked ? (
-                            <button
-                                onClick={() => router.push(`/dashboard/${params.id}`)}
-                                className="px-4 py-2 bg-teal text-dark-bg font-bold font-mono text-xs tracking-widest uppercase rounded hover:bg-teal-glow transition"
-                            >
-                                Go to Dashboard
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleCheckout}
-                                disabled={checkingOut}
-                                className="px-4 py-2 bg-teal text-dark-bg font-bold font-mono text-xs tracking-widest uppercase rounded hover:bg-teal-glow transition disabled:opacity-50"
-                            >
-                                {checkingOut ? "Loading..." : "Unlock Full Report"}
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </nav>
+
 
             <main className="max-w-4xl mx-auto px-6 pt-12">
 
@@ -121,9 +94,16 @@ export default function AuditReportPage() {
 
                             <div className="flex-1 w-full">
                                 <h1 className="font-display text-3xl font-bold mb-2">{biz?.name}</h1>
-                                <p className="text-dim mb-8 pb-6 border-b border-dark-s3">
+                                <p className="text-dim mb-4 pb-4 border-b border-dark-s3">
                                     <strong className="text-white">Primary Diagnosis:</strong> {auditResults?.headline || 'Your digital presence is unoptimized, leaving significant revenue on the table.'}
                                 </p>
+
+                                {auditResults?.executiveSummary && (
+                                    <div className="mb-8 pb-6 border-b border-dark-s3">
+                                        <h3 className="font-bold text-white mb-2 text-sm uppercase tracking-widest font-mono">Executive Summary</h3>
+                                        <p className="text-dim leading-relaxed text-sm">{auditResults.executiveSummary}</p>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
                                     {/* Category Breakdown Mocks */}
@@ -273,9 +253,9 @@ export default function AuditReportPage() {
                     </div>
 
                     {!isUnlocked && (
-                        <div className="absolute bottom-0 left-0 w-full z-20 flex flex-col items-center justify-end pb-12 translate-y-1/4">
+                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-end pb-12 translate-y-1/4 pointer-events-none">
                             {/* Step 6: Opportunity section overlaid on the blur */}
-                            <div className="bg-dark-s1 border border-teal/30 shadow-[0_0_50px_rgba(0,229,199,0.1)] rounded-2xl p-8 max-w-2xl w-full text-center">
+                            <div className="bg-dark-s1 border border-teal/30 shadow-[0_0_50px_rgba(0,229,199,0.1)] rounded-2xl p-8 max-w-2xl w-full text-center pointer-events-auto">
                                 <div className="inline-flex items-center justify-center w-12 h-12 bg-teal/10 rounded-full mb-4">
                                     <TrendingUp className="text-teal" size={24} />
                                 </div>

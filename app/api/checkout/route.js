@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import prisma from '../../../lib/prisma';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
     apiVersion: '2023-10-16'
@@ -20,6 +21,13 @@ export async function POST(req) {
         // For local testing without a stripe env, I'll allow mock bypasses if desired, but this builds real checkout.
         if (!process.env.STRIPE_SECRET_KEY) {
             console.warn("No Stripe Key Provided. Bypassing Stripe in local development mode.");
+
+            // Bypass the need for webhooks locally by just unlocking it now:
+            await prisma.business.update({
+                where: { id: businessId },
+                data: { has_unlocked_report: true }
+            });
+
             return NextResponse.json({ url: `${baseUrl}/report/${businessId}?mock_success=true` });
         }
 

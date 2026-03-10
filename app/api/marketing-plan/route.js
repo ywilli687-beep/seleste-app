@@ -23,8 +23,8 @@ FINDINGS: ${(auditResults.findings || []).map(f => `[${f.severity}] ${f.title}`)
 
         let parsedData;
 
-        if (!process.env.ANTHROPIC_API_KEY) {
-            console.warn("No Anthropic API key. Returning mock marketing plan.");
+        if (!process.env.ANTHROPIC_API_KEY || process.env.MOCK_LLM === 'true') {
+            console.warn("MOCK_LLM is true or missing API key. Returning mock marketing plan.");
             parsedData = {
                 executiveSummary: [
                     "Fix core technical SEO immediately.",
