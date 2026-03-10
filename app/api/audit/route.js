@@ -88,14 +88,33 @@ ${liveDataSection}
                 ]
             };
         } else {
-            // Modern Vercel AI SDK wrapper: Enforces Zod schema on Claude so it doesn't break JSON parsing
-            const { object: generatedObj } = await generateObject({
-                model: anthropic('claude-3-5-sonnet-latest'),
-                system: AUDIT_SYSTEM_PROMPT,
-                prompt: promptString,
-                schema: auditSchema,
-            });
-            parsedData = generatedObj;
+            try {
+                // Modern Vercel AI SDK wrapper: Enforces Zod schema on Claude so it doesn't break JSON parsing
+                const { object: generatedObj } = await generateObject({
+                    model: anthropic('claude-3-5-sonnet-latest'),
+                    system: AUDIT_SYSTEM_PROMPT,
+                    prompt: promptString,
+                    schema: auditSchema,
+                });
+                parsedData = generatedObj;
+            } catch (aiError) {
+                console.warn("Anthropic API call failed (likely an invalid API key). Falling back to mock data.", aiError.message);
+                parsedData = {
+                    qualityScore: 42,
+                    scoreLabel: "Fair",
+                    executiveSummary: "⚠️ SELESTE SYSTEM NOTICE: Your live Anthropic API key was rejected by the server ('invalid x-api-key'). This is a mock report so the app doesn't crash. Please check your Vercel Environment Variables to ensure your ANTHROPIC_API_KEY is correct, starts with 'sk-ant-api03-', has no spaces, and your account has active billing credits.",
+                    headline: "API Key Validation Failed. Showing Mock Data.",
+                    winOpportunity: "Fix your Anthropic API Key in Vercel to unlock real, live AI agents.",
+                    findings: [
+                        { skill: "system-admin", severity: "critical", title: "Invalid API Key in Vercel", description: "The API successfully received your key but Anthropic rejected it.", action: "Replace Vercel ANTHROPIC_API_KEY with a working key and redeploy.", impactScore: 10, difficultyLevel: 1, estRevenueImpact: "Required for App Functionality" }
+                    ],
+                    roadmap: [
+                        { phase: "Immediate", skill: "system", task: "Generate new key in Anthropic Console", assignedAgent: "Admin" },
+                        { phase: "Immediate", skill: "system", task: "Update Vercel Environment Variables", assignedAgent: "Admin" },
+                        { phase: "Immediate", skill: "system", task: "Redeploy the Vercel Main branch", assignedAgent: "Admin" }
+                    ]
+                };
+            }
         }
 
         const userEmail = businessData.email || 'demo@seleste.com';
