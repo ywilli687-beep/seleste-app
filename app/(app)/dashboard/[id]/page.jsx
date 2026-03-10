@@ -3,8 +3,8 @@
 import { useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
-import ScoreRing from '../../../components/dashboard/ScoreRing';
-import AgentChatWindow from '../../../components/chat/AgentChatWindow';
+import ScoreRing from '../../../../components/dashboard/ScoreRing';
+import AgentChatWindow from '../../../../components/chat/AgentChatWindow';
 
 const fetcher = url => fetch(url).then(r => r.json());
 

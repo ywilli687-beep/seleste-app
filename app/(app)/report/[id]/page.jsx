@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { Lock, ArrowRight, TrendingUp, AlertTriangle, CheckCircle, Target, Users, Zap, Search, ShieldCheck, Share2, ThumbsUp, ThumbsDown } from 'lucide-react';
-import ScoreRing from '../../../components/dashboard/ScoreRing';
+import ScoreRing from '../../../../components/dashboard/ScoreRing';
 
 const fetcher = url => fetch(url).then(r => r.json());
 
