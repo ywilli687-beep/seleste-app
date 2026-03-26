@@ -231,10 +231,9 @@ export default function ResultsView({
         </div>
       </div>
 
-      {/* ── LOCKED FULL AUDIT SECTION ── */}
+      {/* ── FULL AUDIT SECTION ── */}
       <div style={{ position: 'relative', marginTop: '-1rem' }}>
-        {/* The blurred content container */}
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 2rem 2rem', display: 'grid', gridTemplateColumns: '310px 1fr', gap: '2rem', alignItems: 'start', filter: 'blur(10px) opacity(0.5)', pointerEvents: 'none', userSelect: 'none' }}>
+        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 2rem 2rem', display: 'grid', gridTemplateColumns: '310px 1fr', gap: '2rem', alignItems: 'start' }}>
           
           {/* SIDEBAR LOCKED */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -478,30 +477,6 @@ export default function ResultsView({
           </div>
         </div>
 
-        {/* ── PAYWALL OVERLAY ── */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '6rem' }}>
-          <div style={{ background: 'rgba(10,10,15,0.7)', backdropFilter: 'blur(36px)', border: '1px solid rgba(200,169,110,0.3)', padding: '3.5rem', borderRadius: 'var(--r)', textAlign: 'center', maxWidth: 480, boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--adim)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, margin: '0 auto 1.5rem', border: '1px solid rgba(200,169,110,.2)' }}>
-              🔒
-            </div>
-            <h3 style={{ fontSize: '1.8rem', fontFamily: 'var(--ff-display)', marginBottom: '1rem', color: '#fff' }}>Unlock Full Audit</h3>
-            <p style={{ color: 'var(--text2)', fontSize: 14, lineHeight: 1.6, marginBottom: '2.5rem' }}>
-              Your complete growth analysis, 10-pillar breakdown, competitor benchmarks, and prioritized 90-day roadmap are ready.
-            </p>
-            <button 
-              className="no-print"
-              onClick={() => alert('Payment integration pending. You will be redirected to Stripe to pay $100.')} 
-              style={{ background: 'var(--accent)', color: '#0a0a0f', border: 'none', padding: '16px 32px', borderRadius: 'var(--rs)', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'opacity 0.2s', ...ghost, backgroundColor: 'var(--accent)' }}
-              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-            >
-              Unlock Report — $100 <span style={{ fontFamily: 'var(--ff-mono)' }}>→</span>
-            </button>
-            <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: '1.25rem', display: 'flex', alignItems: 'center', justifyItems: 'center', gap: 6, justifyContent: 'center' }}>
-              <span style={{ color: 'var(--green)' }}>✓</span> Secure one-time payment
-            </div>
-          </div>
-        </div>
 
       </div>
 
