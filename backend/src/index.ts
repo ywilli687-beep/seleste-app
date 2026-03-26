@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { ClerkExpressRequireAuth } from '@clerk/clerk-sdk-node'
+import rateLimit from 'express-rate-limit'
 
 dotenv.config()
 
@@ -20,7 +21,23 @@ app.use(cors({
 }))
 app.use(express.json())
 
-app.use('/api/audit', auditRoutes)
+// Rate limiting — 5 audits per hour per IP
+const auditLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many audits. You can run up to 5 per hour. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  message: { error: 'Too many requests. Please slow down.' },
+})
+app.use(globalLimiter)
+
+app.use('/api/audit', auditLimiter, auditRoutes)
 app.use('/api/explain', explainRoutes)
 app.use('/api/dashboard', ClerkExpressRequireAuth() as any, dashboardRoutes)
 app.use('/api/history', ClerkExpressRequireAuth() as any, historyRoutes)

@@ -7,6 +7,12 @@ import Dashboard from './pages/Dashboard'
 import History from './pages/History'
 import Report from './pages/Report'
 import Agents from './pages/Agents'
+import Pricing from './pages/Pricing'
+import Privacy from './pages/Privacy'
+import Terms from './pages/Terms'
+import FAQ from './pages/FAQ'
+import Changelog from './pages/Changelog'
+import CookieBanner from './components/CookieBanner'
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
@@ -18,10 +24,19 @@ export default function App() {
   return (
     <ClerkProvider publishableKey={clerkPubKey || ''}>
       <BrowserRouter>
+        <CookieBanner />
         <Routes>
+          {/* Public */}
           <Route path="/" element={<Home />} />
           <Route path="/sign-in/*" element={<SignInPage />} />
           <Route path="/sign-up/*" element={<SignUpPage />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/changelog" element={<Changelog />} />
+
+          {/* Protected */}
           <Route path="/dashboard" element={
             <>
               <SignedIn><Dashboard /></SignedIn>
