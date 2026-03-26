@@ -1,0 +1,18 @@
+{
+  "node": {
+    "13275a814f96e9a3ff1e449b2419207dd4d195d6": {
+      "workers": {
+        "app/_not-found/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fyannickwilliams%2FDownloads%2Fseleste%2Fseleste-antigravity%2Ffrontend%2Fnode_modules%2F%40clerk%2Fnextjs%2Fdist%2Fesm%2Fapp-router%2Fserver-actions.js%22%2C%5B%22invalidateCacheAction%22%5D%5D%5D&__client_imported__=true!",
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fyannickwilliams%2FDownloads%2Fseleste%2Fseleste-antigravity%2Ffrontend%2Fnode_modules%2F%40clerk%2Fnextjs%2Fdist%2Fesm%2Fapp-router%2Fserver-actions.js%22%2C%5B%22invalidateCacheAction%22%5D%5D%5D&__client_imported__=true!",
+        "app/onboarding/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fyannickwilliams%2FDownloads%2Fseleste%2Fseleste-antigravity%2Ffrontend%2Fnode_modules%2F%40clerk%2Fnextjs%2Fdist%2Fesm%2Fapp-router%2Fserver-actions.js%22%2C%5B%22invalidateCacheAction%22%5D%5D%5D&__client_imported__=true!"
+      },
+      "layer": {
+        "app/_not-found/page": "action-browser",
+        "app/page": "action-browser",
+        "app/onboarding/page": "action-browser"
+      }
+    }
+  },
+  "edge": {},
+  "encryptionKey": "R0BUMeTP3PwaaT4JLiMk7I9Ky+vW9bOsPXGbhGpKjA8="
+}

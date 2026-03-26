@@ -1,0 +1,950 @@
+// Seleste Audit Engine V2 — Data Model
+// Designed for: per-business depth, audit history, and market intelligence
+//
+// Core principle: every audit enriches three layers simultaneously:
+//   1. BusinessProfile  — the permanent, ever-richer record of a business
+//   2. AuditSnapshot    — immutable timestamped scoring record
+//   3. MarketSegment    — aggregated intelligence across businesses
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LAYER 1: BUSINESS PROFILE
+// The permanent, enriched record for every business Seleste has ever seen.
+// Gets richer with every audit run. This is the core asset.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Business {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Identity
+  domain        String   @unique // normalized: "apexautorepair.com"
+  canonicalUrl  String           // final URL after redirects
+  businessName  String?
+  vertical      Vertical
+  subVertical   String?          // e.g. "transmission", "oil_change", "body_shop"
+
+  // Location
+  city          String?
+  state         String?
+  country       String   @default("US")
+  zipCode       String?
+  latitude      Float?
+  longitude     Float?
+  serviceRadius Int?             // miles, if known
+
+  // Contact & ownership (for outreach layer)
+  ownerName     String?
+  ownerEmail    String?
+  ownerPhone    String?
+  businessPhone String?
+  businessEmail String?
+
+  // Operational metadata
+  yearFounded   Int?
+  employeeCount EmployeeRange?
+  priceRange    PriceRange?
+  isChain       Boolean  @default(false)
+  parentBrand   String?
+
+  // Current scores (denormalized for fast queries — updated on each audit)
+  // All 10 pillars stored so getLiveBenchmark and updateMarketSegment work correctly
+  latestOverallScore     Int?
+  latestConversionScore  Int?
+  latestTrustScore       Int?
+  latestPerformanceScore Int?
+  latestDiscoverScore    Int?  // discoverability (truncated to match Prisma field naming)
+  latestUxScore          Int?
+  latestContentScore     Int?
+  latestDataScore        Int?
+  latestTechnicalScore   Int?
+  latestBrandScore       Int?
+  latestScalabilityScore Int?
+  latestGrade            Grade?
+  lastAuditedAt          DateTime?
+
+  // Score trajectory (for trend detection)
+  scoreHistory  Json?    // [{date, score, grade}] — lightweight rolling window
+
+  // Market position (updated when we have enough data)
+  verticalPercentile    Int?     // 0-100, where they rank in their vertical
+  marketOpportunity     OpportunityLevel?
+
+  // Flags for intelligence layer
+  isProspect    Boolean  @default(false)  // flagged for outreach
+  isClient      Boolean  @default(false)  // paying customer
+  isBenchmark   Boolean  @default(false)  // used as vertical benchmark
+  doNotContact  Boolean  @default(false)
+  createdByUser String?                   // Clerk userId who first audited this
+
+  // Relations
+  audits        AuditSnapshot[]
+  signals       BusinessSignals?
+  contact       BusinessContact?
+  competitors   CompetitorLink[]  @relation("PrimaryBusiness")
+  competitorOf  CompetitorLink[]  @relation("CompetitorBusiness")
+  marketSegment MarketSegment?    @relation(fields: [segmentId], references: [id])
+  segmentId     String?
+
+  // ── V2 Extensions ──
+  verticalTier    String?
+  verticalQuartet String?
+  locationDMA     String?
+  firstScore      Int?
+  bestScore       Int?
+  worstScore      Int?
+  scoreVelocity   Float    @default(0)
+  auditCount      Int      @default(1)
+  firstAuditAt    DateTime @default(now())
+  daysSinceFirst  Int      @default(0)
+  isImproving     Boolean  @default(false)
+  isStagnant      Boolean  @default(false)
+  isDeclining     Boolean  @default(false)
+  improvementClass String?
+  localRank       Int?
+  localPercentile Float?
+  hasOutcomeData  Boolean  @default(false)
+  latestOutcomeId String?
+  latestOutcome   OutcomeReport? @relation("BusinessLatestOutcome", fields: [latestOutcomeId], references: [id])
+  hasClaimed      Boolean  @default(false)
+  isSubscriber    Boolean  @default(false)
+  subscriberTier  String?
+  claimedAt       DateTime?
+  claimedByUserId String?
+  dataCompleteness Float   @default(0)
+  isVerified       Boolean @default(false)
+
+  // Gamification tracking
+  xpTotal                Int      @default(0)
+  pendingNotifications   String[] @default([])
+
+  events             AuditEvent[]
+  outcomes           OutcomeReport[] @relation("BusinessOutcomes")
+  v2Competitors      BusinessCompetitor[] @relation("FocalBusiness")
+  v2CompetitorOf     BusinessCompetitor[] @relation("CompetitorBusiness")
+  achievements       BusinessAchievement[] @relation("BusinessAchievements")
+  agentCycles        AgentCycle[]
+  weeklyActions      WeeklyAction[] @relation("BusinessWeeklyActions")
+
+  @@index([vertical])
+  @@index([state, vertical])
+  @@index([latestOverallScore])
+  @@index([lastAuditedAt])
+  @@index([isProspect])
+  @@index([isClient])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUSINESS SIGNALS — The full structured signal record (latest state)
+// Kept as a separate table so it can be queried independently for analytics
+// ─────────────────────────────────────────────────────────────────────────────
+
+model BusinessSignals {
+  id         String   @id @default(cuid())
+  updatedAt  DateTime @updatedAt
+  businessId String   @unique
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // ── Conversion signals ──
+  hasCTA            Boolean @default(false)
+  hasBooking        Boolean @default(false)
+  hasContactForm    Boolean @default(false)
+  hasPricing        Boolean @default(false)
+  hasGuarantee      Boolean @default(false)
+  hasLiveChat       Boolean @default(false)
+  hasOnlinePayment  Boolean @default(false)
+  ctaText           String? // actual CTA copy found
+  bookingPlatform   String? // e.g. "Calendly", "OpenTable", "custom"
+  conversionFriction Int?   // 1-5 AI-assessed friction score
+
+  // ── Trust signals ──
+  hasReviews           Boolean @default(false)
+  hasContactInfo       Boolean @default(false)
+  hasSSL               Boolean @default(false)
+  hasAboutPage         Boolean @default(false)
+  hasAddress           Boolean @default(false)
+  hasTeamPhotos        Boolean @default(false)
+  hasLicenseInfo       Boolean @default(false)
+  hasAwardsOrCerts     Boolean @default(false)
+  hasInsuranceInfo     Boolean @default(false)
+  reviewPlatforms      String[] // ["Google", "Yelp", "Facebook"]
+  estimatedReviewCount Int?
+  estimatedRating      Float?   // e.g. 4.7
+
+  // ── Performance signals ──
+  isMobileOptimized   Boolean @default(false)
+  hasOptimizedImages  Boolean @default(false)
+  hasLazyLoad         Boolean @default(false)
+  hasCDN              Boolean @default(false)
+  hasCaching          Boolean @default(false)
+  estimatedLoadScore  Int?    // 1-100 estimated, until PageSpeed API integrated
+
+  // ── Discoverability signals ──
+  hasGBP              Boolean @default(false)
+  hasSchema           Boolean @default(false)
+  hasMetaDescription  Boolean @default(false)
+  hasH1               Boolean @default(false)
+  hasBlog             Boolean @default(false)
+  hasLocalKeywords    Boolean @default(false)
+  schemaTypes         String[] // ["LocalBusiness", "FAQPage", "Review"]
+  targetKeywords      String[] // extracted from page
+
+  // ── UX signals ──
+  hasGoodNav          Boolean @default(false)
+  hasMobileMenu       Boolean @default(false)
+  hasSiteSearch       Boolean @default(false)
+  hasAccessibility    Boolean @default(false)
+  navigationDepth     Int?    // estimated # of nav items
+
+  // ── Content signals ──
+  wordCount           Int     @default(0)
+  hasFAQ              Boolean @default(false)
+  hasServiceList      Boolean @default(false)
+  hasLocationPages    Boolean @default(false)
+  hasVideoContent     Boolean @default(false)
+  hasBeforeAfterPhotos Boolean @default(false)
+  contentQualityScore Int?    // 1-10 AI-assessed
+  primaryServices     String[] // extracted service names
+  valueProposition    String? // extracted UVP text
+
+  // ── Data & tracking signals ──
+  hasAnalytics        Boolean @default(false)
+  hasPixel            Boolean @default(false)
+  hasTagManager       Boolean @default(false)
+  hasHeatmaps         Boolean @default(false)
+  hasCRMIntegration   Boolean @default(false)
+  analyticsplatform   String? // "GA4", "Plausible", "Mixpanel"
+
+  // ── Technical signals ──
+  hasCMS              Boolean @default(false)
+  hasHTTPS            Boolean @default(false)
+  detectedCMS         String?
+  techStack           String[] // detected tech: React, jQuery, Bootstrap...
+  hasStructuredData   Boolean @default(false)
+  hasXMLSitemap       Boolean @default(false)
+  hasRobotsTxt        Boolean @default(false)
+
+  // ── Brand signals ──
+  hasLogo             Boolean @default(false)
+  hasBrandDiff        Boolean @default(false)
+  hasTagline          Boolean @default(false)
+  hasConsistentColors Boolean @default(false)
+  brandVoice          String? // "professional", "casual", "technical"
+
+  // ── Extracted content ──
+  pageTitle           String?
+  metaDescription     String?
+  h1Text              String?
+  pageSummary         String? @db.Text
+  businessDescription String?
+  detectedTopIssues   String[] // AI-extracted issue list
+
+  @@index([hasBooking])
+  @@index([hasAnalytics])
+  @@index([hasGBP])
+  @@index([hasCTA])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUSINESS CONTACT — Separate for access control and outreach workflows
+// ─────────────────────────────────────────────────────────────────────────────
+
+model BusinessContact {
+  id          String   @id @default(cuid())
+  updatedAt   DateTime @updatedAt
+  businessId  String   @unique
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  ownerName        String?
+  ownerTitle       String?
+  ownerEmail       String?
+  ownerLinkedIn    String?
+  businessPhone    String?
+  businessEmail    String?
+  contactConfidence Int?   // 1-100, how confident we are this is accurate
+
+  // Outreach tracking
+  lastContactedAt   DateTime?
+  outreachStatus    OutreachStatus @default(NOT_CONTACTED)
+  outreachNotes     String?  @db.Text
+  convertedAt       DateTime?
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PIPELINE BRIDGE — AuditFetch
+// Short-lived record bridging stage 1 (fetch) and stage 2 (analyze).
+// Allows Vercel Hobby's 10s limit to be respected by splitting the pipeline.
+// TTL: 10 minutes. Cleaned up after stage 2 completes.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditFetch {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+
+  inputUrl    String
+  finalUrl    String
+  html        String   @db.Text
+  status      Int
+  isSSL       Boolean
+  headers     Json
+  hardSignals Json
+  inputData   Json     // the validated AuditRequest
+  ip          String?
+
+  @@index([expiresAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LAYER 2: AUDIT SNAPSHOT
+// Immutable record of every audit run. The full truth at a point in time.
+// Never updated — only new ones created. This enables drift detection.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditSnapshot {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Trigger metadata
+  triggeredBy   AuditTrigger @default(MANUAL)
+  triggeredByIp String?
+  triggeredByUser String?    // Clerk userId
+  auditVersion  String       @default("2.0") // engine version for reproducibility
+
+  // Input at time of audit
+  inputUrl         String
+  inputLocation    String
+  inputVertical    Vertical
+  inputMonthlyRevenue Int?
+
+  // ── Scores (immutable snapshot) ──
+  overallScore      Int
+  grade             Grade
+  gradeLabel        String
+
+  conversionScore   Int
+  trustScore        Int
+  performanceScore  Int
+  uxScore           Int
+  discoverScore     Int
+  contentScore      Int
+  dataScore         Int
+  technicalScore    Int
+  brandScore        Int
+  scalabilityScore  Int
+
+  // ── Revenue analysis ──
+  leakagePct            Int     // e.g. 34
+  estimatedMonthlyLoss  Int?    // dollars, if revenue was provided
+  leakageConversion     Int     // breakdown by source
+  leakageTrust          Int
+  leakagePerformance    Int
+  leakageUX             Int
+
+  // ── Confidence ──
+  confidencePct     Int
+  missingSignals    String[]
+
+  // ── Applied rules (full trace) ──
+  appliedRules      AppliedRuleRecord[]
+
+  // ── Signal snapshot at time of audit ──
+  // Stored as structured JSON for full reproducibility
+  signalSnapshot    Json    // complete PageSignals at audit time
+
+  // ── AI outputs ──
+  aiNarrative       String? @db.Text
+  aiTopIssues       String[]
+  aiQuickWins       String[]
+
+  // ── Benchmark at time of audit ──
+  benchmarkAvg      Json    // vertical avg scores array
+  benchmarkTop      Json    // vertical top scores array
+  verticalPct       Int?    // where they ranked at time of audit
+
+  // ── Score delta from previous audit ──
+  previousAuditId   String?
+  scoreDelta        Int?    // overallScore - previous overallScore
+  improvedPillars   String[]
+  regressedPillars  String[]
+
+  // ── V2 Extensions ──
+  urlCanonical    String?
+  verticalTier    String?
+  verticalQuartet String?
+  locationCountry String   @default("US")
+  locationLat     Float?
+  locationLng     Float?
+  locationDMA     String?
+  revenueBracket  String?
+
+  hasSsl             Boolean @default(false)
+  hasAnalytics       Boolean @default(false)
+  analyticsPlatform  String?
+  hasCms             Boolean @default(false)
+  cmsName            String?
+  cmsVersion         String?
+  hasSchema          Boolean @default(false)
+  schemaTypesV2      String[]
+  hasBookingSystem   Boolean @default(false)
+  bookingPlatform    String?
+  hasContactForm     Boolean @default(false)
+  hasLiveChat        Boolean @default(false)
+  hasPricing         Boolean @default(false)
+  hasReviews         Boolean @default(false)
+  reviewPlatformsV2  String[]
+  hasPhoneNumber     Boolean @default(false)
+  hasAddress         Boolean @default(false)
+  hasHours           Boolean @default(false)
+  hasSocialLinks     Boolean @default(false)
+  socialPlatforms    String[]
+  wordCount          Int     @default(0)
+  imageCount         Int     @default(0)
+  videoCount         Int     @default(0)
+  pageLoadScore      Int?
+  isMobileOptimized  Boolean @default(false)
+  hasCtaAboveFold    Boolean @default(false)
+  hasGoogleBusinessProfile Boolean @default(false)
+  hasFacebookPixel   Boolean @default(false)
+  hasGoogleAds       Boolean @default(false)
+
+  aiValuePropClarity      Int?
+  aiTrustSignalQuality    Int?
+  aiContentDepth          Int?
+  aiDifferentiation       Int?
+  aiCallToActionStrength  Int?
+  aiLocalRelevance        Int?
+  aiMobileExperience      Int?
+  aiPricingClarity        Int?
+
+  dataQualityScore   Float?
+  isDataVerified     Boolean  @default(false)
+  excludeFromBench   Boolean  @default(false)
+
+  sessionId          String?
+  apiConsumerId      String?
+  engineVersion      String?
+  referrerSource     String?
+
+  events             AuditEvent[]
+  qualityRecord      AuditQuality?
+
+  @@index([businessId])
+  @@index([createdAt])
+  @@index([overallScore])
+  @@index([inputVertical])
+  @@index([triggeredBy])
+}
+
+// Every rule that fired in an audit — full trace for explainability
+model AppliedRuleRecord {
+  id          String        @id @default(cuid())
+  auditId     String
+  audit       AuditSnapshot @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  pillarId    String
+  ruleId      String
+  ruleLabel   String
+  ruleType    RuleType      // CAP or PENALTY
+  capValue    Int?          // if cap: what the max was set to
+  penaltyValue Int?         // if penalty: how many points removed
+  baseScore   Int           // score before this rule
+  finalScore  Int           // score after this rule
+
+  @@index([auditId])
+  @@index([ruleId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LAYER 3: MARKET INTELLIGENCE
+// Aggregate intelligence across businesses. The moat.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model MarketSegment {
+  id        String   @id @default(cuid())
+  updatedAt DateTime @updatedAt
+
+  // Segment identity
+  vertical    Vertical
+  state       String?
+  city        String?
+  country     String   @default("US")
+
+  // Unique key for upsert
+  segmentKey  String   @unique // e.g. "auto_repair:TX:Austin"
+
+  // Aggregate scores (recomputed on each audit in segment)
+  businessCount       Int    @default(0)
+  avgOverallScore     Float?
+  medianOverallScore  Float?
+  p25Score            Float? // 25th percentile
+  p75Score            Float? // 75th percentile
+  topDecileScore      Float? // top 10%
+
+  // Per-pillar averages
+  avgConversionScore  Float?
+  avgTrustScore       Float?
+  avgPerformanceScore Float?
+  avgUXScore          Float?
+  avgDiscoverScore    Float?
+  avgContentScore     Float?
+  avgDataScore        Float?
+  avgTechnicalScore   Float?
+  avgBrandScore       Float?
+  avgScalabilityScore Float?
+
+  // Signal prevalence (% of businesses with each signal)
+  pctHasCTA           Float?
+  pctHasBooking       Float?
+  pctHasReviews       Float?
+  pctHasGBP           Float?
+  pctHasAnalytics     Float?
+  pctHasSSL           Float?
+  pctHasSchema        Float?
+  pctHasBlog          Float?
+  pctHasPricing       Float?
+  pctHasMobileMenu    Float?
+
+  // Market opportunity indicators
+  avgLeakagePct       Float?  // average revenue leak in this segment
+  opportunityScore    Float?  // how much room for improvement exists (0-100)
+  competitionDensity  Int?    // businesses per zip/city
+
+  // Most common issues in this segment
+  topIssues           String[] // ranked list of most triggered rules
+
+  // Trend data
+  scoreHistory        Json?    // [{month, avgScore}] rolling 12 months
+
+  businesses          Business[]
+
+  @@index([vertical])
+  @@index([vertical, state])
+  @@index([opportunityScore])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPETITIVE INTELLIGENCE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model CompetitorLink {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  primaryId    String
+  primary      Business @relation("PrimaryBusiness",    fields: [primaryId],    references: [id], onDelete: Cascade)
+  competitorId String
+  competitor   Business @relation("CompetitorBusiness", fields: [competitorId], references: [id], onDelete: Cascade)
+
+  relationship  CompetitorRelationship
+  scoreDiff     Int?    // primary.score - competitor.score (negative = competitor winning)
+  rankDiff      Int?    // SERP rank difference
+
+  @@unique([primaryId, competitorId])
+  @@index([primaryId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Vertical {
+  AUTO_REPAIR
+  CAR_WASH
+  RESTAURANT
+  HOME_SERVICES
+  LOCAL_SERVICE
+  DENTAL
+  LEGAL
+  REAL_ESTATE
+  FITNESS
+  BEAUTY_SALON
+  PLUMBING
+  HVAC
+  LANDSCAPING
+  CLEANING
+  PET_SERVICES
+}
+
+enum Grade {
+  A
+  B
+  C
+  D
+}
+
+enum RuleType {
+  CAP
+  PENALTY
+}
+
+enum AuditTrigger {
+  MANUAL        // user submitted form
+  SCHEDULED     // cron rescore
+  API           // external API call
+  BULK_IMPORT   // batch processing
+}
+
+enum EmployeeRange {
+  SOLO
+  SMALL_2_10
+  MEDIUM_11_50
+  LARGE_51_PLUS
+}
+
+enum PriceRange {
+  BUDGET
+  MODERATE
+  PREMIUM
+  LUXURY
+}
+
+enum OpportunityLevel {
+  VERY_HIGH   // score < 35, lots of easy wins
+  HIGH        // score 35-50
+  MEDIUM      // score 50-65
+  LOW         // score 65-80
+  MINIMAL     // score 80+
+}
+
+enum OutreachStatus {
+  NOT_CONTACTED
+  IDENTIFIED      // flagged as prospect
+  CONTACTED
+  RESPONDED
+  DEMO_SCHEDULED
+  CONVERTED
+  CHURNED
+  DECLINED
+}
+
+enum CompetitorRelationship {
+  DIRECT_LOCAL    // same vertical, same city
+  INDIRECT        // same vertical, different area
+  ASPIRATIONAL    // high scorer in vertical to benchmark against
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA ARCHITECTURE V2 EXTENSIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditEvent {
+  id            String   @id @default(cuid())
+  occurredAt    DateTime @default(now())
+
+  eventType     String
+  entityType    String   
+  entityName    String   
+
+  previousValue String?
+  newValue      String
+  deltaNumeric  Float?   
+
+  vertical      String
+  verticalTier  String?
+  locationCity  String?
+  locationState String?
+  revenueBracket String?
+  cmsName       String?
+  auditVersion  String
+
+  businessId    String
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  auditId       String
+  audit         AuditSnapshot @relation(fields: [auditId], references: [id], onDelete: Cascade)
+}
+
+model BusinessCompetitor {
+  id                  String   @id @default(cuid())
+  computedAt          DateTime @default(now())
+
+  focalBusinessId     String
+  focalBusiness       Business @relation("FocalBusiness", fields: [focalBusinessId], references: [id], onDelete: Cascade)
+  competitorBusinessId String
+  competitorBusiness  Business @relation("CompetitorBusiness", fields: [competitorBusinessId], references: [id], onDelete: Cascade)
+
+  sameVertical        Boolean
+  sameCity            Boolean
+  distanceKm          Float?   
+  distanceBand        String?  
+
+  focalScore          Int
+  competitorScore     Int
+  scoreDelta          Int      
+  deltaDirection      String   
+  deltaClass          String   
+
+  biggestGapPillar    String   
+  biggestGapDelta     Int
+
+  focalAuditId        String
+  competitorAuditId   String
+  isStale             Boolean  @default(false) 
+
+  @@unique([focalBusinessId, competitorBusinessId])
+  @@index([focalBusinessId, scoreDelta])
+}
+
+model OutcomeReport {
+  id              String   @id @default(cuid())
+  reportedAt      DateTime @default(now())
+  businessId      String
+  business        Business @relation("BusinessOutcomes", fields: [businessId], references: [id], onDelete: Cascade)
+
+  outcomeType     String
+  changeMagnitude String   
+  changePercent   Float?   
+  changeAbsolute  Float?   
+
+  weeksElapsed    Int      
+  actionsCompleted String[] 
+  scoreAtReport   Int      
+  scoreAtBaseline Int      
+
+  isVerified      Boolean  @default(false)
+  verifiedAt      DateTime?
+  verificationMethod String? 
+
+  baselineAuditId String   
+  referencedAuditId String? 
+  
+  BusinessLatest  Business[] @relation("BusinessLatestOutcome")
+}
+
+model BenchmarkAggregate {
+  id              String   @id @default(cuid())
+  computedAt      DateTime @default(now())
+  validUntil      DateTime 
+
+  vertical        String
+  verticalTier    String?  
+  locationGranularity String 
+  locationValue   String   
+  revenueBracket  String?  
+  cmsPlatform     String?  
+  scoreBand       String?  
+
+  sampleSize      Int
+  isStatisticallyValid Boolean 
+
+  scoreP10        Float
+  scoreP25        Float
+  scoreMedian     Float
+  scoreP75        Float
+  scoreP90        Float
+  scoreMean       Float
+  scoreStdDev     Float
+
+  medianConversion    Float
+  medianTrust         Float
+  medianPerformance   Float
+  medianUX            Float
+  medianDiscovery     Float
+  medianContent       Float
+  medianData          Float
+  medianTechnical     Float
+  medianBrand         Float
+  medianScalability   Float
+
+  adoptionBooking           Float
+  adoptionAnalytics         Float
+  adoptionSchema            Float
+  adoptionReviews           Float
+  adoptionCtaAboveFold      Float
+  adoptionPricing           Float
+  adoptionLiveChat          Float
+  adoptionGoogleBusiness    Float
+  adoptionMobileOptimized   Float
+  adoptionVideoContent      Float
+
+  topGap1         String   
+  topGap2         String
+  topGap3         String
+  topGap4         String
+  topGap5         String
+
+  medianCompetitiveDelta Float? 
+  pctWithDominantGap    Float?  
+  pctTrailingCompetitor Float?  
+
+  medianRevenueLeak         Float
+  medianWeeksToGradeUpgrade Float?
+  outcomeReportRate         Float?  
+  medianOutcomeImprovement  String? 
+
+  @@unique([vertical, verticalTier, locationGranularity, locationValue, revenueBracket, cmsPlatform, scoreBand])
+}
+
+model AuditQuality {
+  id            String        @id @default(cuid())
+  auditId       String        @unique
+  audit         AuditSnapshot @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  computedAt    DateTime      @default(now())
+
+  qUrlValid           Float  
+  qPageResolved       Float  
+  qContentSufficient  Float  
+  qVerticalConfident  Float  
+  qLocationResolved   Float  
+  qSignalConsistent   Float  
+  qNotDuplicate       Float  
+
+  overallQuality  Float      
+  qualityBand     String     
+
+  isParkingPage   Boolean    @default(false)
+  isStagingEnv    Boolean    @default(false)
+  isPersonalSite  Boolean    @default(false)
+  isBotGenerated  Boolean    @default(false)
+  isDuplicate     Boolean    @default(false)
+
+  excludeFromBenchmarks Boolean @default(false)
+}
+
+model ApiConsumer {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+
+  name          String   
+  type          String   
+  contactEmail  String
+  apiKey        String   @unique
+
+  accessLevel   String   
+  verticalScope String[] 
+  geoScope      String[] 
+  rateLimit     Int      
+
+  tier          String   
+  contractStart DateTime?
+  contractEnd   DateTime?
+  monthlyFee    Float?
+
+  totalRequests     Int      @default(0)
+  requestsThisMonth Int      @default(0)
+  lastRequestAt     DateTime?
+}
+
+model BusinessAchievement {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation("BusinessAchievements", fields: [businessId], references: [id], onDelete: Cascade)
+  achievementId String   
+  earnedAt      DateTime @default(now())
+
+  @@unique([businessId, achievementId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AGENT LAYER (V1 + V2)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AgentCycle {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  businessId       String
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  status           String   // 'pending' | 'running' | 'complete' | 'partial' | 'failed'
+  trigger          String   // 'audit_complete' | 'weekly_cycle' | 'manual'
+  completedAt      DateTime?
+  agentsRun        String[]
+  agentsFailed     String[]
+  durationMs       Int?
+
+  // V2 fields
+  weekLabel        String?    // "2026-W12"
+  scoreAtCompletion Int?      // business score when cycle completed
+  actionsCompleted  Int?      // how many WeeklyActions were marked done this week
+  totalCostUsd      Float?    // sum of all AgentRun costs in this cycle
+
+  runs             AgentRun[]
+  weeklyActions    WeeklyAction[]
+}
+
+model AgentRun {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  cycleId          String
+  cycle            AgentCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  agentId          String
+  status           String   // 'complete' | 'failed' | 'skipped' | 'pending'
+  outputJson       Json?
+  error            String?
+  durationMs       Int?
+
+  // V1 presumed fields
+  modelUsed        String?
+  promptTokens     Int?
+  outputTokens     Int?
+  agentVersion     String   @default("1.0.0")
+
+  // V2 fields
+  actualCostUsd    Float?     
+  contextTokens    Int?       
+  truncated        Boolean    @default(false)  
+  truncationSteps  String[]   
+}
+
+model WeeklyAction {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  cycleId          String
+  cycle            AgentCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  businessId       String
+  business         Business @relation("BusinessWeeklyActions", fields: [businessId], references: [id], onDelete: Cascade)
+
+  title            String
+  description      String
+  effort           String
+  estimatedLift    Int
+  category         String
+  tool             String?
+  actionUrl        String?
+  rank             Int
+  status           String   // 'pending' | 'completed' | 'skipped'
+  completedAt      DateTime?
+
+  // V2 fields
+  confidence       String?  
+  agentVersion     String?  
+}
+
+model AgentCostSummary {
+  id           String @id @default(cuid())
+  weekLabel    String
+  agentId      String
+  businessId   String
+  runCount     Int
+  totalTokens  Int
+  totalCostUsd Float
+  avgCostUsd   Float
+
+  @@unique([weekLabel, agentId, businessId])
+  @@index([weekLabel, agentId])
+}
+
+model AgentEvalRun {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  agentId        String?
+  promptVersion  String
+  totalCases     Int
+  passed         Int
+  failed         Int
+  criticalFailed Int
+  costUsd        Float
+  triggeredBy    String
+  branchName     String?
+
+  @@index([agentId, createdAt])
+}

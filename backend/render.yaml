@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: seleste-api
+    env: node
+    buildCommand: npm install && npm run build && npm run db:generate
+    startCommand: npm run start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://seleste-frontend.vercel.app # Update this once Vercel is live
