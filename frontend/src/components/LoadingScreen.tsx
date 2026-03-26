@@ -1,5 +1,4 @@
-'use client'
-import type { LoadingStage } from '@/app/page'
+type LoadingStage = 'fetching' | 'hard_signals' | 'ai_signals' | 'scoring' | 'narrative' | 'saving' | 'done'
 
 const STAGES: Array<{ id: LoadingStage; label: string; detail: string }> = [
   { id: 'fetching',     label: 'Fetching real website',        detail: 'HTTP · follows redirects · reads full HTML' },
