@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { ClerkExpressRequireAuth, RequireAuthProp, StrictAuthProp } from '@clerk/clerk-sdk-node'
-import { db } from '../db'
+import { db } from '@/lib/db'
 import { runFullCycle } from '../lib/agents/runners/run-cycle'
 
 const router = Router()

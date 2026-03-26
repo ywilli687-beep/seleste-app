@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { db } from '../../db'
 import { AGENT_REGISTRY } from '../registry'
 import { buildScopedContext } from '../coordinator'
-import { checkAndLogCost } from '../data/costs'
+import { checkAndLogCost } from '@/lib/data/costs'
 import type { AgentContext } from '../types'
 
 const anthropic = new Anthropic({
