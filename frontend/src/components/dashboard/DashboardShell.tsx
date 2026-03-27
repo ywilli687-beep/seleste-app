@@ -12,9 +12,10 @@ import { NotificationStack } from './NotificationStack'
 
 interface Props {
   data: DashboardData
+  children?: React.ReactNode
 }
 
-export function DashboardShell({ data }: Props) {
+export function DashboardShell({ data, children }: Props) {
   const isFirstAudit = data.totalAudits === 1
   const isStale = data.daysSinceAudit > 30
 
@@ -56,58 +57,64 @@ export function DashboardShell({ data }: Props) {
         </header>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {data.quickWin && (
-            <QuickWin {...data.quickWin} />
+          {children ? (
+            children
+          ) : (
+            <>
+              {data.quickWin && (
+                <QuickWin {...data.quickWin} />
+              )}
+
+              <StatCards 
+                score={data.overallScore} 
+                delta={data.scoreDelta} 
+                revenueLeak={data.revenueLeakMonthly}
+                levelName={data.levelName}
+                xpTotal={data.xpTotal}
+                xpToNext={data.xpToNextLevel}
+              />
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 5fr) minmax(0, 4fr)', gap: 24 }}>
+                <RoadmapCard 
+                  roadmap={data.roadmap} 
+                  roadmapDurationWeeks={data.roadmapDurationWeeks} 
+                  grade={data.grade} 
+                />
+                <PillarCard pillars={data.pillars} />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 24 }}>
+                <StreakCard 
+                  streakHistory={data.streakHistory}
+                  streakDays={data.streakDays}
+                  streakPtsThisMonth={data.streakPtsThisMonth}
+                  totalAudits={data.totalAudits}
+                />
+                <AchievementsCard 
+                  achievements={data.achievements}
+                  newlyEarnedIds={data.newlyEarnedAchievementIds}
+                />
+              </div>
+
+              <div>
+                <h2 className="text-h2" style={{ marginBottom: 16, marginTop: 16 }}>Market Intelligence</h2>
+                <MarketStrip 
+                  verticalMedianScore={data.verticalMedianScore}
+                  bookingAdoptionRate={data.bookingAdoptionRate}
+                  topGap={data.topGap}
+                  avgMonthlyImprovement={data.avgMonthlyImprovement}
+                />
+                <div style={{ marginTop: 24 }}>
+                  <CompetitorCard 
+                    userScore={data.overallScore}
+                    competitors={data.competitorScores}
+                    gap={data.competitorGap}
+                    isFirstAudit={isFirstAudit}
+                  />
+                </div>
+              </div>
+            </>
           )}
-
-          <StatCards 
-            score={data.overallScore} 
-            delta={data.scoreDelta} 
-            revenueLeak={data.revenueLeakMonthly}
-            levelName={data.levelName}
-            xpTotal={data.xpTotal}
-            xpToNext={data.xpToNextLevel}
-          />
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 5fr) minmax(0, 4fr)', gap: 24 }}>
-            <RoadmapCard 
-              roadmap={data.roadmap} 
-              roadmapDurationWeeks={data.roadmapDurationWeeks} 
-              grade={data.grade} 
-            />
-            <PillarCard pillars={data.pillars} />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 24 }}>
-            <StreakCard 
-              streakHistory={data.streakHistory}
-              streakDays={data.streakDays}
-              streakPtsThisMonth={data.streakPtsThisMonth}
-              totalAudits={data.totalAudits}
-            />
-            <AchievementsCard 
-              achievements={data.achievements}
-              newlyEarnedIds={data.newlyEarnedAchievementIds}
-            />
-          </div>
-
-          <div>
-             <h2 className="text-h2" style={{ marginBottom: 16, marginTop: 16 }}>Market Intelligence</h2>
-             <MarketStrip 
-               verticalMedianScore={data.verticalMedianScore}
-               bookingAdoptionRate={data.bookingAdoptionRate}
-               topGap={data.topGap}
-               avgMonthlyImprovement={data.avgMonthlyImprovement}
-             />
-             <div style={{ marginTop: 24 }}>
-               <CompetitorCard 
-                 userScore={data.overallScore}
-                 competitors={data.competitorScores}
-                 gap={data.competitorGap}
-                 isFirstAudit={isFirstAudit}
-               />
-             </div>
-          </div>
         </div>
       </div>
     </div>

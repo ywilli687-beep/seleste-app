@@ -11,10 +11,6 @@ router.get('/:userId', async (req: Request, res: Response) => {
 
   try {
     const data = await getDashboardData(userId)
-    if (!data) {
-      return res.status(404).json({ success: false, error: 'No audits found for user' })
-    }
-    
     res.json({ success: true, data })
   } catch (err: any) {
     console.error('[Dashboard API Error]', err)

@@ -635,7 +635,41 @@ export async function getDashboardData(userId: string) {
     include: { business: { include: { achievements: true, signals: true } } }
   })
 
-  if (!latestAudit) return null
+  if (!latestAudit) {
+    return {
+      myBusinessesCount: 0,
+      businessName: null,
+      overallScore: 0,
+      scoreDelta: null,
+      grade: 'D' as const,
+      previousGrade: null,
+      pillars: PILLARS.map(p => ({ id: p.id, score: 0, industryAvg: 50 })),
+      revenueLeakMonthly: null,
+      xpTotal: 0,
+      levelId: 1,
+      levelName: 'Novice',
+      xpToNextLevel: 100,
+      unlockedFeatures: [],
+      achievements: [],
+      newlyEarnedAchievementIds: [],
+      streakHistory: new Array(28).fill(0),
+      streakDays: 0,
+      streakPtsThisMonth: 0,
+      totalAudits: 0,
+      daysSinceAudit: 0,
+      scoreHistory: [],
+      quickWin: null,
+      issues: [],
+      roadmap: [],
+      roadmapDurationWeeks: '0',
+      verticalMedianScore: 50,
+      bookingAdoptionRate: 0,
+      topGap: 'No data',
+      avgMonthlyImprovement: 0,
+      competitorScores: [],
+      competitorGap: null
+    }
+  }
 
   const { business } = latestAudit
   const myBusinessesCount = await db.auditSnapshot.groupBy({
