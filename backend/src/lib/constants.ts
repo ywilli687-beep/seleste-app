@@ -14,4 +14,6 @@ export const PILLARS = [
   { id: 'scalability',     name: 'Scalability',              weight: 0.02, icon: '📈' },
 ] as const
 
+export const AUDIT_VERSION = '2.2'
+
 export type PillarId = typeof PILLARS[number]['id']

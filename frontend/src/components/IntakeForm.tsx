@@ -45,14 +45,25 @@ export default function IntakeForm({
     const reaudit = params.get('reaudit')
     if (reaudit) setUrl(reaudit)
   }, [])
-  const [adv, setAdv]       = useState(false)
-
+  const [localError, setLocalError] = useState<string | null>(null)
+  const [adv, setAdv]             = useState(false)
   const valid = url.trim() && loc.trim() && vert
 
   const submit = () => {
+    setLocalError(null)
     if (!valid) return
+    
     let u = url.trim()
     if (!/^https?:\/\//i.test(u)) u = 'https://' + u
+    
+    try {
+      new URL(u)
+      if (!u.includes('.')) throw new Error()
+    } catch {
+      setLocalError('Please enter a valid website URL.')
+      return
+    }
+
     onSubmit({
       url: u,
       businessName: name.trim() || undefined,
@@ -134,10 +145,10 @@ export default function IntakeForm({
             </Fld>
           )}
 
-          {error && (
+          {(error || localError) && (
             <div style={{ background: 'var(--rdim)', border: '1px solid rgba(248,113,113,.2)', borderRadius: 'var(--rs)', padding: '1rem', fontSize: 13, color: 'var(--red)', display: 'flex', gap: 10 }}>
               <span style={{ flexShrink: 0 }}>⚠</span>
-              <span>{error}</span>
+              <span>{localError || error}</span>
             </div>
           )}
 
@@ -158,7 +169,7 @@ export default function IntakeForm({
               <span>Analyze Website</span><span>→</span>
             </button>
             <p style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
-              Fetches real page · AI analysis<br />All data saved · ~20–30s
+              Fetches real page · AI analysis<br />All data saved · ~15–20s
             </p>
           </div>
 

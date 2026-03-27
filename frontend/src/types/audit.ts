@@ -22,6 +22,15 @@ export type PillarId =
 
 // ── Audit Input ───────────────────────────────────────────────────────────────
 
+export type LoadingStage =
+  | 'fetching'
+  | 'hard_signals'
+  | 'ai_signals'
+  | 'scoring'
+  | 'narrative'
+  | 'saving'
+  | 'done'
+
 export interface AuditRequest {
   url: string
   businessName?: string
@@ -280,7 +289,7 @@ export interface AuditResult {
   confidence: AuditConfidence
   recommendations: RecommendationSet
   benchmark: VerticalBenchmark
-  verticalPercentile?: number
+  verticalPercentile?: number | null
 
   // AI outputs
   aiNarrative: string
@@ -343,7 +352,7 @@ export interface BusinessProfile {
   lastAuditedAt?: string
   auditCount: number
   scoreHistory?: Array<{ date: string; score: number; grade: Grade }>
-  verticalPercentile?: number
+  verticalPercentile?: number | null
   marketOpportunity?: OpportunityLevel
   isProspect: boolean
   isClient: boolean

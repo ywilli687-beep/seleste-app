@@ -1,4 +1,5 @@
 export type DashboardData = {
+  myBusinessesCount: number
   businessName: string | null
   overallScore: number
   scoreDelta: number | null

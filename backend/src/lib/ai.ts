@@ -15,6 +15,7 @@ export async function extractSignals(
   html: string,
   url: string,
   hard: HardSignals,
+  vertical: string,
 ): Promise<PageSignals> {
   const trimmed = html.slice(0, 22000)
 
@@ -23,6 +24,7 @@ export async function extractSignals(
 URL: ${url}
 Page title: ${hard.pageTitle}
 Word count: ${hard.wordCount}
+Vertical: ${vertical.replace('_', ' ').toLowerCase()}
 CMS: ${hard.detectedCMS ?? 'unknown'}
 Tech stack: ${hard.techStack.join(', ') || 'unknown'}
 
@@ -255,9 +257,10 @@ export async function writeNarrative(
   const strong = PILLARS.filter(p => scores[p.id] >= 65).map(p => `${p.name}: ${scores[p.id]}/100`).join(', ') || 'none'
   const topRules = applied.slice(0, 6).map(a => a.rule.label).join('; ') || 'none'
 
+  const biz = (input.businessName || input.url).replace(/[<>{}\[\]]/g, '')
   const prompt = `You are a senior growth strategist. Write a specific, direct audit report for this local business owner.
 
-Business: ${input.businessName || input.url}
+Business: ${biz}
 Vertical: ${input.vertical.replace('_', ' ')}
 Location: ${input.location}
 URL: ${input.url}

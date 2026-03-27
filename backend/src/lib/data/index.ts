@@ -562,11 +562,11 @@ export async function getLiveBenchmark(vertical: string, state?: string) {
 // Where does this business rank among all in its vertical?
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function getVerticalPercentile(vertical: string, score: number): Promise<number> {
+export async function getVerticalPercentile(vertical: string, score: number): Promise<number | null> {
   const total = await db.business.count({
     where: { vertical: vertical as any, latestOverallScore: { not: null } },
   })
-  if (total < 5) return 50
+  if (total < 5) return null
 
   const below = await db.business.count({
     where: { vertical: vertical as any, latestOverallScore: { lt: score } },
@@ -638,6 +638,10 @@ export async function getDashboardData(userId: string) {
   if (!latestAudit) return null
 
   const { business } = latestAudit
+  const myBusinessesCount = await db.auditSnapshot.groupBy({
+    by: ['businessId'],
+    where: { triggeredByUser: userId }
+  }).then(res => res.length)
   
   const xpTotal = business.xpTotal
   const { level, name: levelName, xpNextLevel } = getLevelInfo(xpTotal)
@@ -718,6 +722,7 @@ export async function getDashboardData(userId: string) {
   const prevGrade = prevScore ? computeGrade(prevScore).grade : null
 
   return {
+    myBusinessesCount,
     businessName: business.businessName || business.domain,
     overallScore: latestAudit.overallScore,
     scoreDelta: latestAudit.scoreDelta,

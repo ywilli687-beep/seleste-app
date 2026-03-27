@@ -70,7 +70,6 @@ export default function ResultsView({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const gradeColor = (s: number) => s >= 75 ? 'var(--green)' : s >= 60 ? 'var(--accent)' : s >= 45 ? 'var(--amber)' : 'var(--red)'
   const sorted = [...PILLARS].sort((a, b) => pillarScores[b.id] - pillarScores[a.id])
 
   return (
@@ -100,7 +99,7 @@ export default function ResultsView({
               <Bdg c="accent">COMPLETED</Bdg>
               <Bdg c={confidence.pct >= 70 ? 'green' : confidence.pct >= 50 ? 'amber' : 'red'}>CONFIDENCE {confidence.pct}%</Bdg>
               {signals.detectedCMS && <Bdg c="blue">{signals.detectedCMS}</Bdg>}
-              {verticalPercentile !== undefined && (
+              {verticalPercentile != null && (
                 <Bdg c="purple">TOP {100 - verticalPercentile}% IN VERTICAL</Bdg>
               )}
               {delta && (
@@ -118,7 +117,7 @@ export default function ResultsView({
       </div>
 
       {/* ── UNLOCKED TEASER SECTION ── */}
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '2rem', display: 'grid', gridTemplateColumns: '310px 1fr', gap: '2rem', alignItems: 'start' }}>
+      <div className="results-grid" style={{ maxWidth: 1180, margin: '0 auto', padding: '2rem', display: 'grid', gridTemplateColumns: '310px 1fr', gap: '2rem', alignItems: 'start' }}>
         {/* SIDEBAR */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <Card title="Digital Preparedness Score">
@@ -132,7 +131,7 @@ export default function ResultsView({
                 />
               </div>
               <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3, textAlign: 'center' }}>{gradeLabel}</div>
-              {verticalPercentile !== undefined && (
+              {verticalPercentile != null && (
                 <div style={{ marginTop: 8, fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textAlign: 'center' }}>
                   Better than {verticalPercentile}% of {input.vertical.replace('_', ' ').toLowerCase()} businesses
                 </div>
@@ -233,7 +232,7 @@ export default function ResultsView({
 
       {/* ── FULL AUDIT SECTION ── */}
       <div style={{ position: 'relative', marginTop: '-1rem' }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 2rem 2rem', display: 'grid', gridTemplateColumns: '310px 1fr', gap: '2rem', alignItems: 'start' }}>
+        <div className="results-grid" style={{ maxWidth: 1180, margin: '0 auto', padding: '0 2rem 2rem', display: 'grid', gridTemplateColumns: '310px 1fr', gap: '2rem', alignItems: 'start' }}>
           
           {/* SIDEBAR LOCKED */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -426,7 +425,7 @@ export default function ResultsView({
 
             {/* Roadmap */}
             <Card title="30 / 60 / 90 Day Roadmap">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+              <div className="roadmap-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
                 {(['30', '60', '90'] as const).map(ph => {
                   const cfg = { '30': { bg: 'var(--adm)', fg: 'var(--amber)', lbl: 'Foundation' }, '60': { bg: 'var(--bdim)', fg: 'var(--blue)', lbl: 'Acceleration' }, '90': { bg: 'var(--gdim)', fg: 'var(--green)', lbl: 'Scale' } }[ph]
                   return (
@@ -499,6 +498,8 @@ export default function ResultsView({
   )
 }
 
+const gradeColor = (s: number) => s >= 75 ? 'var(--green)' : s >= 60 ? 'var(--accent)' : s >= 45 ? 'var(--amber)' : 'var(--red)'
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
@@ -535,9 +536,13 @@ function MStat({ label, val, color, sub }: { label: string; val: string; color: 
 
 function ScoreDial({ score }: { score: number }) {
   const ref = useRef<HTMLCanvasElement>(null)
+  const [hasCanvas, setHasCanvas] = useState(true)
+
   useEffect(() => {
     const c = ref.current; if (!c) return
-    const ctx = c.getContext('2d'); if (!ctx) return
+    const ctx = c.getContext('2d')
+    if (!ctx) { setHasCanvas(false); return }
+    
     const cx = 95, cy = 95, r = 72
     const sa = Math.PI * 0.75, ea = Math.PI * 2.25
     ctx.clearRect(0, 0, 190, 190)
@@ -547,9 +552,14 @@ function ScoreDial({ score }: { score: number }) {
     ctx.beginPath(); ctx.arc(cx, cy, r, sa, sa + (ea - sa) * (score / 100))
     ctx.strokeStyle = col; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.stroke()
   }, [score])
+
   return (
-    <div style={{ position: 'relative', width: 190, height: 190 }}>
-      <canvas ref={ref} width={190} height={190} />
+    <div style={{ position: 'relative', width: 190, height: 190, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {hasCanvas ? (
+        <canvas ref={ref} width={190} height={190} />
+      ) : (
+        <div style={{ width: 150, height: 150, borderRadius: '50%', border: '8px solid rgba(255,255,255,.07)', borderTopColor: gradeColor(score), transform: `rotate(${45 + (score * 2.7)}deg)` }} />
+      )}
       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', marginTop: 8 }}>
         <div style={{ fontFamily: 'var(--ff-display)', fontSize: '3.5rem', lineHeight: 1 }}>{score}</div>
         <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--ff-mono)', marginTop: 3 }}>/ 100</div>

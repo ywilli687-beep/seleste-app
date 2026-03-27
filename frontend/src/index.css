@@ -21,7 +21,15 @@ body { font-family: var(--ff-sans); background: var(--bg); color: var(--text); m
 .ai-narrative p:last-child { margin-bottom: 0; }
 .ai-narrative strong { color: var(--text); font-weight: 500; }
 @media print { nav, .no-print { display: none !important; } body { background: white; color: black; } }
-@media (max-width: 900px) { .results-grid { grid-template-columns: 1fr !important; } .roadmap-grid { grid-template-columns: 1fr !important; } }
+@media (max-width: 900px) {
+  .results-grid { grid-template-columns: 1fr !important; }
+  .roadmap-grid { grid-template-columns: 1fr !important; }
+  .premium-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+@media (max-width: 600px) {
+  .premium-grid { grid-template-columns: 1fr !important; }
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    DASHBOARD V2 CSS

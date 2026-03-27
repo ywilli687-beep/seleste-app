@@ -1,21 +1,12 @@
 import { useState } from 'react'
 import { useUser } from '@clerk/clerk-react'
-import type { AuditResult, AuditRequest } from '@/types/audit'
+import type { AuditResult, AuditRequest, LoadingStage } from '@/types/audit'
 import Landing from '@/components/Landing'
 import IntakeForm from '@/components/IntakeForm'
 import LoadingScreen from '@/components/LoadingScreen'
 import ResultsView from '@/components/ResultsView'
 
 type View = 'landing' | 'intake' | 'loading' | 'results'
-
-export type LoadingStage =
-  | 'fetching'
-  | 'hard_signals'
-  | 'ai_signals'
-  | 'scoring'
-  | 'narrative'
-  | 'saving'
-  | 'done'
 
 export default function Home() {
   const { user } = useUser()

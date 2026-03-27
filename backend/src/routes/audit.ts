@@ -14,6 +14,7 @@ import {
 } from '@/lib/data'
 import { runPostAuditJobs } from '@/lib/jobs'
 import { awardXP, computeStreak, checkAndAwardAchievements, type AchievementContext } from '@/lib/gamification'
+import { AUDIT_VERSION } from '@/lib/constants'
 import type { AuditResult } from '@/types/audit'
 
 const router = Router()
@@ -118,7 +119,7 @@ router.post('/', async (req: Request, res: Response) => {
     const hard = extractHardSignals(page)
 
     // ── 3. AI signal extraction ───────────────────────────────────────────────
-    const signals = await extractSignals(page.html, page.finalUrl, hard)
+    const signals = await extractSignals(page.html, page.finalUrl, hard, input.vertical)
 
     // ── 4. Rules engine ────────────────────────────────────────────────────────
     const { caps, penalties, applied } = applyRules(signals)
@@ -191,7 +192,7 @@ router.post('/', async (req: Request, res: Response) => {
         roadmap,
         delta,
         createdAt: new Date().toISOString(),
-        auditVersion: '2.1',  // bumped for this fix release
+        auditVersion: AUDIT_VERSION,
       }
 
       const snapshot = await saveAuditSnapshot({
@@ -277,7 +278,7 @@ router.post('/', async (req: Request, res: Response) => {
       roadmap,
       delta,
       createdAt: new Date().toISOString(),
-      auditVersion: '2.1',
+      auditVersion: AUDIT_VERSION,
     }
 
     return res.json({ success: true, result })

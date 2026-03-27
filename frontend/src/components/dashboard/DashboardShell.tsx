@@ -41,7 +41,12 @@ export function DashboardShell({ data }: Props) {
             <h1 className="text-h1" style={{ fontSize: 28, marginBottom: 8 }}>
               {data.businessName ? `${data.businessName} Command Center` : 'Growth Command Center'}
             </h1>
-            <p className="text-body">Welcome back. Here is your growth intelligence overview.</p>
+            <p className="text-body" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span>Welcome back. Here is your growth intelligence overview.</span>
+              <span style={{ fontSize: 11, background: 'var(--bg3)', border: '1px solid var(--border)', padding: '2px 8px', borderRadius: 99, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>
+                MY BUSINESSES: {data.myBusinessesCount}
+              </span>
+            </p>
           </div>
           {isStale && (
             <div className="chip chip-amber" style={{ padding: '8px 16px', fontSize: 13, cursor: 'pointer' }} onClick={handleAuditNavigation}>

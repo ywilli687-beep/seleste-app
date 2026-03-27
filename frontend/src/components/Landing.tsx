@@ -50,11 +50,11 @@ export default function Landing({ onStart }: { onStart: () => void }) {
             Built for local business owners
           </div>
           <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(2.4rem,5vw,4rem)', lineHeight: 1.08, marginBottom: '1.25rem', fontWeight: 700 }}>
-            More customers.<br />
-            <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>Less guessing.</em>
+            AI-Powered Growth.<br />
+            <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>Built for Main Street.</em>
           </h1>
           <p style={{ fontSize: '1rem', color: 'var(--text2)', maxWidth: 440, marginBottom: '2.5rem', lineHeight: 1.75 }}>
-            Seleste looks at your business online, gives you a clear score, and shows you exactly what's stopping people from finding and contacting you — then helps you fix it.
+            Seleste audits your business online, identifies revenue leaks, and gives you a structured growth roadmap — all in minutes.
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button onClick={onStart} style={{ background: 'var(--accent)', color: '#0a0a0f', border: 'none', padding: '14px 28px', borderRadius: 'var(--rs)', cursor: 'pointer', fontSize: 14, fontWeight: 700, fontFamily: 'var(--ff-sans)' }}>

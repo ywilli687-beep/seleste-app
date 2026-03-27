@@ -21,8 +21,8 @@ function Sparkline({ history }: { history: AuditSnap[] }) {
   const max = Math.max(...scores) + 5
   const W = 80, H = 28
   const pts = scores.map((s, i) => {
-    const x = (i / (scores.length - 1)) * W
-    const y = H - ((s - min) / (max - min)) * H
+    const x = (i / (scores.length - 1)) * (W - 4) + 2
+    const y = (H - 4) - ((s - min) / (max - min)) * (H - 8) + 4
     return `${x},${y}`
   }).join(' ')
   const last = scores[scores.length - 1]
@@ -30,7 +30,7 @@ function Sparkline({ history }: { history: AuditSnap[] }) {
   const color = last >= first ? 'var(--green)' : 'var(--red)'
   return (
     <svg width={W} height={H} style={{ overflow: 'visible' }}>
-      <polyline points={pts} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
     </svg>
   )
 }
@@ -95,8 +95,23 @@ export default function HistoryShell({ businesses }: { businesses: BusinessRow[]
             {businesses.length === 0 ? (
               <>
                 <div style={{ fontSize: '1.2rem', fontFamily: 'var(--ff-display)', marginBottom: '.5rem' }}>No audits yet</div>
-                <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: '1.5rem' }}>Run your first audit to start tracking businesses.</p>
-                <a href="/" style={{ background: 'var(--accent)', color: '#0a0a0f', padding: '10px 24px', borderRadius: 'var(--rs)', textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>Run an audit →</a>
+                <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: '2rem' }}>Run your first audit to start tracking businesses.</p>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2.5rem', textAlign: 'left' }}>
+                  {[
+                    { name: 'Joe\'s Auto Repair', url: 'joesautorepair.com', v: 'AUTO_REPAIR' },
+                    { name: 'The Daily Grind', url: 'dailygrindcoffee.com', v: 'RESTAURANT' },
+                    { name: 'Main St Dental', url: 'mainstdental.com', v: 'DENTAL' }
+                  ].map(s => (
+                    <a key={s.url} href={`/?url=${s.url}&name=${encodeURIComponent(s.name)}&v=${s.v}`} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '1rem', borderRadius: 'var(--rs)', textDecoration: 'none', transition: 'border-color .2s' }} onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'} onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{s.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--ff-mono)', marginTop: 2 }}>{s.url}</div>
+                      <div style={{ fontSize: 10, color: 'var(--accent)', marginTop: 8, textTransform: 'uppercase', letterSpacing: '.05em' }}>Try example →</div>
+                    </a>
+                  ))}
+                </div>
+
+                <a href="/" style={{ background: 'var(--accent)', color: '#0a0a0f', padding: '12px 28px', borderRadius: 'var(--rs)', textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>Run custom audit →</a>
               </>
             ) : (
               <p style={{ fontSize: 13, color: 'var(--text2)' }}>No results for "{search}"</p>

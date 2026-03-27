@@ -1,4 +1,4 @@
-type LoadingStage = 'fetching' | 'hard_signals' | 'ai_signals' | 'scoring' | 'narrative' | 'saving' | 'done'
+import type { LoadingStage } from '@/types/audit'
 
 const STAGES: Array<{ id: LoadingStage; label: string; detail: string }> = [
   { id: 'fetching',     label: 'Fetching real website',        detail: 'HTTP · follows redirects · reads full HTML' },
