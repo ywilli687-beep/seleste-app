@@ -8,9 +8,9 @@ import ExplainIcon from '@/components/ExplainIcon'
 import ExplainerPopover from '@/components/ExplainerPopover'
 
 const ghost: React.CSSProperties = {
-  background: 'none', border: '1px solid var(--border2)', color: 'var(--text2)',
+  background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(244,241,236,0.82)',
   padding: '6px 16px', borderRadius: 'var(--rs)', cursor: 'pointer',
-  fontFamily: 'var(--ff-sans)', fontSize: 13,
+  fontFamily: 'var(--ff-sans)', fontSize: 14, fontWeight: 500,
 }
 
 export default function ResultsView({
@@ -76,9 +76,9 @@ export default function ResultsView({
     <div style={{ paddingBottom: '6rem' }}>
 
       {/* Fixed nav */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(10,10,15,.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(10,10,15,.97)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
         <div onClick={onNewAudit} style={{ fontFamily: 'var(--ff-display)', fontSize: '1.25rem', color: 'var(--accent)', cursor: 'pointer' }}>
-          Seleste <span style={{ color: 'var(--text3)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8 }}>AUDIT ENGINE V2</span>
+          Seleste <span style={{ color: 'rgba(244,241,236,0.55)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8 }}>AUDIT ENGINE V2</span>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <a href="/dashboard" style={{ ...ghost, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Intelligence →</a>
@@ -97,10 +97,9 @@ export default function ResultsView({
             </div>
             <div style={{ display: 'flex', gap: 7, marginTop: 8, flexWrap: 'wrap' }}>
               <Bdg c="accent">COMPLETED</Bdg>
-              <Bdg c={confidence.pct >= 70 ? 'green' : confidence.pct >= 50 ? 'amber' : 'red'}>CONFIDENCE {confidence.pct}%</Bdg>
-              {signals.detectedCMS && <Bdg c="blue">{signals.detectedCMS}</Bdg>}
-              {verticalPercentile != null && (
-                <Bdg c="purple">TOP {100 - verticalPercentile}% IN VERTICAL</Bdg>
+              <Bdg c="blue">REPORT QUALITY {confidence.pct}%</Bdg>
+               {verticalPercentile !== null && verticalPercentile !== undefined && (
+                <Bdg c="purple">TOP {Math.max(1, 100 - (verticalPercentile ?? 0))}% IN YOUR INDUSTRY</Bdg>
               )}
               {delta && (
                 <Bdg c={delta.scoreDelta >= 0 ? 'green' : 'red'}>
@@ -120,7 +119,7 @@ export default function ResultsView({
       <div className="results-grid" style={{ maxWidth: 1180, margin: '0 auto', padding: '2rem', display: 'grid', gridTemplateColumns: '310px 1fr', gap: '2rem', alignItems: 'start' }}>
         {/* SIDEBAR */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <Card title="Digital Preparedness Score">
+          <Card title="Your Website Score">
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '.5rem' }}>
               <ScoreDial score={overallScore} />
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: '1.4rem', marginTop: '1rem', color: gradeColor(overallScore), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -131,9 +130,29 @@ export default function ResultsView({
                 />
               </div>
               <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3, textAlign: 'center' }}>{gradeLabel}</div>
+              
+              <div style={{ width: '100%', marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 10, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 8, textAlign: 'center' }}>Score Legend</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
+                  {[
+                    { r: '90-100', l: 'High Performance', c: 'var(--green)' },
+                    { r: '70-89',  l: 'Good',             c: 'var(--accent)' },
+                    { r: '50-69',  l: 'Average',          c: 'var(--amber)' },
+                    { r: '<50',    l: 'At Risk',          c: 'var(--red)' }
+                  ].map(item => (
+                    <div key={item.r} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.c }} />
+                      <div style={{ fontSize: 10, color: 'var(--text2)', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontWeight: 600, color: item.c }}>{item.r}</span> {item.l}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {verticalPercentile != null && (
-                <div style={{ marginTop: 8, fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textAlign: 'center' }}>
-                  Better than {verticalPercentile}% of {input.vertical.replace('_', ' ').toLowerCase()} businesses
+                <div style={{ marginTop: '1.25rem', fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textAlign: 'center', background: 'var(--bg3)', padding: '6px 12px', borderRadius: 99, border: '1px solid var(--border)' }}>
+                  Higher score than {verticalPercentile}% of similar local businesses
                 </div>
               )}
             </div>
@@ -237,9 +256,9 @@ export default function ResultsView({
           {/* SIDEBAR LOCKED */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Audit confidence */}
-            <Card title="Audit Confidence">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1rem' }}>
-                <span style={{ fontSize: 13, color: 'var(--text2)', whiteSpace: 'nowrap' }}>Signal quality</span>
+            <Card title="How Complete Is This Report">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <span style={{ fontSize: 13, color: 'var(--text2)' }}>Report completeness</span>
                 <div style={{ flex: 1, height: 7, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${confidence.pct}%`, background: `linear-gradient(90deg, var(--amber), var(--green))`, borderRadius: 99 }} />
                 </div>
@@ -252,43 +271,42 @@ export default function ResultsView({
               ))}
             </Card>
 
-            {/* Signals detected */}
-            <Card title="Signals Detected">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <Card title="What We Found On Your Site">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {([
-                  ['CTA above fold',        signals.hasCTA],
-                  ['Online booking',        signals.hasBooking],
-                  ['Contact form',          signals.hasContactForm],
-                  ['Pricing shown',         signals.hasPricing],
-                  ['Reviews displayed',     signals.hasReviews],
-                  ['SSL / HTTPS',           signals.hasSSL],
-                  ['Mobile optimized',      signals.isMobileOptimized],
-                  ['Google Business Profile', signals.hasGBP],
-                  ['Schema markup',         signals.hasSchema],
-                  ['Analytics installed',   signals.hasAnalytics],
-                  ['Remarketing pixel',     signals.hasPixel],
-                  ['Physical address',      signals.hasAddress],
-                  ['Service list',          signals.hasServiceList],
-                  ['FAQ section',           signals.hasFAQ],
-                  ['Blog / content hub',    signals.hasBlog],
-                  ['Logo present',          signals.hasLogo],
-                ] as [string, boolean][]).map(([label, val]) => (
-                  <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
-                    <span style={{ color: 'var(--text2)', display: 'flex', alignItems: 'center' }}>
-                      {label}
-                      <ExplainIcon 
-                        onClick={(e) => fetchExplanation(`signal_${label}`, label as string, e, { type: 'signal', signalName: label, signalValue: val ? 'was found' : 'was NOT found', businessName: biz, vertical: input.vertical })}
-                        loading={loadingKey === `signal_${label}`} loaded={!!explanations[`signal_${label}`]}
-                      />
-                    </span>
-                    <span style={{ color: val ? 'var(--green)' : 'var(--red)', fontFamily: 'var(--ff-mono)', fontSize: 11 }}>
+                  ['Main action button',          signals.hasCTA,             'A clear button telling visitors what to do — like "Call Now", "Book Online", or "Get a Quote". Without this, visitors don\'t know their next step.'],
+                  ['Online booking or scheduling',signals.hasBooking,         'A way for customers to book appointments directly on your site. Businesses with booking fill 30%+ more slots.'],
+                  ['Contact form',                signals.hasContactForm,     'A form visitors can fill out to reach you — captures leads even when you can\'t answer the phone.'],
+                  ['Prices or packages shown',    signals.hasPricing,         'Showing what you charge helps visitors decide. Most people won\'t call to ask — they\'ll just leave.'],
+                  ['Reviews or testimonials',     signals.hasReviews,         'Customer reviews on your site — the biggest trust signal for local businesses. 87% of buyers check reviews before choosing.'],
+                  ['Secure connection (HTTPS)',   signals.hasSSL,             'Your site uses a secure connection. Browsers warn visitors about sites that don\'t — which drives them away.'],
+                  ['Works on mobile phones',      signals.isMobileOptimized,  'Your site works properly on smartphones. Over 60% of local searches happen on mobile.'],
+                  ['Google Business linked',      signals.hasGBP,             'Your Google Business listing is connected — what powers your appearance in Google Maps and local search.'],
+                  ['Optimized for Google search', signals.hasSchema,          'Technical code that helps Google understand your business and can improve how you appear in search results.'],
+                  ['Website analytics installed', signals.hasAnalytics,       'A tool like Google Analytics tracking who visits and what they do. Without it you\'re making decisions blind.'],
+                  ['Paid ad tracking set up',     signals.hasPixel,           'Code that lets you show ads to people who already visited your site — cost-effective because they know you.'],
+                  ['Business address shown',      signals.hasAddress,         'Your physical address is visible — tells visitors you\'re a real, local business they can actually visit.'],
+                  ['Services listed clearly',     signals.hasServiceList,     'A clear list of what you offer — visitors need to confirm you handle their need within seconds of arriving.'],
+                  ['FAQ section',                 signals.hasFAQ,             'Answers to common questions — removes hesitation that stops people from picking up the phone.'],
+                  ['Blog or news section',        signals.hasBlog,            'Regular content about your industry helps you appear in more Google searches over time.'],
+                  ['Logo visible',                signals.hasLogo,            'Your logo is on the page — basic brand recognition and a professionalism signal.'],
+                ] as [string, boolean, string][]).map(([label, val, tip]) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, padding: '3px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ color: 'var(--text)' }}>{label}</span>
+                      <span
+                        title={tip}
+                        style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--bg3)', border: '1px solid var(--border)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text3)', cursor: 'help', flexShrink: 0 }}
+                      >?</span>
+                    </div>
+                    <span style={{ color: val ? 'var(--green)' : 'var(--red)', fontFamily: 'var(--ff-mono)', fontSize: 12, fontWeight: 500 }}>
                       {val ? '✓' : '✗'}
                     </span>
                   </div>
                 ))}
-                <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                  <span style={{ color: 'var(--text2)' }}>Word count</span>
-                  <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: signals.wordCount >= 300 ? 'var(--green)' : 'var(--red)' }}>
+                <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                  <span style={{ color: 'var(--text)' }}>Word count</span>
+                  <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: signals.wordCount >= 300 ? 'var(--green)' : 'var(--red)', fontWeight: 500 }}>
                     {signals.wordCount}
                   </span>
                 </div>
@@ -306,12 +324,24 @@ export default function ResultsView({
                 </div>
               }>
                 <div style={{ background: 'linear-gradient(135deg, rgba(200,169,110,.06), rgba(167,139,250,.04))', border: '1px solid rgba(200,169,110,.18)', borderRadius: 'var(--r)', padding: '1.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
-                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', animation: 'blink 2s infinite', display: 'inline-block' }} />
-                    <span style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em' }}>
-                      AI Growth Analysis — Real page content
-                    </span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '1.25rem', borderBottom: '1px solid rgba(200,169,110,.12)' }}>
+                    <div>
+                      <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Overall Performance</div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                        <span style={{ fontFamily: 'var(--ff-display)', fontSize: '2rem', color: gradeColor(overallScore) }}>{overallScore}</span>
+                        <span style={{ fontSize: 13, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>/ 100</span>
+                        <span style={{ fontSize: 16, fontWeight: 600, color: gradeColor(overallScore), marginLeft: 8 }}>Grade {grade}</span>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Report Status</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', animation: 'blink 2s infinite' }} />
+                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>AI Analysis Active</span>
+                      </div>
+                    </div>
                   </div>
+
                   <div className="ai-narrative" style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.8 }}
                     dangerouslySetInnerHTML={{ __html: aiNarrative }} />
                   {aiTopIssues.length > 0 && (
@@ -389,7 +419,7 @@ export default function ResultsView({
             </Card>
 
             {/* Benchmark */}
-            <Card title={`Benchmark — vs. ${input.vertical.replace('_', ' ').toLowerCase()} vertical${benchmark.count ? ` (n=${benchmark.count})` : ''}`}>
+            <Card title={`How You Compare To Similar Businesses${benchmark.count ? ` (${benchmark.count} audited)` : ''}`}>
               {PILLARS.slice(0, 8).map((p, i) => {
                 const you = pillarScores[p.id]
                 const avg = benchmark.avg[i] ?? 50
@@ -412,7 +442,7 @@ export default function ResultsView({
                 )
               })}
               <div style={{ marginTop: '1rem', display: 'flex', gap: 16, fontSize: 11, fontFamily: 'var(--ff-mono)' }}>
-                {[['You', 'var(--accent)'], ['Vertical avg', 'var(--blue)'], ['Top 10%', 'var(--green)']].map(([l, c]) => (
+                {[['You', 'var(--accent)'], ['Industry average', 'var(--blue)'], ['Top 10%', 'var(--green)']].map(([l, c]) => (
                   <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <span style={{ width: 10, height: 2, background: c, borderRadius: 2, display: 'inline-block' }} />{l}
                   </span>
@@ -544,13 +574,19 @@ function ScoreDial({ score }: { score: number }) {
     if (!ctx) { setHasCanvas(false); return }
     
     const cx = 95, cy = 95, r = 72
-    const sa = Math.PI * 0.75, ea = Math.PI * 2.25
+    const thick = 14
+    const sa = -Math.PI / 2
+    const ea = sa + (Math.PI * 2)
     ctx.clearRect(0, 0, 190, 190)
-    ctx.beginPath(); ctx.arc(cx, cy, r, sa, ea)
-    ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.stroke()
-    const col = score >= 75 ? '#4ade80' : score >= 60 ? '#c8a96e' : score >= 45 ? '#fbbf24' : '#f87171'
-    ctx.beginPath(); ctx.arc(cx, cy, r, sa, sa + (ea - sa) * (score / 100))
-    ctx.strokeStyle = col; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.stroke()
+    
+    // Background track
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2)
+    ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = thick; ctx.stroke()
+    
+    // Foreground arc
+    const col = score >= 90 ? '#4ade80' : score >= 70 ? '#c8a96e' : score >= 50 ? '#fbbf24' : '#f87171'
+    ctx.beginPath(); ctx.arc(cx, cy, r, sa, sa + (Math.PI * 2) * (score / 100))
+    ctx.strokeStyle = col; ctx.lineWidth = thick; ctx.lineCap = 'round'; ctx.stroke()
   }, [score])
 
   return (

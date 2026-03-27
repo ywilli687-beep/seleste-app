@@ -77,13 +77,13 @@ export default function IntakeForm({
     <div style={{ minHeight: '100vh', paddingTop: 80 }}>
 
       {/* Nav */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(10,10,15,.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(10,10,15,.97)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
         <div onClick={onBack} style={{ fontFamily: 'var(--ff-display)', fontSize: '1.25rem', color: 'var(--accent)', cursor: 'pointer' }}>
-          Seleste <span style={{ color: 'var(--text3)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8 }}>AUDIT ENGINE V2</span>
+          Seleste <span style={{ color: 'rgba(244,241,236,0.55)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8 }}>AUDIT ENGINE V2</span>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <a href="/dashboard" style={{ color: 'var(--text2)', fontSize: 13, textDecoration: 'none', fontFamily: 'var(--ff-sans)' }}>Intelligence →</a>
-          <button onClick={onBack} style={{ background: 'none', border: '1px solid var(--border2)', color: 'var(--text2)', padding: '6px 16px', borderRadius: 'var(--rs)', cursor: 'pointer', fontFamily: 'var(--ff-sans)', fontSize: 13 }}>← Home</button>
+          <a href="/dashboard" style={{ color: 'rgba(244,241,236,0.82)', fontSize: 14, textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Intelligence →</a>
+          <button onClick={onBack} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(244,241,236,0.82)', padding: '6px 16px', borderRadius: 'var(--rs)', cursor: 'pointer', fontFamily: 'var(--ff-sans)', fontSize: 14, fontWeight: 500 }}>← Home</button>
         </div>
       </nav>
 

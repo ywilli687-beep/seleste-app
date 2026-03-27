@@ -25,8 +25,18 @@ export default function LoadingScreen({
   const progress = Math.round((current / (ORDER.length - 1)) * 88) + 4
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      <div style={{ maxWidth: 560, width: '100%' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(10,10,15,.97)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ fontFamily: 'var(--ff-display)', fontSize: '1.25rem', color: 'var(--accent)' }}>
+          Seleste
+          <span style={{ color: 'rgba(244,241,236,0.55)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8 }}>WEBSITE AUDIT</span>
+        </div>
+        <div style={{ fontSize: 14, color: 'rgba(244,241,236,0.65)', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>
+          Analyzing your website...
+        </div>
+      </nav>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', paddingTop: 80 }}>
+        <div style={{ maxWidth: 560, width: '100%' }}>
 
         {/* Spinner */}
         <div style={{ width: 64, height: 64, margin: '0 auto 2rem', position: 'relative' }}>
@@ -108,6 +118,7 @@ export default function LoadingScreen({
         <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: '.75rem', fontFamily: 'var(--ff-mono)', textAlign: 'center' }}>
           {STAGES.find(s => s.id === stage)?.label ?? 'Processing'}...
         </p>
+        </div>
       </div>
     </div>
   )

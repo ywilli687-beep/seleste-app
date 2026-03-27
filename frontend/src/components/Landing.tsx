@@ -22,51 +22,41 @@ export default function Landing({ onStart }: { onStart: () => void }) {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
 
       {/* Nav */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(10,10,15,.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontFamily: 'var(--ff-display)', fontSize: '1.25rem', color: 'var(--accent)' }}>Seleste <span style={{ color: 'var(--text3)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8 }}>AUDIT ENGINE V2</span></div>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(10,10,15,.97)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ fontFamily: 'var(--ff-display)', fontSize: '1.25rem', color: 'var(--accent)' }}>Seleste <span style={{ color: 'rgba(244,241,236,0.55)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8 }}>AUDIT ENGINE V2</span></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <a href="/pricing" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Pricing</a>
-          <a href="/faq" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>FAQ</a>
-          <a href="/changelog" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Changelog</a>
-          <a href="/sign-in" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Sign In</a>
+          <a href="/pricing" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Pricing</a>
+          <a href="/faq" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>FAQ</a>
+          <a href="/changelog" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Changelog</a>
+          <a href="/sign-in" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Sign In</a>
           <button onClick={onStart} style={{ background: 'var(--accent)', border: 'none', color: '#0a0a0f', padding: '8px 20px', borderRadius: 'var(--rs)', cursor: 'pointer', fontFamily: 'var(--ff-sans)', fontSize: 13, fontWeight: 600 }}>Run Audit</button>
         </div>
       </nav>
 
-      {/* ── SPLIT HERO ── */}
-      <section style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        alignItems: 'center',
-        gap: '4rem',
-        maxWidth: 1180,
-        margin: '0 auto',
-        padding: '120px 2rem 80px',
-        width: '100%',
-      }}>
-        <div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--adim)', border: '1px solid rgba(200,169,110,.22)', padding: '5px 14px', borderRadius: 99, marginBottom: '1.75rem', fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--accent)', letterSpacing: '.07em', textTransform: 'uppercase' }}>
-            <span style={{ width: 6, height: 6, background: 'var(--green)', borderRadius: '50%', animation: 'blink 2s infinite', display: 'inline-block' }} />
-            Built for local business owners
-          </div>
-          <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(2.4rem,5vw,4rem)', lineHeight: 1.08, marginBottom: '1.25rem', fontWeight: 700 }}>
-            AI-Powered Growth.<br />
-            <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>Built for Main Street.</em>
-          </h1>
-          <p style={{ fontSize: '1rem', color: 'var(--text2)', maxWidth: 440, marginBottom: '2.5rem', lineHeight: 1.75 }}>
-            Seleste audits your business online, identifies revenue leaks, and gives you a structured growth roadmap — all in minutes.
-          </p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <button onClick={onStart} style={{ background: 'var(--accent)', color: '#0a0a0f', border: 'none', padding: '14px 28px', borderRadius: 'var(--rs)', cursor: 'pointer', fontSize: 14, fontWeight: 700, fontFamily: 'var(--ff-sans)' }}>
-              Get Your Free Audit →
-            </button>
-            <a href="/pricing" style={{ display: 'flex', alignItems: 'center', padding: '14px 28px', borderRadius: 'var(--rs)', border: '1px solid var(--border2)', color: 'var(--text2)', textDecoration: 'none', fontSize: 14, fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>
-              See Pricing →
-            </a>
-          </div>
+      {/* ── HERO ── */}
+      <section style={{ padding: '88px 2rem 56px', textAlign: 'center', maxWidth: 1200, margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--adim)', border: '1px solid rgba(200,169,110,.22)', padding: '5px 14px', borderRadius: 99, marginBottom: '1.5rem', fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--accent)', letterSpacing: '.07em', textTransform: 'uppercase' }}>
+          <span style={{ width: 6, height: 6, background: 'var(--green)', borderRadius: '50%', animation: 'blink 2s infinite', display: 'inline-block' }} />
+          LIVE · REAL WEBSITE ANALYSIS
         </div>
+        
+        <p style={{ fontSize: '.9rem', color: 'rgba(244,241,236,0.6)', marginBottom: '.6rem', fontFamily: 'var(--ff-sans)', letterSpacing: '.02em' }}>
+          Free website check for local businesses
+        </p>
 
-        <div style={{ position: 'relative' }}>
+        <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(2.8rem, 7vw, 5rem)', lineHeight: 1.05, maxWidth: 840, marginBottom: '1.5rem' }}>
+          Find out why customers choose your <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>competitor</em> instead of you.
+        </h1>
+
+        <p style={{ fontSize: '1.05rem', color: 'var(--text2)', maxWidth: 520, marginBottom: '3rem', lineHeight: 1.7 }}>
+          Enter your website address. We check 60+ things that affect whether visitors become customers — give you a score, explain what's costing you the most, and show you what to fix first.
+        </p>
+
+        <button onClick={onStart} style={{ background: 'var(--accent)', color: '#0a0a0f', border: 'none', padding: '14px 32px', borderRadius: 'var(--rs)', cursor: 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'var(--ff-sans)' }}>
+          Check My Website Free →
+        </button>
+
+        <div style={{ position: 'relative', marginTop: '4rem', width: '100%', maxWidth: 1000 }}>
           <div style={{ position: 'absolute', inset: '-10%', background: 'radial-gradient(ellipse at center, rgba(200,169,110,.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
             <div style={{ background: '#1c1c1e', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -75,14 +65,19 @@ export default function Landing({ onStart }: { onStart: () => void }) {
               <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#28c840', display: 'inline-block' }} />
               <div style={{ flex: 1, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--ff-mono)' }}>seleste-app.vercel.app</div>
             </div>
-            <img src="/report-mockup.png" alt="Seleste audit report showing score, quick wins and issues" style={{ width: '100%', display: 'block' }} />
+            <img src="/report-mockup.png" alt="Seleste audit report" style={{ width: '100%', display: 'block' }} />
           </div>
         </div>
       </section>
 
       {/* ── STATS ── */}
-      <div style={{ display: 'flex', gap: '3rem', justifyContent: 'center', padding: '2rem', borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
-        {[{ n: '60+', l: 'Signals Captured' }, { n: '47+', l: 'Deterministic Rules' }, { n: '10', l: 'Pillar Scores' }, { n: '∞', l: 'Compounds Over Time' }].map(s => (
+      <div style={{ display: 'flex', gap: '3rem', justifyContent: 'center', padding: '1.75rem 2rem', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg2)', flexWrap: 'wrap' }}>
+        {[
+          { n: '60+', l: 'Things We Check' },
+          { n: '47+', l: 'Scoring Rules' },
+          { n: '3', l: 'Reports Per Audit' },
+          { n: '∞', l: 'Gets Smarter Over Time' }
+        ].map(s => (
           <div key={s.l} style={{ textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--ff-display)', fontSize: '2.2rem', color: 'var(--accent)' }}>{s.n}</div>
             <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--ff-mono)', textTransform: 'uppercase', letterSpacing: '.1em', marginTop: 4 }}>{s.l}</div>

@@ -25,11 +25,11 @@ export function DashboardShell({ data }: Props) {
   return (
     <div className="grid-shell">
       <div className="sidebar">
-        <div style={{ marginBottom: 40, fontWeight: 700, fontSize: 20 }}>Seleste V2</div>
+        <div style={{ marginBottom: 40, fontWeight: 700, fontSize: 20, color: 'var(--accent)' }}>Seleste <span style={{ color: 'rgba(244,241,236,0.55)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8 }}>V2</span></div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ color: 'var(--green2)', fontWeight: 600, cursor: 'pointer' }}>Command Center</div>
-          <div style={{ color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }} onClick={() => window.location.href = '/history'}>Audit History</div>
-          <div style={{ color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }} onClick={handleAuditNavigation}>Run New Audit</div>
+          <div style={{ color: 'rgba(244,241,236,0.55)', cursor: 'pointer', fontSize: 14, fontWeight: 500 }} onClick={() => window.location.href = '/history'}>Audit History</div>
+          <div style={{ color: 'rgba(244,241,236,0.55)', cursor: 'pointer', fontSize: 14, fontWeight: 500 }} onClick={handleAuditNavigation}>Run New Audit</div>
         </nav>
       </div>
       

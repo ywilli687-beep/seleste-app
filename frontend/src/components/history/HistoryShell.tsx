@@ -50,13 +50,13 @@ export default function HistoryShell({ businesses }: { businesses: BusinessRow[]
       {/* Nav */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(10,10,15,.97)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-          <a href="/" style={{ fontFamily: 'var(--ff-display)', fontSize: '1.2rem', color: 'var(--accent)', textDecoration: 'none' }}>
-            Seleste
-          </a>
-          <div style={{ display: 'flex', gap: 2, background: 'var(--bg3)', borderRadius: 'var(--rs)', padding: 3 }}>
-            {[['/', 'New Audit'], ['/history', 'My Audits'], ['/dashboard', 'Intelligence']].map(([href, label]) => (
-              <a key={href} href={href} style={{ padding: '6px 14px', borderRadius: 6, background: href === '/history' ? 'var(--bg2)' : 'none', border: href === '/history' ? '1px solid var(--border)' : 'none', color: href === '/history' ? 'var(--text)' : 'var(--text3)', fontSize: 12, fontFamily: 'var(--ff-mono)', textDecoration: 'none' }}>
-                {label}
+          <div onClick={() => window.location.href = '/'} style={{ fontFamily: 'var(--ff-display)', fontSize: '1.25rem', color: 'var(--accent)', cursor: 'pointer' }}>
+            Seleste <span style={{ color: 'rgba(244,241,236,0.55)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8 }}>AUDIT ENGINE V2</span>
+          </div>
+          <div style={{ display: 'flex', gap: 16 }}>
+            {['/history', '/dashboard'].map(href => (
+              <a key={href} href={href} style={{ fontSize: 14, color: href === '/history' ? 'var(--text)' : 'rgba(244,241,236,0.55)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>
+                {href === '/history' ? 'History' : 'Intelligence'}
               </a>
             ))}
           </div>
