@@ -37,12 +37,36 @@ hasCDN=${hard.hasCDN}, hasCaching=${hard.hasCaching}, hasLazyLoad=${hard.hasLazy
 isMobileOptimized=${hard.isMobileOptimized}, hasOptimizedImages=${hard.hasOptimizedImages},
 hasCMS=${hard.hasCMS}, hasXMLSitemap=${hard.hasXMLSitemap},
 wordCount=${hard.wordCount}, h1Text=${JSON.stringify(hard.h1Text)},
-metaDescription=${JSON.stringify(hard.metaDescription)}, pageTitle=${JSON.stringify(hard.pageTitle)}
+metaDescription=${JSON.stringify(hard.metaDescription)}, pageTitle=${JSON.stringify(hard.pageTitle)},
+hasReviewStructure=${hard.hasReviewSignals}, hasPhoneNumber=${hard.hasPhoneNumber}, hasNavElement=${hard.hasNavLinks}
 
-HTML:
 \`\`\`
 ${trimmed}
 \`\`\`
+
+DETECTION RULES — apply these exact criteria, do not use general judgment:
+
+hasReviews: if hasReviewStructure=true above, set true. Otherwise, look for visible quoted testimonials
+  from named customers. Set false if only a generic "Read our reviews" link exists.
+
+hasCTA: true ONLY if the HTML contains a button, <a> tag, or form submit that uses action-oriented text
+  visible above the first 30% of the page content. Action text includes: Call, Book, Schedule, Request,
+  Get a Quote, Contact Us, Order, Buy, Reserve, Sign Up, Start, Try. 
+  Set false if the only action elements are in the footer or navigation menu.
+
+hasGoodNav: if hasNavElement=true above, set true. Otherwise set false.
+
+hasBrandDiff: true ONLY if the HTML contains explicit text stating a unique claim — a specific guarantee,
+  a number of years in business, an award name, a certification, a named specialty, or a stated
+  differentiator (e.g. "family owned since 1987", "5-star rated", "certified by X", "the only Y in Z").
+  Set false if the page only has generic phrases like "quality service" or "we care about customers".
+
+conversionFriction: score 1–5 using this exact rubric:
+  1 = Phone number AND booking/contact form both visible above fold, no obstacles
+  2 = Phone number visible above fold, form exists but below fold
+  3 = Contact info requires scrolling OR form has more than 5 fields
+  4 = No phone number visible, only a contact form with 5+ fields, or form is on a separate page
+  5 = No visible contact method above fold, form is buried or broken, or site has no contact mechanism
 
 Return ONLY valid JSON, no markdown:
 {
@@ -124,6 +148,7 @@ Return ONLY valid JSON, no markdown:
   const msg = await anthropic.messages.create({
     model: 'claude-sonnet-4-5',
     max_tokens: 2000,
+    temperature: 0,   // deterministic output — same HTML always produces same signals
     messages: [{ role: 'user', content: prompt }],
   })
 

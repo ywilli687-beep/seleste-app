@@ -30,6 +30,9 @@ export interface HardSignals {
   hasXMLSitemap: boolean
   pageTitle: string
   wordCount: number
+  hasReviewSignals: boolean   // deterministic: found review embed code, star elements, or widget
+  hasPhoneNumber: boolean     // deterministic: E.164 or (XXX) XXX-XXXX pattern found in HTML
+  hasNavLinks: boolean        // deterministic: <nav> with 3+ distinct href links
 }
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -173,6 +176,34 @@ export function extractHardSignals(page: FetchedPage): HardSignals {
   if (lo.includes('clarity.ms')) techStack.push('Microsoft Clarity')
   if (hasGTM) techStack.push('Google Tag Manager')
 
+  // ── Deterministic review detection ────────────────────────────────────────
+  const hasReviewWidget = 
+    lo.includes('google.com/maps/embed') ||
+    lo.includes('elfsight') ||
+    lo.includes('widget.trustpilot') ||
+    lo.includes('staticmap') ||
+    lo.includes('maps.googleapis') ||
+    /class="[^"]*review[^"]*"/i.test(html) ||
+    /class="[^"]*testimonial[^"]*"/i.test(html) ||
+    /class="[^"]*rating[^"]*"/i.test(html) ||
+    /aria-label="[^"]*star[^"]*"/i.test(html) ||
+    /itemprop="review"/i.test(html) ||
+    /itemprop="ratingValue"/i.test(html) ||
+    lo.includes('yelp.com/biz') ||
+    lo.includes('facebook.com/pg') ||
+    lo.includes('g.co/maps')
+
+  // ── Deterministic phone number detection ──────────────────────────────────
+  const hasPhoneNumber = 
+    /\(?\d{3}\)?[\s\-\.]\d{3}[\s\-\.]\d{4}/.test(html) ||   // (XXX) XXX-XXXX
+    /tel:\+?\d{10,}/.test(html) ||                          // tel: href
+    /\+1[\s\-]?\(?\d{3}\)?[\s\-]\d{3}[\s\-]\d{4}/.test(html) // +1 format
+
+  // ── Deterministic nav link detection ─────────────────────────────────────
+  const navMatch = html.match(/<nav[\s\S]*?<\/nav>/i)
+  const navLinks = navMatch ? (navMatch[0].match(/href="[^#"][^"]*"/g) || []) : []
+  const hasNavLinks = navLinks.length >= 3
+
   return {
     isSSL: page.isSSL,
     hasMetaDescription: metaDescription.length > 10,
@@ -196,6 +227,9 @@ export function extractHardSignals(page: FetchedPage): HardSignals {
     hasXMLSitemap: lo.includes('sitemap.xml') || lo.includes('<sitemap>'),
     pageTitle,
     wordCount,
+    hasReviewSignals: hasReviewWidget,
+    hasPhoneNumber,
+    hasNavLinks,
   }
 }
 
@@ -206,5 +240,6 @@ function emptyHardSignals(page: FetchedPage): HardSignals {
     hasPixel: false, hasTagManager: false, hasCDN: false, hasCaching: false, hasLazyLoad: false,
     isMobileOptimized: false, hasOptimizedImages: false, hasCMS: false, detectedCMS: null,
     techStack: [], hasXMLSitemap: false, pageTitle: '', wordCount: 0,
+    hasReviewSignals: false, hasPhoneNumber: false, hasNavLinks: false,
   }
 }

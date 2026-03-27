@@ -71,9 +71,14 @@ export function DashboardShell({ data, children }: Props) {
                       {data.overallScore}
                       <span style={{ fontSize: 24, fontWeight: 500, color: 'var(--text3)' }}>/100</span>
                     </div>
-                    <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div style={{ padding: '4px 10px', background: 'var(--bg1)', borderRadius: 20, fontSize: 12, fontWeight: 600, color: 'var(--accent)', border: '1px solid var(--border)' }}>
                         Grade {data.grade}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text2)' }}>
+                        {data.overallScore >= 75 ? 'Great' : 
+                         data.overallScore >= 60 ? 'Good' : 
+                         data.overallScore >= 45 ? 'Needs Work' : 'Critical Issues'}
                       </div>
                       {data.scoreDelta !== null && (
                         <div style={{ fontSize: 13, color: data.scoreDelta >= 0 ? 'var(--accent)' : '#ff5a5f', fontWeight: 600 }}>
