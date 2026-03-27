@@ -9,6 +9,8 @@ import { AchievementsCard } from './AchievementsCard'
 import { CompetitorCard } from './CompetitorCard'
 import { MarketStrip } from './MarketStrip'
 import { NotificationStack } from './NotificationStack'
+import { TrendChart } from './TrendChart'
+import { ScoreBreakdown } from './ScoreBreakdown'
 
 interface Props {
   data: DashboardData
@@ -61,26 +63,81 @@ export function DashboardShell({ data, children }: Props) {
             children
           ) : (
             <>
-              {data.quickWin && (
-                <QuickWin {...data.quickWin} />
-              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  <div style={{ padding: 32, background: 'var(--bg2)', borderRadius: 'var(--r)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+                    <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Overall Score</div>
+                    <div style={{ fontSize: 64, fontWeight: 900, lineHeight: 1, color: 'var(--text1)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'baseline', gap: 12 }}>
+                      {data.overallScore}
+                      <span style={{ fontSize: 24, fontWeight: 500, color: 'var(--text3)' }}>/100</span>
+                    </div>
+                    <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ padding: '4px 10px', background: 'var(--bg1)', borderRadius: 20, fontSize: 12, fontWeight: 600, color: 'var(--accent)', border: '1px solid var(--border)' }}>
+                        Grade {data.grade}
+                      </div>
+                      {data.scoreDelta !== null && (
+                        <div style={{ fontSize: 13, color: data.scoreDelta >= 0 ? 'var(--accent)' : '#ff5a5f', fontWeight: 600 }}>
+                          {data.scoreDelta >= 0 ? '↑' : '↓'} {Math.abs(data.scoreDelta)} pts
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                   <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--text3)', textTransform: 'uppercase' }}>Performance Trajectory</h3>
+                   <TrendChart data={data.chartData} />
+                </div>
+              </div>
 
-              <StatCards 
-                score={data.overallScore} 
-                delta={data.scoreDelta} 
-                revenueLeak={data.revenueLeakMonthly}
-                levelName={data.levelName}
-                xpTotal={data.xpTotal}
-                xpToNext={data.xpToNextLevel}
-              />
-              
+              <ScoreBreakdown pillars={data.pillars} />
+
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 5fr) minmax(0, 4fr)', gap: 24 }}>
                 <RoadmapCard 
                   roadmap={data.roadmap} 
                   roadmapDurationWeeks={data.roadmapDurationWeeks} 
                   grade={data.grade} 
                 />
-                <PillarCard pillars={data.pillars} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  {data.quickWin && (
+                    <QuickWin {...data.quickWin} />
+                  )}
+                  <div style={{ padding: 24, background: 'var(--bg2)', borderRadius: 'var(--r)', border: '1px solid var(--border)' }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20, color: 'var(--text1)' }}>Audit History</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {data.recentAudits.map((audit) => (
+                        <div 
+                          key={audit.id} 
+                          onClick={() => window.location.href = `/report/${audit.id}`}
+                          style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center', 
+                            padding: '12px 14px', 
+                            background: 'var(--bg3)', 
+                            borderRadius: 'var(--rs)', 
+                            cursor: 'pointer',
+                            border: '1px solid transparent',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'transparent')}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 600 }}>{audit.version}</div>
+                              <div style={{ fontSize: 11, color: 'var(--text3)' }}>{new Date(audit.createdAt).toLocaleDateString()}</div>
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 13, fontWeight: 700 }}>{audit.overallScore}</div>
+                            <div style={{ fontSize: 10, color: 'var(--text3)' }}>pts</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 24 }}>
@@ -104,56 +161,24 @@ export function DashboardShell({ data, children }: Props) {
                   topGap={data.topGap}
                   avgMonthlyImprovement={data.avgMonthlyImprovement}
                 />
-                
-                {data.recentAudits && data.recentAudits.length > 0 && (
-                  <div style={{ marginTop: 24, padding: 24, background: 'var(--bg2)', borderRadius: 'var(--r)', border: '1px solid var(--border)' }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--text1)' }}>Recent Reports</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {data.recentAudits.map((audit) => (
-                        <div 
-                          key={audit.id} 
-                          onClick={() => window.location.href = `/report/${audit.id}`}
-                          style={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center', 
-                            padding: '12px 16px', 
-                            background: 'var(--bg3)', 
-                            borderRadius: 'var(--rs)', 
-                            cursor: 'pointer',
-                            border: '1px solid transparent',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-                          onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'transparent')}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <div style={{ 
-                              width: 32, height: 32, borderRadius: 8, background: 'var(--bg1)', 
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 12, fontWeight: 700, color: 'var(--accent)'
-                            }}>
-                              {audit.grade}
-                            </div>
-                            <div>
-                              <div style={{ fontSize: 13, fontWeight: 500 }}>{audit.inputUrl.replace(/^https?:\/\//, '')}</div>
-                              <div style={{ fontSize: 11, color: 'var(--text3)' }}>{new Date(audit.createdAt).toLocaleDateString()}</div>
-                            </div>
-                          </div>
-                          <div style={{ fontSize: 14, fontWeight: 600 }}>{audit.overallScore} <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text3)' }}>pts</span></div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
-                <div style={{ marginTop: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 24 }}>
                   <CompetitorCard 
                     userScore={data.overallScore}
                     competitors={data.competitorScores}
                     gap={data.competitorGap}
                     isFirstAudit={isFirstAudit}
                   />
+                  <div style={{ padding: 24, background: 'var(--bg2)', borderRadius: 'var(--r)', border: '1px solid var(--border)' }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text2)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue Opportunity</h3>
+                    <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--accent)' }}>
+                      ${data.revenueLeakMonthly?.toLocaleString() || '0'}
+                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text3)', marginLeft: 8 }}>lost per month</span>
+                    </div>
+                    <p style={{ fontSize: 13, color: 'var(--text3)', marginTop: 12, lineHeight: 1.5 }}>
+                      This represents the estimated revenue bleeding from conversion gaps, trust deficits, and technical friction identified in your latest audit.
+                    </p>
+                  </div>
                 </div>
               </div>
             </>

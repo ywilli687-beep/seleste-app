@@ -1,24 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useAuth, useUser } from '@clerk/clerk-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { DashboardShell } from '@/components/dashboard/DashboardShell'
+import type { DashboardData } from '@/types/dashboard'
 
 export default function Dashboard() {
-  const { user, isLoaded } = useUser()
+  const { user, isLoaded: isUserLoaded } = useUser()
   const { getToken } = useAuth()
-  const [data, setData] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
 
+  // 1. Audit Claiming Logic (Side Effect)
   useEffect(() => {
-    if (!isLoaded || !user) return
+    if (!isUserLoaded || !user) return
 
-    getToken().then(async (token: string | null) => {
-      const API_URL = import.meta.env.VITE_API_URL || ''
-
-      // ── Claim any anonymous audit ──
-      const lastAnonId = localStorage.getItem('last_anonymous_audit')
-      if (lastAnonId) {
+    const lastAnonId = localStorage.getItem('last_anonymous_audit')
+    if (lastAnonId) {
+      const claimAudit = async () => {
         try {
+          const token = await getToken()
+          const API_URL = import.meta.env.VITE_API_URL || ''
           await fetch(`${API_URL}/api/claim`, {
             method: 'POST',
             headers: { 
@@ -28,38 +28,42 @@ export default function Dashboard() {
             body: JSON.stringify({ auditId: lastAnonId, userId: user.id })
           })
           localStorage.removeItem('last_anonymous_audit')
+          // Invalidate query to show the newly claimed audit
+          queryClient.invalidateQueries({ queryKey: ['dashboard', user.id] })
         } catch (e) {
           console.error('[Claim Error]', e)
         }
       }
+      claimAudit()
+    }
+  }, [isUserLoaded, user, getToken, queryClient])
 
-      fetch(`${API_URL}/api/dashboard/${user.id}`, {
+  // 2. Data Fetching with React Query
+  const { data, isLoading, error } = useQuery<DashboardData>({
+    queryKey: ['dashboard', user?.id],
+    queryFn: async () => {
+      const token = await getToken()
+      const API_URL = import.meta.env.VITE_API_URL || ''
+      const res = await fetch(`${API_URL}/api/dashboard/${user?.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      .then(res => res.json())
-      .then(resData => {
-        if (!resData.success) {
-          throw new Error(resData.error || 'Failed to load dashboard data')
-        }
-        setData(resData.data)
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
-    })
-  }, [isLoaded, user, getToken])
+      const resData = await res.json()
+      if (!resData.success) throw new Error(resData.error || 'Failed to load dashboard')
+      return resData.data
+    },
+    enabled: !!isUserLoaded && !!user
+  })
 
-  if (loading) {
-    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f0ede8', backgroundColor: 'var(--bg)' }}>Loading...</div>
+  if (isLoading || !isUserLoaded) {
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f0ede8', backgroundColor: 'var(--bg)' }}>Loading Growth Intelligence...</div>
   }
 
   if (error) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem', padding: '2rem', textAlign: 'center', backgroundColor: 'var(--bg)' }}>
-        <div style={{ fontFamily: 'var(--ff-display, serif)', fontSize: '1.75rem', color: '#f0ede8' }}>
-          Dashboard error
-        </div>
-        <p style={{ color: '#9b9890', maxWidth: 520, lineHeight: 1.6 }}>{error}</p>
-        <button onClick={() => window.location.reload()} style={{ color: '#c8a96e', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14 }}>Try refreshing</button>
+        <div style={{ fontFamily: 'var(--ff-display, serif)', fontSize: '1.75rem', color: '#f0ede8' }}>Command Center Offline</div>
+        <p style={{ color: '#9b9890', maxWidth: 520, lineHeight: 1.6 }}>{(error as Error).message}</p>
+        <button onClick={() => window.location.reload()} style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14 }}>Reconnect →</button>
       </div>
     )
   }
@@ -67,15 +71,15 @@ export default function Dashboard() {
   if (data?.totalAudits === 0) {
     return (
       <DashboardShell data={data}>
-        <div style={{ padding: '4rem 2rem', textAlign: 'center', background: 'var(--bg2)', borderRadius: 'var(--r)', border: '1px solid var(--border)', marginTop: '2rem' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1.5rem' }}>🚀</div>
-          <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: '2rem', marginBottom: '1rem' }}>Welcome to your Command Center</h2>
-          <p style={{ color: 'var(--text2)', maxWidth: 500, margin: '0 auto 2rem', lineHeight: 1.6 }}>
-            You haven't linked any audits to your account yet. Run your first deep-scan to unlock growth intelligence, competitor benchmarks, and your 90-day roadmap.
+        <div style={{ padding: '64px 32px', textAlign: 'center', background: 'var(--bg2)', borderRadius: 'var(--r)', border: '1px solid var(--border)', marginTop: '2rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '24px' }}>🚀</div>
+          <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: '2rem', marginBottom: '16px' }}>Initialize growth intelligence</h2>
+          <p style={{ color: 'var(--text2)', maxWidth: 500, margin: '0 auto 32px', lineHeight: 1.6 }}>
+            Your command center is ready. Run your first deep-scan to unlock historical tracking, competitor benchmarks, and your 90-day growth roadmap.
           </p>
           <button 
             onClick={() => window.location.href = '/'}
-            style={{ background: 'var(--accent)', color: '#0a0a0f', padding: '12px 32px', borderRadius: 'var(--rs)', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}
+            style={{ background: 'var(--accent)', color: '#0a0a0f', padding: '14px 36px', borderRadius: 'var(--rs)', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}
           >
             Run First Audit →
           </button>
@@ -84,5 +88,5 @@ export default function Dashboard() {
     )
   }
 
-  return <DashboardShell data={data} />
+  return <DashboardShell data={data!} />
 }

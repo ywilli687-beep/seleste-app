@@ -38,5 +38,6 @@ export type DashboardData = {
   avgMonthlyImprovement: number
   competitorScores: number[] 
   competitorGap: number | null
-  recentAudits: { id: string; createdAt: string; overallScore: number; grade: string; inputUrl: string }[]
+  recentAudits: { id: string; createdAt: string; overallScore: number; grade: string; inputUrl: string; version: string }[]
+  chartData: { date: string; score: number }[]
 }

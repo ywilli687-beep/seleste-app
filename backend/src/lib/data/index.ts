@@ -668,7 +668,8 @@ export async function getDashboardData(userId: string) {
       avgMonthlyImprovement: 0,
       competitorScores: [],
       competitorGap: null,
-      recentAudits: []
+      recentAudits: [],
+      chartData: []
     }
   }
 
@@ -805,15 +806,18 @@ export async function getDashboardData(userId: string) {
     competitorGap,
     recentAudits: await db.auditSnapshot.findMany({
       where: { triggeredByUser: userId },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      select: {
-        id: true,
-        createdAt: true,
-        overallScore: true,
-        grade: true,
-        inputUrl: true
-      }
-    })
+      orderBy: { createdAt: 'asc' }, // Get in chronological order to number them
+    }).then(audits => audits.reverse().map((a, i, arr) => ({
+      id: a.id,
+      createdAt: a.createdAt.toISOString(),
+      overallScore: a.overallScore,
+      grade: a.grade,
+      inputUrl: a.inputUrl,
+      version: `Audit #${arr.length - i}`
+    }))).then(audits => audits.slice(0, 5)), // Take most recent 5 after numbering
+    chartData: ((business.scoreHistory as any[]) || []).map(sh => ({
+      date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(sh.date)),
+      score: sh.score
+    }))
   }
 }

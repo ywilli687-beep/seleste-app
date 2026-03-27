@@ -14,7 +14,17 @@ import FAQ from './pages/FAQ'
 import Changelog from './pages/Changelog'
 import CookieBanner from './components/CookieBanner'
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      retry: 1
+    }
+  }
+})
 
 if (!clerkPubKey) {
   console.warn("Missing Clerk Publishable Key")
@@ -23,7 +33,8 @@ if (!clerkPubKey) {
 export default function App() {
   return (
     <ClerkProvider publishableKey={clerkPubKey || ''}>
-      <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
         <CookieBanner />
         <Routes>
           {/* Public */}
@@ -63,6 +74,7 @@ export default function App() {
           } />
         </Routes>
       </BrowserRouter>
-    </ClerkProvider>
-  )
+    </QueryClientProvider>
+  </ClerkProvider>
+)
 }
