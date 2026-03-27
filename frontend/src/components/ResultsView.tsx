@@ -6,6 +6,7 @@ import { PILLARS } from '@/lib/constants'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import ExplainIcon from '@/components/ExplainIcon'
 import ExplainerPopover from '@/components/ExplainerPopover'
+import InsightTooltip from '@/components/ui/InsightTooltip'
 
 const ghost: React.CSSProperties = {
   background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(244,241,236,0.82)',
@@ -115,9 +116,10 @@ export default function ResultsView({
         </div>
       </div>
 
-      {/* ── UNLOCKED TEASER SECTION ── */}
+      {/* ── AUDIT RESULTS GRID ── */}
       <div className="results-grid" style={{ maxWidth: 1180, margin: '0 auto', padding: '2rem', display: 'grid', gridTemplateColumns: '310px 1fr', gap: '2rem', alignItems: 'start' }}>
-        {/* SIDEBAR */}
+        
+        {/* LEFT COLUMN: Sidebar Intelligence */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <Card title="Your Website Score">
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '.5rem' }}>
@@ -202,10 +204,65 @@ export default function ResultsView({
               <MStat label="Rules Hit" val={`${appliedRules.length}`} color="var(--amber)" sub="caps & penalties" />
             </div>
           </Card>
+
+          <Card title="How Complete Is This Report">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <span style={{ fontSize: 13, color: 'var(--text2)' }}>Report completeness</span>
+              <div style={{ flex: 1, height: 7, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${confidence.pct}%`, background: `linear-gradient(90deg, var(--amber), var(--green))`, borderRadius: 99 }} />
+              </div>
+              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 13, color: 'var(--text2)' }}>{confidence.pct}%</span>
+            </div>
+            {confidence.missingSignals.map((m, i) => (
+              <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text2)', marginTop: 6 }}>
+                <span style={{ color: 'var(--amber)', flexShrink: 0 }}>!</span>{m}
+              </div>
+            ))}
+          </Card>
+
+          <Card title="What We Found On Your Site">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {([
+                ['Main action button',          signals.hasCTA,             'A clear primary action like \'Book Now\' or \'Get a Quote\' guides users toward conversion. Without it, visitors hesitate or leave without taking action.'],
+                ['Online booking',              signals.hasBooking,         'Allowing customers to book immediately reduces friction and captures intent at its peak. Businesses with online booking typically see a 30% increase in conversion.'],
+                ['Contact form',                signals.hasContactForm,     'A simple way for leads to reach you 24/7. It captures contact info even when you\'re closed, ensuring no potential customer is ignored.'],
+                ['Prices or packages',          signals.hasPricing,         'Transparency builds trust and filters out unqualified leads. Most visitors won\'t call to ask for a price—they\'ll just choose a competitor who shows it.'],
+                ['Reviews or testimonials',     signals.hasReviews,         'Social proof is the #1 trust factor for local businesses. Without it, you lose customers at the final decision stage to more \'proven\' competitors.'],
+                ['Secure connection (HTTPS)',   signals.hasSSL,             'Security is non-negotiable. Modern browsers flag non-secure sites as \'Dangerous\', causing immediate trust loss and high bounce rates.'],
+                ['Mobile optimized',            signals.isMobileOptimized,  'Over 60% of local searches happen on mobile. If your site is hard to use on a phone, you are literally throwing away more than half of your potential business.'],
+                ['Google Business linked',      signals.hasGBP,             'Connecting your site to GMB powers your visibility in Google Maps. Without this link, you\'re invisible to customers searching for services near them.'],
+                ['Optimized for Google search', signals.hasSchema,          'Technical \'Schema\' code tells Google exactly what you do. This increases your chances of appearing in high-value \'rich results\' and maps.'],
+                ['Website analytics',           signals.hasAnalytics,       'You can\'t improve what you don\'t measure. Analytics show you where people leave, allowing you to fix leaks and increase marketing ROI.'],
+                ['Paid ad tracking',            signals.hasPixel,           'Pixels let you \'retarget\' past visitors with ads. This is the most cost-effective way to bring back people who were interested but didn\'t buy yet.'],
+                ['Business address',            signals.hasAddress,         'Physical location is a massive credibility signal for local businesses. It confirms you are real and within a convenient distance for the customer.'],
+                ['Services listed clearly',     signals.hasServiceList,     'Visitors decide within seconds if you can help them. If your services aren\'t front-and-center, they\'ll leave to find someone who lists them clearly.'],
+                ['FAQ section',                 signals.hasFAQ,             'Answers common objections before they become hurdles. Reducing hesitation directly leads to faster decisions and more inbound calls.'],
+                ['Blog or news section',        signals.hasBlog,            'Regular updates signal an active, authoritative business. It also provides \'hooks\' for Google to rank you for more keywords over time.'],
+                ['Logo visible',                signals.hasLogo,            'Fundamental brand recognition. A professional logo builds immediate trust and makes your business feel established and reliable.'],
+              ] as [string, boolean, string][]).map(([label, val, tip]) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, padding: '3px 0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text)' }}>{label}</span>
+                    <InsightTooltip title={label} text={tip} />
+                  </div>
+                  <span style={{ color: val ? 'var(--green)' : 'var(--red)', fontFamily: 'var(--ff-mono)', fontSize: 12, fontWeight: 500 }}>
+                    {val ? '✓' : '✗'}
+                  </span>
+                </div>
+              ))}
+              <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <span style={{ color: 'var(--text)' }}>Word count</span>
+                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: signals.wordCount >= 300 ? 'var(--green)' : 'var(--red)', fontWeight: 500 }}>
+                  {signals.wordCount}
+                </span>
+              </div>
+            </div>
+          </Card>
         </div>
 
-        {/* MAIN TEASER */}
+        {/* RIGHT COLUMN: Actionable Analysis */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          
           <Card title="Revenue Leakage Analysis">
             <div style={{ textAlign: 'center', padding: '1.25rem 0' }}>
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: '3.8rem', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -246,267 +303,195 @@ export default function ResultsView({
               <a href="/dashboard" style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>View in dashboard →</a>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* ── FULL AUDIT SECTION ── */}
-      <div style={{ position: 'relative', marginTop: '-1rem' }}>
-        <div className="results-grid" style={{ maxWidth: 1180, margin: '0 auto', padding: '0 2rem 2rem', display: 'grid', gridTemplateColumns: '310px 1fr', gap: '2rem', alignItems: 'start' }}>
-          
-          {/* SIDEBAR LOCKED */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Audit confidence */}
-            <Card title="How Complete Is This Report">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <span style={{ fontSize: 13, color: 'var(--text2)' }}>Report completeness</span>
-                <div style={{ flex: 1, height: 7, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${confidence.pct}%`, background: `linear-gradient(90deg, var(--amber), var(--green))`, borderRadius: 99 }} />
-                </div>
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 13, color: 'var(--text2)' }}>{confidence.pct}%</span>
+          {/* AI Narrative */}
+          {aiNarrative && (
+            <ErrorBoundary label="AI narrative" fallback={
+              <div style={{ padding: '1.25rem', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, color: 'var(--text2)' }}>
+                AI analysis unavailable — scores and recommendations are deterministic and accurate.
               </div>
-              {confidence.missingSignals.map((m, i) => (
-                <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text2)', marginTop: 6 }}>
-                  <span style={{ color: 'var(--amber)', flexShrink: 0 }}>!</span>{m}
-                </div>
-              ))}
-            </Card>
-
-            <Card title="What We Found On Your Site">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {([
-                  ['Main action button',          signals.hasCTA,             'A clear button telling visitors what to do — like "Call Now", "Book Online", or "Get a Quote". Without this, visitors don\'t know their next step.'],
-                  ['Online booking or scheduling',signals.hasBooking,         'A way for customers to book appointments directly on your site. Businesses with booking fill 30%+ more slots.'],
-                  ['Contact form',                signals.hasContactForm,     'A form visitors can fill out to reach you — captures leads even when you can\'t answer the phone.'],
-                  ['Prices or packages shown',    signals.hasPricing,         'Showing what you charge helps visitors decide. Most people won\'t call to ask — they\'ll just leave.'],
-                  ['Reviews or testimonials',     signals.hasReviews,         'Customer reviews on your site — the biggest trust signal for local businesses. 87% of buyers check reviews before choosing.'],
-                  ['Secure connection (HTTPS)',   signals.hasSSL,             'Your site uses a secure connection. Browsers warn visitors about sites that don\'t — which drives them away.'],
-                  ['Works on mobile phones',      signals.isMobileOptimized,  'Your site works properly on smartphones. Over 60% of local searches happen on mobile.'],
-                  ['Google Business linked',      signals.hasGBP,             'Your Google Business listing is connected — what powers your appearance in Google Maps and local search.'],
-                  ['Optimized for Google search', signals.hasSchema,          'Technical code that helps Google understand your business and can improve how you appear in search results.'],
-                  ['Website analytics installed', signals.hasAnalytics,       'A tool like Google Analytics tracking who visits and what they do. Without it you\'re making decisions blind.'],
-                  ['Paid ad tracking set up',     signals.hasPixel,           'Code that lets you show ads to people who already visited your site — cost-effective because they know you.'],
-                  ['Business address shown',      signals.hasAddress,         'Your physical address is visible — tells visitors you\'re a real, local business they can actually visit.'],
-                  ['Services listed clearly',     signals.hasServiceList,     'A clear list of what you offer — visitors need to confirm you handle their need within seconds of arriving.'],
-                  ['FAQ section',                 signals.hasFAQ,             'Answers to common questions — removes hesitation that stops people from picking up the phone.'],
-                  ['Blog or news section',        signals.hasBlog,            'Regular content about your industry helps you appear in more Google searches over time.'],
-                  ['Logo visible',                signals.hasLogo,            'Your logo is on the page — basic brand recognition and a professionalism signal.'],
-                ] as [string, boolean, string][]).map(([label, val, tip]) => (
-                  <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, padding: '3px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ color: 'var(--text)' }}>{label}</span>
-                      <span
-                        title={tip}
-                        style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--bg3)', border: '1px solid var(--border)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text3)', cursor: 'help', flexShrink: 0 }}
-                      >?</span>
-                    </div>
-                    <span style={{ color: val ? 'var(--green)' : 'var(--red)', fontFamily: 'var(--ff-mono)', fontSize: 12, fontWeight: 500 }}>
-                      {val ? '✓' : '✗'}
-                    </span>
-                  </div>
-                ))}
-                <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                  <span style={{ color: 'var(--text)' }}>Word count</span>
-                  <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: signals.wordCount >= 300 ? 'var(--green)' : 'var(--red)', fontWeight: 500 }}>
-                    {signals.wordCount}
-                  </span>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* MAIN LOCKED */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* AI Narrative */}
-            {aiNarrative && (
-              <ErrorBoundary label="AI narrative" fallback={
-                <div style={{ padding: '1.25rem', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, color: 'var(--text2)' }}>
-                  AI analysis unavailable — scores and recommendations are deterministic and accurate.
-                </div>
-              }>
-                <div style={{ background: 'linear-gradient(135deg, rgba(200,169,110,.06), rgba(167,139,250,.04))', border: '1px solid rgba(200,169,110,.18)', borderRadius: 'var(--r)', padding: '1.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '1.25rem', borderBottom: '1px solid rgba(200,169,110,.12)' }}>
-                    <div>
-                      <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Overall Performance</div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                        <span style={{ fontFamily: 'var(--ff-display)', fontSize: '2rem', color: gradeColor(overallScore) }}>{overallScore}</span>
-                        <span style={{ fontSize: 13, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>/ 100</span>
-                        <span style={{ fontSize: 16, fontWeight: 600, color: gradeColor(overallScore), marginLeft: 8 }}>Grade {grade}</span>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Report Status</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', animation: 'blink 2s infinite' }} />
-                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>AI Analysis Active</span>
-                      </div>
+            }>
+              <div style={{ background: 'linear-gradient(135deg, rgba(200,169,110,.06), rgba(167,139,250,.04))', border: '1px solid rgba(200,169,110,.18)', borderRadius: 'var(--r)', padding: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '1.25rem', borderBottom: '1px solid rgba(200,169,110,.12)' }}>
+                  <div>
+                    <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Overall Performance</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                      <span style={{ fontFamily: 'var(--ff-display)', fontSize: '2rem', color: gradeColor(overallScore) }}>{overallScore}</span>
+                      <span style={{ fontSize: 13, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>/ 100</span>
+                      <span style={{ fontSize: 16, fontWeight: 600, color: gradeColor(overallScore), marginLeft: 8 }}>Grade {grade}</span>
                     </div>
                   </div>
-
-                  <div className="ai-narrative" style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.8 }}
-                    dangerouslySetInnerHTML={{ __html: aiNarrative }} />
-                  {aiTopIssues.length > 0 && (
-                    <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(200,169,110,.12)' }}>
-                      <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', marginBottom: 8 }}>TOP ISSUES DETECTED ON PAGE</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {aiTopIssues.map((issue, i) => (
-                          <span key={i} style={{ fontSize: 11, padding: '3px 10px', background: 'var(--rdim)', color: 'var(--red)', border: '1px solid rgba(248,113,113,.2)', borderRadius: 99, fontFamily: 'var(--ff-mono)' }}>
-                            {issue}
-                          </span>
-                        ))}
-                      </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Report Status</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', animation: 'blink 2s infinite' }} />
+                      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>AI Analysis Active</span>
                     </div>
-                  )}
+                  </div>
                 </div>
-              </ErrorBoundary>
-            )}
 
-            {/* Pillar scores */}
-            <Card title="Pillar Breakdown — Weighted Scores">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {PILLARS.map(p => {
-                  const sc = pillarScores[p.id] ?? 0
-                  const col = gradeColor(sc)
-                  const bm = benchmark.avg[PILLARS.findIndex(x => x.id === p.id)] ?? 50
-                  return (
-                    <div key={p.id}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                      <div style={{ fontSize: 13, display: 'flex', alignItems: 'center' }}>
-                        {p.icon} {p.name}
-                        <ExplainIcon 
-                          onClick={(e) => fetchExplanation(`pillar_${p.id}`, p.name, e, { type: 'pillar', pillarName: p.name, pillarScore: sc, pillarWeight: p.weight * 100, industryAvg: bm, businessName: biz, vertical: input.vertical })}
-                          loading={loadingKey === `pillar_${p.id}`} loaded={!!explanations[`pillar_${p.id}`]}
-                        />
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)' }}>avg {bm}</span>
-                          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 13, color: col }}>{sc}/100</span>
-                        </div>
-                      </div>
-                      <div style={{ height: 6, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden', position: 'relative' }}>
-                        <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${bm}%`, width: 1, background: 'rgba(255,255,255,.15)', zIndex: 1 }} />
-                        <div style={{ height: '100%', width: `${sc}%`, background: col, borderRadius: 99, transition: 'width 1.2s ease' }} />
-                      </div>
-                      <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--ff-mono)', marginTop: 3 }}>
-                        weight: {Math.round(p.weight * 100)}%
-                      </div>
+                <div className="ai-narrative" style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.8 }}
+                  dangerouslySetInnerHTML={{ __html: aiNarrative }} />
+                {aiTopIssues.length > 0 && (
+                  <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(200,169,110,.12)' }}>
+                    <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', marginBottom: 8 }}>TOP ISSUES DETECTED ON PAGE</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {aiTopIssues.map((issue, i) => (
+                        <span key={i} style={{ fontSize: 11, padding: '3px 10px', background: 'var(--rdim)', color: 'var(--red)', border: '1px solid rgba(248,113,113,.2)', borderRadius: 99, fontFamily: 'var(--ff-mono)' }}>
+                          {issue}
+                        </span>
+                      ))}
                     </div>
-                  )
-                })}
+                  </div>
+                )}
               </div>
-            </Card>
+            </ErrorBoundary>
+          )}
 
-            {/* Recommendations */}
-            <Card title="Recommendations Engine">
-              <div style={{ display: 'flex', gap: 2, marginBottom: '1.5rem', background: 'var(--bg3)', borderRadius: 'var(--rs)', padding: 3 }}>
-                {(['revenue_leaks', 'quick_wins', 'high_impact'] as const).map(tab => (
-                  <button key={tab} onClick={() => setRecTab(tab)} style={{
-                    flex: 1, padding: '8px 10px', borderRadius: 6,
-                    border: recTab === tab ? '1px solid var(--border)' : 'none',
-                    background: recTab === tab ? 'var(--bg2)' : 'none',
-                    color: recTab === tab ? 'var(--text)' : 'var(--text3)',
-                    fontSize: 11, fontFamily: 'var(--ff-mono)', cursor: 'pointer', textAlign: 'center',
-                  }}>
-                    {tab === 'revenue_leaks' ? 'Revenue Leaks' : tab === 'quick_wins' ? 'Quick Wins' : 'High Impact'}
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {recommendations[recTab].length === 0
-                  ? <p style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', padding: '1.5rem' }}>Strong performance here — no critical issues in this category.</p>
-                  : recommendations[recTab].map((rec, i) => <RecCard key={i} rec={rec} num={i + 1} />)
-                }
-              </div>
-            </Card>
-
-            {/* Benchmark */}
-            <Card title={`How You Compare To Similar Businesses${benchmark.count ? ` (${benchmark.count} audited)` : ''}`}>
-              {PILLARS.slice(0, 8).map((p, i) => {
-                const you = pillarScores[p.id]
-                const avg = benchmark.avg[i] ?? 50
-                const top = benchmark.top[i] ?? 80
+          {/* Pillar scores */}
+          <Card title="Pillar Breakdown — Weighted Scores">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {PILLARS.map(p => {
+                const sc = pillarScores[p.id] ?? 0
+                const col = gradeColor(sc)
+                const bm = benchmark.avg[PILLARS.findIndex(x => x.id === p.id)] ?? 50
                 return (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: i < 7 ? '1px solid var(--border)' : 'none' }}>
-                    <div style={{ fontSize: 12, color: 'var(--text2)', width: 130, flexShrink: 0 }}>{p.name}</div>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      {[{ l: 'You', v: you, c: 'var(--accent)' }, { l: 'Avg', v: avg, c: 'var(--blue)' }, { l: 'Top', v: top, c: 'var(--green)' }].map(row => (
-                        <div key={row.l} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontFamily: 'var(--ff-mono)' }}>
-                          <span style={{ color: row.c, width: 22 }}>{row.l}</span>
-                          <div style={{ flex: 1, height: 4, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${row.v}%`, background: row.c, borderRadius: 99 }} />
-                          </div>
-                          <span style={{ width: 22, textAlign: 'right', color: row.c }}>{row.v}</span>
+                  <div key={p.id}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                    <div style={{ fontSize: 13, display: 'flex', alignItems: 'center' }}>
+                      {p.icon} {p.name}
+                      <ExplainIcon 
+                        onClick={(e) => fetchExplanation(`pillar_${p.id}`, p.name, e, { type: 'pillar', pillarName: p.name, pillarScore: sc, pillarWeight: p.weight * 100, industryAvg: bm, businessName: biz, vertical: input.vertical })}
+                        loading={loadingKey === `pillar_${p.id}`} loaded={!!explanations[`pillar_${p.id}`]}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)' }}>avg {bm}</span>
+                        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 13, color: col }}>{sc}/100</span>
+                      </div>
+                    </div>
+                    <div style={{ height: 6, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden', position: 'relative' }}>
+                      <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${bm}%`, width: 1, background: 'rgba(255,255,255,.15)', zIndex: 1 }} />
+                      <div style={{ height: '100%', width: `${sc}%`, background: col, borderRadius: 99, transition: 'width 1.2s ease' }} />
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--ff-mono)', marginTop: 3 }}>
+                      weight: {Math.round(p.weight * 100)}%
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
+
+          {/* Recommendations */}
+          <Card title="Recommendations Engine">
+            <div style={{ display: 'flex', gap: 2, marginBottom: '1.5rem', background: 'var(--bg3)', borderRadius: 'var(--rs)', padding: 3 }}>
+              {(['revenue_leaks', 'quick_wins', 'high_impact'] as const).map(tab => (
+                <button key={tab} onClick={() => setRecTab(tab)} style={{
+                  flex: 1, padding: '8px 10px', borderRadius: 6,
+                  border: recTab === tab ? '1px solid var(--border)' : 'none',
+                  background: recTab === tab ? 'var(--bg2)' : 'none',
+                  color: recTab === tab ? 'var(--text)' : 'var(--text3)',
+                  fontSize: 11, fontFamily: 'var(--ff-mono)', cursor: 'pointer', textAlign: 'center',
+                }}>
+                  {tab === 'revenue_leaks' ? 'Revenue Leaks' : tab === 'quick_wins' ? 'Quick Wins' : 'High Impact'}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {recommendations[recTab].length === 0
+                ? <p style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', padding: '1.5rem' }}>Strong performance here — no critical issues in this category.</p>
+                : recommendations[recTab].map((rec, i) => <RecCard key={i} rec={rec} num={i + 1} />)
+              }
+            </div>
+          </Card>
+
+          {/* Benchmark */}
+          <Card title={`How You Compare To Similar Businesses${benchmark.count ? ` (${benchmark.count} audited)` : ''}`}>
+            {PILLARS.slice(0, 8).map((p, i) => {
+              const you = pillarScores[p.id]
+              const avg = benchmark.avg[i] ?? 50
+              const top = benchmark.top[i] ?? 80
+              return (
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: i < 7 ? '1px solid var(--border)' : 'none' }}>
+                  <div style={{ fontSize: 12, color: 'var(--text2)', width: 130, flexShrink: 0 }}>{p.name}</div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {[{ l: 'You', v: you, c: 'var(--accent)' }, { l: 'Avg', v: avg, c: 'var(--blue)' }, { l: 'Top', v: top, c: 'var(--green)' }].map(row => (
+                      <div key={row.l} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontFamily: 'var(--ff-mono)' }}>
+                        <span style={{ color: row.c, width: 22 }}>{row.l}</span>
+                        <div style={{ flex: 1, height: 4, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${row.v}%`, background: row.c, borderRadius: 99 }} />
+                        </div>
+                        <span style={{ width: 22, textAlign: 'right', color: row.c }}>{row.v}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+            <div style={{ marginTop: '1rem', display: 'flex', gap: 16, fontSize: 11, fontFamily: 'var(--ff-mono)' }}>
+              {[['You', 'var(--accent)'], ['Industry average', 'var(--blue)'], ['Top 10%', 'var(--green)']].map(([l, c]) => (
+                <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 10, height: 2, background: c, borderRadius: 2, display: 'inline-block' }} />{l}
+                </span>
+              ))}
+              {benchmark.count && benchmark.count > 5 && (
+                <span style={{ color: 'var(--green)', marginLeft: 'auto' }}>✓ Live data ({benchmark.count} businesses)</span>
+              )}
+            </div>
+          </Card>
+
+          {/* Roadmap */}
+          <Card title="30 / 60 / 90 Day Roadmap">
+            <div className="roadmap-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+              {(['30', '60', '90'] as const).map(ph => {
+                const cfg = { '30': { bg: 'var(--adm)', fg: 'var(--amber)', lbl: 'Foundation' }, '60': { bg: 'var(--bdim)', fg: 'var(--blue)', lbl: 'Acceleration' }, '90': { bg: 'var(--gdim)', fg: 'var(--green)', lbl: 'Scale' } }[ph]
+                return (
+                  <div key={ph} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1rem' }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 'var(--rs)', background: cfg.bg, color: cfg.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'var(--ff-mono)', fontWeight: 600 }}>{ph}d</div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 500 }}>{ph}-Day Sprint</div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>{cfg.lbl}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                      {roadmap[ph].slice(0, 5).map((item, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text2)', lineHeight: 1.4 }}>
+                          <span style={{ color: 'var(--text3)', flexShrink: 0 }}>→</span>{item}
                         </div>
                       ))}
                     </div>
                   </div>
                 )
               })}
-              <div style={{ marginTop: '1rem', display: 'flex', gap: 16, fontSize: 11, fontFamily: 'var(--ff-mono)' }}>
-                {[['You', 'var(--accent)'], ['Industry average', 'var(--blue)'], ['Top 10%', 'var(--green)']].map(([l, c]) => (
-                  <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <span style={{ width: 10, height: 2, background: c, borderRadius: 2, display: 'inline-block' }} />{l}
-                  </span>
-                ))}
-                {benchmark.count && benchmark.count > 5 && (
-                  <span style={{ color: 'var(--green)', marginLeft: 'auto' }}>✓ Live data ({benchmark.count} businesses)</span>
-                )}
-              </div>
-            </Card>
+            </div>
+          </Card>
 
-            {/* Roadmap */}
-            <Card title="30 / 60 / 90 Day Roadmap">
-              <div className="roadmap-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-                {(['30', '60', '90'] as const).map(ph => {
-                  const cfg = { '30': { bg: 'var(--adm)', fg: 'var(--amber)', lbl: 'Foundation' }, '60': { bg: 'var(--bdim)', fg: 'var(--blue)', lbl: 'Acceleration' }, '90': { bg: 'var(--gdim)', fg: 'var(--green)', lbl: 'Scale' } }[ph]
+          {/* Rules trace */}
+          <Card title="Audit Trace — Every Rule That Fired">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {appliedRules.length === 0
+                ? <p style={{ fontSize: 13, color: 'var(--text3)' }}>No critical rules triggered — site passed all baseline checks.</p>
+                : appliedRules.map((ar, i) => {
+                  const pname = PILLARS.find(p => p.id === ar.pillarId)?.name ?? ar.pillarId
                   return (
-                    <div key={ph} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '1.25rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1rem' }}>
-                        <div style={{ width: 30, height: 30, borderRadius: 'var(--rs)', background: cfg.bg, color: cfg.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'var(--ff-mono)', fontWeight: 600 }}>{ph}d</div>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 500 }}>{ph}-Day Sprint</div>
-                          <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>{cfg.lbl}</div>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                        {roadmap[ph].slice(0, 5).map((item, i) => (
-                          <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text2)', lineHeight: 1.4 }}>
-                            <span style={{ color: 'var(--text3)', flexShrink: 0 }}>→</span>{item}
-                          </div>
-                        ))}
+                    <div key={i} style={{ padding: '9px 13px', background: 'var(--bg3)', borderRadius: 'var(--rs)', borderLeft: `3px solid ${ar.type === 'CAP' ? 'var(--red)' : 'var(--amber)'}` }}>
+                      <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 2 }}>[{pname}] {ar.rule.label}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>
+                        {ar.type === 'CAP' ? `CAP → score max ${ar.rule.cap}` : `PENALTY → −${ar.rule.pen} pts`}
+                        {ar.baseScore !== undefined && (
+                          <span style={{ marginLeft: 12 }}>{ar.baseScore} → {ar.finalScore}</span>
+                        )}
                       </div>
                     </div>
                   )
-                })}
-              </div>
-            </Card>
+                })
+              }
+            </div>
+          </Card>
 
-            {/* Rules trace */}
-            <Card title="Audit Trace — Every Rule That Fired">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                {appliedRules.length === 0
-                  ? <p style={{ fontSize: 13, color: 'var(--text3)' }}>No critical rules triggered — site passed all baseline checks.</p>
-                  : appliedRules.map((ar, i) => {
-                    const pname = PILLARS.find(p => p.id === ar.pillarId)?.name ?? ar.pillarId
-                    return (
-                      <div key={i} style={{ padding: '9px 13px', background: 'var(--bg3)', borderRadius: 'var(--rs)', borderLeft: `3px solid ${ar.type === 'CAP' ? 'var(--red)' : 'var(--amber)'}` }}>
-                        <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 2 }}>[{pname}] {ar.rule.label}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>
-                          {ar.type === 'CAP' ? `CAP → score max ${ar.rule.cap}` : `PENALTY → −${ar.rule.pen} pts`}
-                          {ar.baseScore !== undefined && (
-                            <span style={{ marginLeft: 12 }}>{ar.baseScore} → {ar.finalScore}</span>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })
-                }
-              </div>
-            </Card>
-
-          </div>
         </div>
-
-
       </div>
 
       {/* Sticky bar */}
