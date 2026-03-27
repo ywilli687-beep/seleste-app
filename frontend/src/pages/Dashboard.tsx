@@ -12,8 +12,27 @@ export default function Dashboard() {
   useEffect(() => {
     if (!isLoaded || !user) return
 
-    getToken().then((token: string | null) => {
+    getToken().then(async (token: string | null) => {
       const API_URL = import.meta.env.VITE_API_URL || ''
+
+      // ── Claim any anonymous audit ──
+      const lastAnonId = localStorage.getItem('last_anonymous_audit')
+      if (lastAnonId) {
+        try {
+          await fetch(`${API_URL}/api/claim`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}` 
+            },
+            body: JSON.stringify({ auditId: lastAnonId, userId: user.id })
+          })
+          localStorage.removeItem('last_anonymous_audit')
+        } catch (e) {
+          console.error('[Claim Error]', e)
+        }
+      }
+
       fetch(`${API_URL}/api/dashboard/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })

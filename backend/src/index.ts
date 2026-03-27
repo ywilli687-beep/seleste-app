@@ -13,6 +13,7 @@ import reportRoutes from './routes/report'
 import explainRoutes from './routes/explain'
 import agentsRoutes from './routes/agents'
 import cronRoutes from './routes/cron'
+import claimRoutes from './routes/claim'
 
 const app = express()
 
@@ -44,6 +45,7 @@ app.use('/api/dashboard', ClerkExpressRequireAuth() as any, dashboardRoutes)
 app.use('/api/history', ClerkExpressRequireAuth() as any, historyRoutes)
 app.use('/api/report', ClerkExpressRequireAuth() as any, reportRoutes)
 app.use('/api/agents', ClerkExpressRequireAuth() as any, agentsRoutes)
+app.use('/api/claim', ClerkExpressRequireAuth() as any, claimRoutes)
 app.use('/api/cron', cronRoutes)
 
 const PORT = process.env.PORT || 4000

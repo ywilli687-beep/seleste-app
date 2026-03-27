@@ -52,6 +52,9 @@ export default function Home() {
       setStage('done')
 
       setResult(analyzeData.result)
+      if (analyzeData.result.auditId) {
+        localStorage.setItem('last_anonymous_audit', analyzeData.result.auditId)
+      }
       setView('results')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')

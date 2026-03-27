@@ -667,7 +667,8 @@ export async function getDashboardData(userId: string) {
       topGap: 'No data',
       avgMonthlyImprovement: 0,
       competitorScores: [],
-      competitorGap: null
+      competitorGap: null,
+      recentAudits: []
     }
   }
 
@@ -801,6 +802,18 @@ export async function getDashboardData(userId: string) {
     topGap,
     avgMonthlyImprovement: business.scoreVelocity || 0,
     competitorScores,
-    competitorGap
+    competitorGap,
+    recentAudits: await db.auditSnapshot.findMany({
+      where: { triggeredByUser: userId },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        createdAt: true,
+        overallScore: true,
+        grade: true,
+        inputUrl: true
+      }
+    })
   }
 }

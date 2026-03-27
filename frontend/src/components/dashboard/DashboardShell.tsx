@@ -104,6 +104,49 @@ export function DashboardShell({ data, children }: Props) {
                   topGap={data.topGap}
                   avgMonthlyImprovement={data.avgMonthlyImprovement}
                 />
+                
+                {data.recentAudits && data.recentAudits.length > 0 && (
+                  <div style={{ marginTop: 24, padding: 24, background: 'var(--bg2)', borderRadius: 'var(--r)', border: '1px solid var(--border)' }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--text1)' }}>Recent Reports</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {data.recentAudits.map((audit) => (
+                        <div 
+                          key={audit.id} 
+                          onClick={() => window.location.href = `/report/${audit.id}`}
+                          style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center', 
+                            padding: '12px 16px', 
+                            background: 'var(--bg3)', 
+                            borderRadius: 'var(--rs)', 
+                            cursor: 'pointer',
+                            border: '1px solid transparent',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'transparent')}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ 
+                              width: 32, height: 32, borderRadius: 8, background: 'var(--bg1)', 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 12, fontWeight: 700, color: 'var(--accent)'
+                            }}>
+                              {audit.grade}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 500 }}>{audit.inputUrl.replace(/^https?:\/\//, '')}</div>
+                              <div style={{ fontSize: 11, color: 'var(--text3)' }}>{new Date(audit.createdAt).toLocaleDateString()}</div>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 14, fontWeight: 600 }}>{audit.overallScore} <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text3)' }}>pts</span></div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ marginTop: 24 }}>
                   <CompetitorCard 
                     userScore={data.overallScore}
