@@ -1,5 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useUser } from '@clerk/clerk-react'
+import { useNavigate } from 'react-router-dom'
 import type { AuditRequest, Vertical } from '@/types/audit'
 
 const VERTICALS: { value: Vertical; label: string }[] = [
@@ -20,12 +22,6 @@ const VERTICALS: { value: Vertical; label: string }[] = [
   { value: 'LOCAL_SERVICE',  label: 'Local Service / Other' },
 ]
 
-const inp: React.CSSProperties = {
-  background: 'var(--bg3)', border: '1px solid var(--border2)',
-  color: 'var(--text)', padding: '12px 16px', borderRadius: 'var(--rs)',
-  fontFamily: 'var(--ff-sans)', fontSize: 14, width: '100%', outline: 'none',
-}
-
 export default function IntakeForm({
   onSubmit, onBack, error,
 }: {
@@ -33,6 +29,9 @@ export default function IntakeForm({
   onBack: () => void
   error?: string | null
 }) {
+  const { isSignedIn } = useUser()
+  const navigate = useNavigate()
+
   const [url, setUrl]       = useState('')
   const [name, setName]     = useState('')
   const [loc, setLoc]       = useState('')
@@ -61,6 +60,23 @@ export default function IntakeForm({
       if (!u.includes('.')) throw new Error()
     } catch {
       setLocalError('Please enter a valid website URL.')
+      return
+    }
+
+    // SIGNUP GATE LOGIC
+    if (!isSignedIn) {
+      // Save form data to sessionStorage, then redirect to sign-up
+      sessionStorage.setItem(
+        'seleste_pending_audit',
+        JSON.stringify({ 
+          url: u, 
+          businessName: name.trim() || undefined,
+          location: loc.trim(), 
+          vertical: vert as Vertical,
+          monthlyRevenue: rev ? parseInt(rev) : undefined,
+        })
+      )
+      navigate('/sign-up')
       return
     }
 
@@ -165,7 +181,7 @@ export default function IntakeForm({
                 fontSize: 14,
               }}
             >
-              Analyze Website →
+              {isSignedIn ? 'Run free audit' : 'Create account & run audit'} →
             </button>
             <p style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
               Fetches real page · AI analysis<br />All data saved · ~15–20s
@@ -179,13 +195,13 @@ export default function IntakeForm({
           <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '1rem' }}>What gets captured and stored</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '.75rem' }}>
             {[
-              ['50+ signals', 'Every boolean structured'],
-              ['10 pillar scores', 'Full audit trail'],
+              ['50+ things we check', 'Every boolean structured'],
+              ['10 area scores', 'Full audit trail'],
               ['Rules fired', 'Cap & penalty trace'],
               ['Revenue leakage', '% and dollar estimate'],
               ['AI narrative', 'Specific, stored forever'],
               ['Score history', 'Tracks improvement over time'],
-              ['Vertical percentile', 'Where you rank vs. peers'],
+              ['Industry percentile', 'How you compare vs. peers'],
               ['Market segment', 'Powers aggregate intel'],
               ['Business profile', 'Enriched on each audit'],
             ].map(([label, sub]) => (
