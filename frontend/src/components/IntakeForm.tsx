@@ -106,21 +106,21 @@ export default function IntakeForm({
               onChange={e => setUrl(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && submit()}
               placeholder="https://yourbusiness.com"
-              style={inp}
+              className="audit-input"
             />
           </Fld>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <Fld label="Business Name" hint="optional">
-              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Apex Auto Repair" style={inp} />
+              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Apex Auto Repair" className="audit-input" />
             </Fld>
             <Fld label="Location" req>
-              <input type="text" value={loc} onChange={e => setLoc(e.target.value)} placeholder="City, State" style={inp} />
+              <input type="text" value={loc} onChange={e => setLoc(e.target.value)} placeholder="City, State" className="audit-input" />
             </Fld>
           </div>
 
           <Fld label="Business Vertical" req>
-            <select value={vert} onChange={e => setVert(e.target.value as Vertical)} style={inp}>
+            <select value={vert} onChange={e => setVert(e.target.value as Vertical)} className="audit-input">
               <option value="">Select your industry...</option>
               {VERTICALS.map(v => <option key={v.value} value={v.value}>{v.label}</option>)}
             </select>
@@ -134,7 +134,7 @@ export default function IntakeForm({
 
           {adv && (
             <Fld label="Monthly Revenue" hint="powers the leakage dollar estimate">
-              <select value={rev} onChange={e => setRev(e.target.value)} style={inp}>
+              <select value={rev} onChange={e => setRev(e.target.value)} className="audit-input">
                 <option value="">Not specified</option>
                 <option value="10000">Under $10k/mo</option>
                 <option value="25000">$10k–$25k/mo</option>
@@ -158,15 +158,14 @@ export default function IntakeForm({
             <button
               onClick={submit}
               disabled={!valid}
+              className="primary-button"
               style={{
-                background: valid ? 'var(--accent)' : 'rgba(200,169,110,.25)',
-                color: '#0a0a0f', border: 'none', padding: '14px 32px',
-                borderRadius: 'var(--rs)', cursor: valid ? 'pointer' : 'not-allowed',
-                fontSize: 14, fontWeight: 600, fontFamily: 'var(--ff-sans)',
-                display: 'flex', alignItems: 'center', gap: 10,
+                background: !valid ? 'rgba(200,169,110,.25)' : undefined,
+                cursor: valid ? 'pointer' : 'not-allowed',
+                fontSize: 14,
               }}
             >
-              <span>Analyze Website</span><span>→</span>
+              Analyze Website →
             </button>
             <p style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
               Fetches real page · AI analysis<br />All data saved · ~15–20s

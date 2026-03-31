@@ -29,7 +29,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
           <a href="/faq" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>FAQ</a>
           <a href="/changelog" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Changelog</a>
           <a href="/sign-in" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Sign In</a>
-          <button onClick={onStart} style={{ background: 'var(--accent)', border: 'none', color: '#0a0a0f', padding: '8px 20px', borderRadius: 'var(--rs)', cursor: 'pointer', fontFamily: 'var(--ff-sans)', fontSize: 13, fontWeight: 600 }}>Run Audit</button>
+          <button onClick={onStart} className="primary-button" style={{ padding: '8px 20px', borderRadius: 'var(--rs)', fontSize: 13 }}>Run Audit</button>
         </div>
       </nav>
 
@@ -52,7 +52,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
           Enter your website address. We check 60+ things that affect whether visitors become customers — give you a score, explain what's costing you the most, and show you what to fix first.
         </p>
 
-        <button onClick={onStart} style={{ background: 'var(--accent)', color: '#0a0a0f', border: 'none', padding: '14px 32px', borderRadius: 'var(--rs)', cursor: 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'var(--ff-sans)' }}>
+        <button onClick={onStart} className="primary-button">
           Check My Website Free →
         </button>
 
@@ -132,7 +132,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
           Find out what's costing you<br /><em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>customers right now.</em>
         </h2>
         <p style={{ color: 'var(--text2)', fontSize: '1rem', marginBottom: '2.5rem' }}>Free. No credit card. Results in 90 seconds.</p>
-        <button onClick={onStart} style={{ background: 'var(--accent)', color: '#0a0a0f', border: 'none', padding: '16px 36px', borderRadius: 'var(--rs)', cursor: 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'var(--ff-sans)' }}>
+        <button onClick={onStart} className="primary-button">
           Audit Your Website — It's Free →
         </button>
       </section>

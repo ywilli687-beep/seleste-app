@@ -28,13 +28,46 @@ export function DashboardShell({ data, children }: Props) {
   return (
     <div className="grid-shell">
       <div className="sidebar">
-        <div style={{ marginBottom: 48, fontWeight: 700, fontSize: 22, color: 'var(--accent)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
-          Seleste <span style={{ padding: '2px 6px', background: 'var(--adim)', color: 'var(--accent2)', fontSize: '10px', borderRadius: 4, fontFamily: 'var(--ff-mono)', letterSpacing: '0.05em' }}>V2.1</span>
+        <div className="logo-container">
+          <span className="logo-text">Seleste</span>
+          <span className="logo-version">V2.1</span>
         </div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ padding: '12px 16px', background: 'var(--adim)', color: 'var(--accent)', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Command Center</div>
-          <div style={{ padding: '12px 16px', color: 'var(--text3)', cursor: 'pointer', fontSize: 14, fontWeight: 500 }} onClick={() => window.location.href = '/history'}>Audit History</div>
-          <div style={{ padding: '12px 16px', color: 'var(--text3)', cursor: 'pointer', fontSize: 14, fontWeight: 500 }} onClick={handleAuditNavigation}>Run New Audit</div>
+        
+        <nav className="nav-group">
+          <div className="nav-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            Command Center
+          </div>
+          
+          <div className="nav-item" onClick={() => window.location.href = '/dashboard/agents'}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            AI Specialists
+          </div>
+
+          <div className="nav-item" onClick={() => window.location.href = '/history'}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Audit History
+          </div>
+          
+          <div className="nav-item" onClick={handleAuditNavigation}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+            </svg>
+            Run New Audit
+          </div>
         </nav>
       </div>
       
