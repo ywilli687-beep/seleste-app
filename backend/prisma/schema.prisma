@@ -31,6 +31,8 @@ model Business {
   businessName  String?
   vertical      Vertical
   subVertical   String?          // e.g. "transmission", "oil_change", "body_shop"
+  slug          String?   @unique
+  reportPublic  Boolean   @default(true)
 
   // Location
   city          String?
@@ -134,6 +136,11 @@ model Business {
   agentCycles        AgentCycle[]
   weeklyActions      WeeklyAction[] @relation("BusinessWeeklyActions")
 
+  // V2 Extensions  -- Outbound Email & Agency
+  outboundEmailedAt DateTime?
+  outboundEmailHash String? // to track the specific template
+  workspaces        BusinessWorkspace[]
+  
   @@index([vertical])
   @@index([state, vertical])
   @@index([latestOverallScore])
@@ -948,4 +955,42 @@ model AgentEvalRun {
   branchName     String?
 
   @@index([agentId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKSPACE / AGENCY TIER & STRIPE BILLING
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Workspace {
+  id                   String   @id @default(cuid())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  name                 String
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  plan                 String   @default("free") // "free", "pro", "agency"
+  
+  ownerId              String   // Clerk userId who created it
+  members              WorkspaceMember[]
+  businesses           BusinessWorkspace[]
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String   // Clerk userId
+  role        String   @default("member") // "owner", "admin", "member"
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  @@unique([workspaceId, userId])
+}
+
+model BusinessWorkspace {
+  id          String   @id @default(cuid())
+  workspaceId String
+  businessId  String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  @@unique([workspaceId, businessId])
 }

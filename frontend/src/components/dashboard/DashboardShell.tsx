@@ -69,6 +69,34 @@ export function DashboardShell({ data, children }: Props) {
             Run New Audit
           </div>
         </nav>
+
+        {data?.isAgency && data?.workspaces?.length > 0 && (
+          <div style={{ marginTop: 'auto', paddingBottom: 20 }}>
+            <div style={{ fontSize: 11, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Agency Workspaces</div>
+            <select
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
+                borderRadius: 'var(--rs)',
+                fontSize: 13,
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+              onChange={(e) => {
+                // Here we would switch workspace context if we had a global context for it,
+                // for UI rendering simulation we simply log or alert:
+                alert(`Switched to workspace: ${e.target.value}`)
+              }}
+            >
+              {data.workspaces.map(w => (
+                <option key={w.id} value={w.id}>{w.name} ({w.businessCount})</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
       
       <div className="main-content">
@@ -86,6 +114,38 @@ export function DashboardShell({ data, children }: Props) {
               </span>
             </p>
           </div>
+
+          <button
+            onClick={() => {
+              if (!data?.slug) return
+              const code = `<a href="https://seleste.app/report/${data.slug}" target="_blank"><img src="https://api.seleste.app/api/badge/${data.slug}" alt="Seleste Verified Rating" /></a>`
+              navigator.clipboard.writeText(code)
+              alert('Badge embed code copied to clipboard!')
+            }}
+            style={{
+              background: 'var(--page-bg)',
+              border: '1px solid var(--border)',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              color: 'var(--ink)',
+              fontFamily: 'var(--ff-sans)',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--ink-muted)')}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            Embed Badge
+          </button>
         </header>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -152,12 +212,46 @@ export function DashboardShell({ data, children }: Props) {
                                 <div style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{new Date(audit.createdAt).toLocaleDateString()}</div>
                               </div>
                             </div>
-                            <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 12 }}>
-                              <div>
-                                <div style={{ fontSize: 13, fontWeight: 700 }}>{audit.overallScore}</div>
-                                <div style={{ fontSize: 10, color: 'var(--ink-muted)' }}>pts</div>
+                            <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 32 }}>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                                <div style={{ fontSize: 13, fontWeight: 700 }}>{audit.overallScore} <span style={{ fontSize: 10, color: 'var(--ink-muted)', fontWeight: 400 }}>pts</span></div>
+                                {audit.scoreDelta !== null && audit.scoreDelta !== 0 && (
+                                  <span style={{
+                                    fontSize: '11px',
+                                    color: audit.scoreDelta > 0 ? 'var(--green)' : 'var(--red)',
+                                    fontFamily: 'var(--ff-sans)',
+                                    fontWeight: 600
+                                  }}>
+                                    {audit.scoreDelta > 0 ? '↑' : '↓'} {Math.abs(audit.scoreDelta)} pts
+                                  </span>
+                                )}
                               </div>
-                              <span style={{ color: '#000', fontWeight: 600, fontSize: 13 }}>View →</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    sessionStorage.setItem('seleste_pending_audit', JSON.stringify({
+                                      url: audit.inputUrl,
+                                      city: '',
+                                      vertical: 'UNKNOWN'
+                                    }))
+                                    window.location.href = '/?reaudit=1'
+                                  }}
+                                  style={{
+                                    background: 'transparent',
+                                    border: '1px solid var(--border)',
+                                    color: 'var(--ink-muted)',
+                                    borderRadius: '6px',
+                                    padding: '4px 10px',
+                                    fontFamily: 'var(--ff-sans)',
+                                    fontSize: '11px',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Re-audit
+                                </button>
+                                <span style={{ color: '#000', fontWeight: 600, fontSize: 13 }}>View →</span>
+                              </div>
                             </div>
                           </div>
                         ))

@@ -17,7 +17,13 @@ const HOW_IT_WORKS = [
   { n: '04', title: 'Get your growth roadmap', body: 'Claude AI writes a specific growth narrative and ranks every fix by revenue impact — not generic advice.' },
 ]
 
+import { useUser } from '@clerk/clerk-react'
+
+// ... [pillars and testimonials remain same] ...
+
 export default function Landing({ onStart }: { onStart: () => void }) {
+  const { user, isSignedIn } = useUser()
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
 
@@ -27,36 +33,60 @@ export default function Landing({ onStart }: { onStart: () => void }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <a href="/pricing" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Pricing</a>
           <a href="/faq" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>FAQ</a>
-          <a href="/changelog" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Changelog</a>
-          <a href="/sign-in" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Sign In</a>
+          {isSignedIn ? (
+            <a href="/dashboard" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Dashboard →</a>
+          ) : (
+            <a href="/sign-in" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Sign In</a>
+          )}
           <button onClick={onStart} className="primary-button" style={{ padding: '8px 20px', borderRadius: 'var(--rs)', fontSize: 13 }}>Run Audit</button>
         </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ padding: '88px 2rem 56px', textAlign: 'center', maxWidth: 1200, margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--adim)', border: '1px solid rgba(200,169,110,.22)', padding: '5px 14px', borderRadius: 99, marginBottom: '1.5rem', fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--accent)', letterSpacing: '.07em', textTransform: 'uppercase' }}>
+      <section style={{ padding: '120px 2rem 56px', textAlign: 'center', maxWidth: 1200, margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--adim)', border: '1px solid rgba(200,169,110,.22)', padding: '5px 14px', borderRadius: 99, marginBottom: '2rem', fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--accent)', letterSpacing: '.07em', textTransform: 'uppercase' }}>
           <span style={{ width: 6, height: 6, background: 'var(--green)', borderRadius: '50%', animation: 'blink 2s infinite', display: 'inline-block' }} />
           LIVE · REAL WEBSITE ANALYSIS
         </div>
         
-        <p style={{ fontSize: '.9rem', color: 'rgba(244,241,236,0.6)', marginBottom: '.6rem', fontFamily: 'var(--ff-sans)', letterSpacing: '.02em' }}>
-          Free website check for local businesses
-        </p>
-
-        <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(2.8rem, 7vw, 5rem)', lineHeight: 1.05, maxWidth: 840, marginBottom: '1.5rem' }}>
-          Find out why customers choose your <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>competitor</em> instead of you.
+        <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', lineHeight: 1.05, maxWidth: 840, marginBottom: '1.5rem' }}>
+          Find out why your website isn't bringing in customers.
         </h1>
 
-        <p style={{ fontSize: '1.05rem', color: 'var(--text2)', maxWidth: 520, marginBottom: '3rem', lineHeight: 1.7 }}>
-          Enter your website address. We check 60+ things that affect whether visitors become customers — give you a score, explain what's costing you the most, and show you what to fix first.
+        <p style={{ fontSize: '1.15rem', color: 'var(--text2)', maxWidth: 640, marginBottom: '2rem', lineHeight: 1.6 }}>
+          Get a free, instant analysis of your business website. See exactly what's costing you customers — and how to fix it in 90 days.
         </p>
+
+        <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', marginBottom: '3rem', flexWrap: 'wrap' }}>
+          {[
+            '47 checks across 10 areas',
+            'Results in under 60 seconds',
+            'Free — no credit card needed'
+          ].map(point => (
+            <div key={point} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', fontFamily: 'var(--ff-sans)' }}>
+              <span style={{ color: 'var(--accent)', fontSize: 14 }}>✓</span> {point}
+            </div>
+          ))}
+        </div>
 
         <button onClick={onStart} className="primary-button">
           Check My Website Free →
         </button>
 
-        <div style={{ position: 'relative', marginTop: '4rem', width: '100%', maxWidth: 1000 }}>
+        {/* 2B: Social Proof Strip (Industries) */}
+        <div style={{ marginTop: '3.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'center', maxWidth: 800 }}>
+          {[
+            'Restaurant', 'Auto Repair', 'Dental', 'Home Services', 
+            'Fitness', 'Legal', 'Real Estate', 'Beauty Salon'
+          ].map(industry => (
+            <div key={industry} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 99, padding: '6px 14px', fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--ff-sans)' }}>
+              {industry}
+            </div>
+          ))}
+          <div style={{ fontSize: 12, color: 'var(--text3)', display: 'flex', alignItems: 'center', marginLeft: 8 }}>& more</div>
+        </div>
+
+        <div style={{ position: 'relative', marginTop: '5rem', width: '100%', maxWidth: 1000 }}>
           <div style={{ position: 'absolute', inset: '-10%', background: 'radial-gradient(ellipse at center, rgba(200,169,110,.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
             <div style={{ background: '#1c1c1e', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -66,6 +96,73 @@ export default function Landing({ onStart }: { onStart: () => void }) {
               <div style={{ flex: 1, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--ff-mono)' }}>seleste-app.vercel.app</div>
             </div>
             <img src="/report-mockup.png" alt="Seleste audit report" style={{ width: '100%', display: 'block' }} />
+          </div>
+        </div>
+      </section>
+
+      {/* 2C: Features Preview Section */}
+      <section style={{ padding: '6rem 2rem', background: 'var(--bg2)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '4.5rem' }}>
+            <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(2rem, 5vw, 3rem)', marginBottom: '1rem' }}>
+              What your free audit includes
+            </h2>
+            <p style={{ color: 'var(--text3)', fontSize: '1.1rem' }}>Zero fluff. Just actionable growth intelligence.</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2.5rem', marginBottom: '5rem' }}>
+            {/* Score Ring */}
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--adim)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', fontSize: '1.5rem' }}>🎯</div>
+              <h3 style={{ fontFamily: 'var(--ff-display)', fontSize: '1.5rem', marginBottom: '0.75rem', color: 'var(--text)' }}>Your Website Score</h3>
+              <p style={{ color: 'var(--text2)', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                A weighted letter grade from A to F with a full breakdown across 10 mission-critical growth pillars.
+              </p>
+            </div>
+
+            {/* Checklist */}
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--adim)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', fontSize: '1.5rem' }}>📋</div>
+              <h3 style={{ fontFamily: 'var(--ff-display)', fontSize: '1.5rem', marginBottom: '0.75rem', color: 'var(--text)' }}>47 Specific Checks</h3>
+              <p style={{ color: 'var(--text2)', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                We check everything from page speed and mobile UX to Google Business profiles and revenue-draining friction.
+              </p>
+            </div>
+
+            {/* Roadmap */}
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--adim)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', fontSize: '1.5rem' }}>🗺️</div>
+              <h3 style={{ fontFamily: 'var(--ff-display)', fontSize: '1.5rem', marginBottom: '0.75rem', color: 'var(--text)' }}>90-Day Action Plan</h3>
+              <p style={{ color: 'var(--text2)', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                A prioritized roadmap ranked by revenue impact, showing you exactly what to fix this month to see real ROI.
+              </p>
+            </div>
+          </div>
+
+          {/* Blurred Sample Card */}
+          <div style={{ position: 'relative', marginTop: '4rem', padding: '2rem', border: '1px solid var(--border)', borderRadius: 16, background: 'var(--bg)', overflow: 'hidden' }}>
+            <div style={{ filter: 'blur(6px)', opacity: 0.4, pointerEvents: 'none', userSelect: 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                 <div style={{ fontSize: '3.5rem', fontFamily: 'var(--ff-display)', color: 'var(--amber)' }}>62</div>
+                 <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--accent)' }}>Grade B — Above Average</div>
+                    <div style={{ fontSize: 12, color: 'var(--text3)' }}>Audited Oct 24, 2024</div>
+                 </div>
+              </div>
+              <div style={{ height: 10, background: 'var(--bg3)', borderRadius: 99, marginBottom: 20 }} />
+              <div style={{ height: 10, background: 'var(--bg3)', borderRadius: 99, marginBottom: 20, width: '80%' }} />
+              <div style={{ height: 10, background: 'var(--bg3)', borderRadius: 99, width: '60%' }} />
+            </div>
+            
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button 
+                onClick={onStart}
+                className="primary-button"
+                style={{ boxShadow: '0 10px 30px rgba(0,0,0,0.4)', padding: '14px 28px' }}
+              >
+                See your real score →
+              </button>
+            </div>
           </div>
         </div>
       </section>

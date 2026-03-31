@@ -270,6 +270,7 @@ export interface AuditResult {
   // IDs
   auditId: string
   businessId: string
+  slug?: string | null
 
   // Input
   input: AuditRequest

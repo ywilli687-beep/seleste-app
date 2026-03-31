@@ -264,10 +264,10 @@ export function computeRevenueLeak(scores: PillarScores, monthlyRevenue?: number
     uxPct: Math.round(ul * 100),
     estimatedMonthlyLoss: monthlyRevenue ? Math.round(monthlyRevenue * total) : undefined,
     breakdown: [
-      { label: 'Conversion gaps', pillar: 'conversion', pct: Math.round(cl * 100), icon: '🎯' },
-      { label: 'Trust deficit', pillar: 'trust', pct: Math.round(tl * 100), icon: '🛡️' },
-      { label: 'Performance friction', pillar: 'performance', pct: Math.round(pl * 100), icon: '⚡' },
-      { label: 'UX friction', pillar: 'ux', pct: Math.round(ul * 100), icon: '✨' },
+      { label: 'Conversion gaps', pillar: 'conversion' as any, pct: Math.round(cl * 100), icon: '🎯' },
+      { label: 'Trust deficit', pillar: 'trust' as any, pct: Math.round(tl * 100), icon: '🛡️' },
+      { label: 'Performance friction', pillar: 'performance' as any, pct: Math.round(pl * 100), icon: '⚡' },
+      { label: 'UX friction', pillar: 'ux' as any, pct: Math.round(ul * 100), icon: '✨' },
     ].filter(x => x.pct > 0),
   }
 }

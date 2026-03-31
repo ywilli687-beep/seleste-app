@@ -15,6 +15,10 @@ import agentsRoutes from './routes/agents'
 import cronRoutes from './routes/cron'
 import claimRoutes from './routes/claim'
 import callbackRoutes from './routes/callback'
+import publicReportRoutes from './routes/public-report'
+import badgeRoutes from './routes/badge'
+import stripeRoutes from './routes/stripe'
+import outboundRoutes from './routes/outbound'
 
 const app = express()
 
@@ -42,11 +46,17 @@ app.use(globalLimiter)
 
 app.use('/api/audit', auditLimiter, auditRoutes)
 app.use('/api/explain', explainRoutes)
+app.use('/api/public-report', publicReportRoutes)
+app.use('/api/badge', badgeRoutes)
 app.use('/api/dashboard', ClerkExpressRequireAuth() as any, dashboardRoutes)
 app.use('/api/history', ClerkExpressRequireAuth() as any, historyRoutes)
 app.use('/api/report', ClerkExpressRequireAuth() as any, reportRoutes)
 app.use('/api/agents', ClerkExpressRequireAuth() as any, agentsRoutes)
 app.use('/api/claim', ClerkExpressRequireAuth() as any, claimRoutes)
+
+// Auto-outbound & Stripe
+app.use('/api/stripe', stripeRoutes)
+app.use('/api/outbound', outboundRoutes)
 app.use('/api/cron', cronRoutes)
 app.use('/api/callback', callbackRoutes) // Public callback for agents
 

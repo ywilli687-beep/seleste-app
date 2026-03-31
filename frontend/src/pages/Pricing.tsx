@@ -1,4 +1,6 @@
 import { useNavigate } from 'react-router-dom'
+import { useUser } from '@clerk/clerk-react'
+import { useState } from 'react'
 
 const plans = [
   {
@@ -31,8 +33,8 @@ const plans = [
       'PDF export',
       'Priority support',
     ],
-    cta: 'Start Growing',
-    href: '/sign-up',
+    cta: 'Upgrade to Pro',
+    href: 'mailto:upgrade@seleste.io?subject=Pro upgrade',
     highlight: true,
   },
   {
@@ -57,6 +59,48 @@ const plans = [
 
 export default function Pricing() {
   const navigate = useNavigate()
+  const { user, isSignedIn } = useUser()
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+
+  const handleCheckout = async (e: React.MouseEvent, planName: string, href: string) => {
+    e.preventDefault()
+    if (planName === 'Starter' || planName === 'Agency') {
+      if (href.startsWith('mailto')) {
+        window.location.href = href
+      } else {
+        navigate(href)
+      }
+      return
+    }
+    
+    if (!isSignedIn) {
+      navigate('/sign-up')
+      return
+    }
+
+    try {
+      setLoadingPlan(planName)
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/stripe/create-checkout-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.primaryEmailAddress?.emailAddress,
+          plan: planName.toLowerCase()
+        })
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert('Checkout failed: ' + (data.error || 'Unknown error'))
+      }
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setLoadingPlan(null)
+    }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingBottom: '6rem' }}>
@@ -111,15 +155,16 @@ export default function Pricing() {
                   </li>
                 ))}
               </ul>
-              <a href={p.href} style={{
-                display: 'block', textAlign: 'center', padding: '12px', borderRadius: 'var(--rs)',
+              <button onClick={(e) => handleCheckout(e, p.name, p.href)} disabled={loadingPlan === p.name} style={{
+                display: 'block', width: '100%', textAlign: 'center', padding: '12px', borderRadius: 'var(--rs)',
                 background: p.highlight ? 'var(--accent)' : 'transparent',
                 border: `1px solid ${p.highlight ? 'transparent' : 'var(--border2)'}`,
                 color: p.highlight ? '#0a0a0f' : 'var(--text2)',
-                textDecoration: 'none', fontSize: 14, fontWeight: 600, fontFamily: 'var(--ff-sans)',
+                textDecoration: 'none', fontSize: 14, fontWeight: 600, fontFamily: 'var(--ff-sans)', cursor: 'pointer',
+                opacity: loadingPlan === p.name ? 0.7 : 1
               }}>
-                {p.cta}
-              </a>
+                {loadingPlan === p.name ? 'Processing...' : p.cta}
+              </button>
             </div>
           ))}
         </div>

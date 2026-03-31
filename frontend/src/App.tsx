@@ -12,6 +12,7 @@ import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import FAQ from './pages/FAQ'
 import Changelog from './pages/Changelog'
+import PublicReport from './pages/PublicReport'
 import CookieBanner from './components/CookieBanner'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/sign-in/*" element={<SignInPage />} />
           <Route path="/sign-up/*" element={<SignUpPage />} />
+          <Route path="/report/:slug" element={<PublicReport />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />

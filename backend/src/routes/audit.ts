@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express'
+import { db } from '@/lib/db'
 import { z } from 'zod'
 import { fetchPage, extractHardSignals } from '@/lib/fetcher'
 import { extractSignals, writeNarrative } from '@/lib/ai'
@@ -12,10 +13,22 @@ import {
   upsertBusiness, upsertBusinessSignals, saveAuditSnapshot,
   computeScoreDelta, getLiveBenchmark, getVerticalPercentile, updateMarketSegment,
 } from '@/lib/data'
+import { createClerkClient } from '@clerk/clerk-sdk-node'
+import { sendAuditReadyEmail } from '@/lib/email'
 import { runPostAuditJobs } from '@/lib/jobs'
-import { awardXP, computeStreak, checkAndAwardAchievements, type AchievementContext } from '@/lib/gamification'
+import { awardXP, computeStreak, checkAndAwardAchievements, type AchievementContext, type XPEventType } from '@/lib/gamification'
 import { AUDIT_VERSION } from '@/lib/constants'
-import type { AuditResult } from '@/types/audit'
+import type { AuditResult, AppliedRule } from '@/types/audit'
+
+const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY || 'sk_test_...' })
+
+const GRADE_LABELS: Record<string, string> = {
+  A: 'Strong performer',
+  B: 'Above average',
+  C: 'Needs improvement',
+  D: 'At risk',
+  F: 'Critical issues found',
+}
 
 const router = Router()
 
@@ -109,6 +122,47 @@ router.post('/', async (req: Request, res: Response) => {
 
     const input = { ...rawInput, url: cleanUrl }
 
+    let userId = input.userId
+    // Support session parsing if the frontend decides to pass it through a header, but input.userId is safest format.
+    if (userId && userId !== 'anon') {
+      try {
+        const user = await clerkClient.users.getUser(userId)
+        const plan = (user.publicMetadata?.plan as string) || 'free'
+        const isPro = plan === 'pro'
+
+        if (!isPro) {
+          const domain = new URL(cleanUrl).hostname.replace(/^www\./, '').toLowerCase()
+          const existingBusinessCount = await db.business.count({
+            where: { createdByUser: userId }
+          })
+          const isExistingBusiness = await db.business.findUnique({
+            where: { domain }
+          })
+
+          if (!isExistingBusiness && existingBusinessCount >= 1) {
+            return res.status(403).json({
+              success: false, 
+              error: 'Free accounts can audit one business. Upgrade to Pro for unlimited domains.',
+              upgradeRequired: true
+            })
+          }
+
+          if (isExistingBusiness) {
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+            if (isExistingBusiness.lastAuditedAt && isExistingBusiness.lastAuditedAt > thirtyDaysAgo) {
+              return res.status(403).json({
+                success: false,
+                error: 'Free accounts can re-audit once every 30 days. Upgrade to Pro for unlimited re-audits.',
+                upgradeRequired: true
+              })
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to verify user plan or business limit:', err)
+      }
+    }
+
     // ── 1. Fetch real page ─────────────────────────────────────────────────────
     const page = await fetchPage(input.url)
     if (page.error && !page.html) {
@@ -151,6 +205,7 @@ router.post('/', async (req: Request, res: Response) => {
     // ── 10. Persist to database ────────────────────────────────────────────────
     let businessId = ''
     let auditId    = ''
+    let business_slug: string | null = null
     let verticalPercentile: number | undefined
     let delta      = undefined
 
@@ -165,6 +220,7 @@ router.post('/', async (req: Request, res: Response) => {
         pillarScores,
       })
       businessId = business.id
+      business_slug = business.slug as string | null
 
       await upsertBusinessSignals(businessId, signals)
 
@@ -174,6 +230,7 @@ router.post('/', async (req: Request, res: Response) => {
       const resultForDb: AuditResult = {
         auditId: '',  // filled after save
         businessId,
+        slug: business_slug,
         input,
         signals,
         appliedRules: applied,
@@ -213,21 +270,47 @@ router.post('/', async (req: Request, res: Response) => {
 
       // V2 Async Post-Audit Tasks
       Promise.all([
-        runPostAuditJobs(auditId),
+        runPostAuditJobs(auditId, resultForDb),
         (async () => {
           try {
             const uId = input.userId || 'anon'
-            const xpType = business.auditCount === 1 ? 'first_audit' : 'subsequent_audit'
-            await awardXP({ type: xpType, userId: uId, businessId: business.id, auditId })
+            const xpType: XPEventType = business.auditCount === 1 ? 'first_audit' : 'subsequent_audit'
+            
+            // 1. Award XP
+            if (uId !== 'anon') {
+              await awardXP({ type: xpType, userId: uId, businessId: business.id, auditId })
+            }
+
+            // 2. Fire audit-ready email
+            if (uId !== 'anon') {
+              const user = await clerkClient.users.getUser(uId)
+              const email = user.emailAddresses[0]?.emailAddress
+              
+              if (email) {
+                const topIssue = applied
+                  .sort((a, b) => (b.rule.pen || b.rule.cap) - (a.rule.pen || a.rule.cap))[0]
+
+                await sendAuditReadyEmail({
+                  to: email,
+                  businessName: business.businessName || 'your business',
+                  domain: business.domain,
+                  score: overallScore,
+                  grade,
+                  gradeLabel: GRADE_LABELS[grade as string] || grade as string,
+                  topIssue: topIssue?.rule.label || 'Review your full analysis for critical growth leaks.',
+                  reportSlug: business.slug || null
+                })
+              }
+            }
 
             if (delta?.scoreDelta && delta.scoreDelta >= 10) {
-              await awardXP({ type: 'score_improved_10', userId: uId, businessId: business.id, auditId })
+              await awardXP({ type: 'score_improved_10', userId: uId, businessId, auditId })
             }
 
             const prevGrade = delta ? computeGrade(delta.previousScore).grade : null
             const grades = ['D', 'C', 'B', 'A']
             if (prevGrade && grade !== prevGrade && grades.indexOf(grade) > grades.indexOf(prevGrade)) {
-              await awardXP({ type: 'grade_upgraded', userId: uId, businessId: business.id, auditId })
+              await awardXP({ type: 'grade_upgraded', userId: uId, businessId, auditId })
             }
 
             const { streakDays } = await computeStreak(business.id)
@@ -260,6 +343,7 @@ router.post('/', async (req: Request, res: Response) => {
     const result: AuditResult = {
       auditId,
       businessId,
+      slug: business_slug,
       input,
       signals,
       appliedRules: applied,

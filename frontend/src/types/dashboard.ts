@@ -1,6 +1,7 @@
 export type DashboardData = {
   myBusinessesCount: number
   businessName: string | null
+  slug: string
   overallScore: number
   scoreDelta: number | null
   grade: 'A' | 'B' | 'C' | 'D'
@@ -38,6 +39,10 @@ export type DashboardData = {
   avgMonthlyImprovement: number
   competitorScores: number[] 
   competitorGap: number | null
-  recentAudits: { id: string; createdAt: string; overallScore: number; grade: string; inputUrl: string; version: string }[]
+  recentAudits: { id: string; createdAt: string; overallScore: number; scoreDelta: number | null; grade: string; inputUrl: string; version: string }[]
   chartData: { date: string; score: number }[]
+
+  // Agency / Workspace
+  isAgency: boolean
+  workspaces: { id: string; name: string; businessCount: number }[]
 }

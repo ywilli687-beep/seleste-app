@@ -8,6 +8,29 @@ import { PILLARS, PILLAR_DB_FIELD, computeGrade } from '@/lib/engine'
 import { getLevelInfo, computeStreak, ACHIEVEMENTS } from '@/lib/gamification'
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SLUG GENERATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function generateSlug(domain: string): string {
+  // Strip protocol and www, replace non-alphanumeric with hyphens
+  return domain
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\.[^.]+$/, '')       // remove TLD
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase()
+    .slice(0, 60)
+}
+
+export async function uniqueSlug(base: string): Promise<string> {
+  const existing = await db.business.findUnique({ where: { slug: base } })
+  if (!existing) return base
+  const suffix = Math.random().toString(36).slice(2, 6)
+  return `${base}-${suffix}`
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // NORMALIZE DOMAIN
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -77,6 +100,8 @@ export async function upsertBusiness(params: {
       vertical: params.vertical,
       city,
       state,
+      slug: await uniqueSlug(generateSlug(domain)),
+      reportPublic: true,
       latestOverallScore:     params.overallScore,
       latestConversionScore:  params.pillarScores.conversion,
       latestTrustScore:       params.pillarScores.trust,
@@ -628,13 +653,27 @@ export async function getBusinessHistory(domain: string) {
 // Generates the massive DashboardData payload from user's latest state
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function getDashboardData(userId: string) {
+export async function getDashboardData(userId: string, isPro: boolean = false) {
+  // Check agency/workspace status
+  const userWorkspaces = await db.workspace.findMany({
+    where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
+    include: { _count: { select: { businesses: true } } }
+  })
+  
+  const isAgency = userWorkspaces.some(w => w.plan === 'agency')
+  const workspaces = userWorkspaces.map(w => ({
+    id: w.id,
+    name: w.name,
+    businessCount: w._count.businesses
+  }))
+
   const latestAudit = await db.auditSnapshot.findFirst({
     where: { triggeredByUser: userId },
     orderBy: { createdAt: 'desc' },
-    include: { business: { include: { achievements: true, signals: true } } }
+    include: { business: { include: { achievements: true } } }
   })
 
+  // If new user / no audits, return empty state
   if (!latestAudit) {
     return {
       myBusinessesCount: 0,
@@ -757,9 +796,10 @@ export async function getDashboardData(userId: string) {
   const prevScore = latestAudit.scoreDelta ? latestAudit.overallScore - latestAudit.scoreDelta : null
   const prevGrade = prevScore ? computeGrade(prevScore).grade : null
 
-  return {
+  const result = {
     myBusinessesCount,
     businessName: business.businessName || business.domain,
+    slug: business.slug,
     overallScore: latestAudit.overallScore,
     scoreDelta: latestAudit.scoreDelta,
     grade: latestAudit.grade,
@@ -811,13 +851,102 @@ export async function getDashboardData(userId: string) {
       id: a.id,
       createdAt: a.createdAt.toISOString(),
       overallScore: a.overallScore,
+      scoreDelta: a.scoreDelta,
       grade: a.grade,
       inputUrl: a.inputUrl,
-      version: `Audit #${arr.length - i}`
+      version: `V${arr.length - i}`
     }))).then(audits => audits.slice(0, 5)), // Take most recent 5 after numbering
-    chartData: ((business.scoreHistory as any[]) || []).map(sh => ({
+    chartData: isPro ? ((business.scoreHistory as any[]) || []).map(sh => ({
       date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(sh.date)),
       score: sh.score
-    }))
+    })) : [
+      {
+        date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(latestAudit.createdAt),
+        score: latestAudit.overallScore
+      }
+    ],
+    isAgency,
+    workspaces
+  }
+
+  // Enforce freemium gating before returning
+  if (!isPro) {
+    result.competitorGap = null
+    result.competitorScores = []
+  }
+
+  return result
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC REPORT LOOKUP
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getPublicReport(slug: string) {
+  const business = await db.business.findUnique({
+    where: { slug, reportPublic: true },
+    include: {
+      audits: {
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        include: {
+          appliedRules: true,
+        },
+      },
+    }
+  })
+
+  if (!business || business.audits.length === 0) return null
+  const latest = business.audits[0]
+
+  return {
+    business: {
+      domain: business.domain,
+      name: business.businessName,
+      city: business.city,
+      vertical: business.vertical,
+      slug: business.slug,
+      latestOverallScore: business.latestOverallScore,
+      latestGrade: business.latestGrade,
+      latestConversionScore: business.latestConversionScore,
+      latestTrustScore: business.latestTrustScore,
+      latestPerformanceScore: business.latestPerformanceScore,
+      latestUxScore: business.latestUxScore,
+      latestDiscoverScore: business.latestDiscoverScore,
+      latestContentScore: business.latestContentScore,
+      latestDataScore: business.latestDataScore,
+      latestTechnicalScore: business.latestTechnicalScore,
+      latestBrandScore: business.latestBrandScore,
+      latestScalabilityScore: business.latestScalabilityScore,
+    },
+    snapshot: {
+      createdAt: latest.createdAt,
+      totalScore: latest.overallScore,
+      grade: latest.grade,
+      revenueLeakage: latest.estimatedMonthlyLoss,
+      // Top 3 failing rules (penalties)
+      topIssues: latest.appliedRules
+        .filter(r => r.ruleType === 'PENALTY')
+        .sort((a, b) => (b.penaltyValue || 0) - (a.penaltyValue || 0))
+        .slice(0, 3)
+        .map(r => ({
+          title: r.ruleLabel,
+          description: 'Resolving this could significantly improve your performance score.',
+          impact: r.penaltyValue || 5,
+          pillar: r.pillarId,
+        })),
+      pillarScores: {
+        conversion: latest.conversionScore,
+        trust: latest.trustScore,
+        performance: latest.performanceScore,
+        ux: latest.uxScore,
+        discoverability: latest.discoverScore,
+        content: latest.contentScore,
+        data: latest.dataScore,
+        technical: latest.technicalScore,
+        brand: latest.brandScore,
+        scalability: latest.scalabilityScore,
+      },
+    },
   }
 }

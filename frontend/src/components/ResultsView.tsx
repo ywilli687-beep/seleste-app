@@ -33,8 +33,18 @@ export default function ResultsView({
   const [explanations, setExplanations] = useState<Record<string, string>>({})
   const [loadingKey, setLoadingKey] = useState<string | null>(null)
   const [openKey, setOpenKey] = useState<{ key: string, label: string, rect: DOMRect } | null>(null)
+  const [copied, setCopied] = useState(false)
   
   const { getToken } = useAuth()
+
+  const shareUrl = result.slug ? `${window.location.origin}/report/${result.slug}` : null
+
+  const handleCopyLink = () => {
+    if (!shareUrl) return
+    navigator.clipboard.writeText(shareUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   async function fetchExplanation(key: string, label: string, e: React.MouseEvent, context: any) {
     const rect = (e.currentTarget as Element).getBoundingClientRect()
@@ -155,6 +165,35 @@ export default function ResultsView({
               {verticalPercentile != null && (
                 <div style={{ marginTop: '1.25rem', fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textAlign: 'center', background: 'var(--bg3)', padding: '6px 12px', borderRadius: 99, border: '1px solid var(--border)' }}>
                   Higher score than {verticalPercentile}% of similar local businesses
+                </div>
+              )}
+
+              {shareUrl && (
+                <div style={{ width: '100%', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                  <button 
+                    onClick={handleCopyLink}
+                    style={{ 
+                      width: '100%', 
+                      background: copied ? 'var(--green)' : 'var(--bg3)', 
+                      border: '1px solid var(--border)', 
+                      color: copied ? '#0a0a0f' : 'var(--text)', 
+                      padding: '10px', 
+                      borderRadius: 'var(--rs)', 
+                      cursor: 'pointer', 
+                      fontSize: 13, 
+                      fontWeight: 600,
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8
+                    }}
+                  >
+                    {copied ? '✓ Link Copied!' : '🔗 Copy Shareable Link'}
+                  </button>
+                  <p style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'center', marginTop: 10, lineHeight: 1.4 }}>
+                    Anyone with this link can view the public version of your report scores.
+                  </p>
                 </div>
               )}
             </div>
