@@ -17,7 +17,7 @@ export function TrendChart({ data }: TrendChartProps) {
   const chartData = data.length === 1 ? [...data, { ...data[0], date: 'Now' }] : data
 
   return (
-    <div style={{ padding: '24px 16px 8px 0px', background: 'var(--bg2)', borderRadius: 'var(--r)', border: '1px solid var(--border)', height: 300 }}>
+    <div className="card-v2" style={{ height: 300, padding: '24px 16px 8px 0px' }}>
       <ResponsiveContainer width="100%" height={260}>
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />

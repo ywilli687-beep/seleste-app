@@ -33,15 +33,15 @@ export default function Report() {
 
   if (error) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem', padding: '2rem', textAlign: 'center', backgroundColor: 'var(--bg)' }}>
-        <div style={{ fontFamily: 'var(--ff-display, serif)', fontSize: '1.75rem', color: '#f0ede8' }}>Report error</div>
-        <p style={{ color: '#9b9890', maxWidth: 520, lineHeight: 1.6 }}>{error}</p>
-        <button onClick={() => navigate('/history')} style={{ background: 'none', border: 'none', color: '#c8a96e', fontSize: 14, cursor: 'pointer' }}>← Back to History</button>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem', padding: '2rem', textAlign: 'center', backgroundColor: 'var(--page-bg)' }}>
+        <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--ink)' }}>Report error</div>
+        <p style={{ color: 'var(--ink-muted)', maxWidth: 520, lineHeight: 1.6 }}>{error}</p>
+        <button onClick={() => navigate('/history')} style={{ background: 'none', border: 'none', color: 'var(--blue)', fontSize: 14, cursor: 'pointer', fontWeight: 600 }}>← Back to History</button>
       </div>
     )
   }
 
-  if (!result) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f0ede8', backgroundColor: 'var(--bg)' }}>Loading report...</div>
+  if (!result) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-muted)', backgroundColor: 'var(--page-bg)' }}>Loading report...</div>
 
   return <ResultsView result={result} onNewAudit={() => navigate('/')} />
 }

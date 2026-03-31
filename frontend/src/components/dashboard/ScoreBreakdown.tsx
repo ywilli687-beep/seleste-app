@@ -19,40 +19,31 @@ const PILLAR_LABELS: Record<string, string> = {
 
 export function ScoreBreakdown({ pillars }: ScoreBreakdownProps) {
   return (
-    <div style={{ padding: 24, background: 'var(--bg2)', borderRadius: 'var(--r)', border: '1px solid var(--border)' }}>
-      <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20, color: 'var(--text1)' }}>Growth Pillar Breakdown</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+    <div className="card-v2">
+      <h3 className="text-small" style={{ marginBottom: 24 }}>Growth Pillar Breakdown</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' }}>
         {pillars.map((p) => (
           <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)' }}>{PILLAR_LABELS[p.id] || p.id}</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: p.score >= 80 ? 'var(--accent)' : 'var(--text1)' }}>{p.score}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{PILLAR_LABELS[p.id] || p.id}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{p.score}</span>
             </div>
             
             {/* The Bar */}
-            <div style={{ position: 'relative', height: 6, background: 'var(--bg1)', borderRadius: 3, overflow: 'visible' }}>
+            <div style={{ position: 'relative', height: 8, background: 'var(--page-bg)', borderRadius: 4, overflow: 'hidden' }}>
               {/* Pillar Score */}
               <div 
                 style={{ 
-                  position: 'absolute', left: 0, top: 0, height: '100%', 
-                  width: `${p.score}%`, background: 'var(--accent)', borderRadius: 3,
+                  position: 'absolute', 
+                  left: 0, top: 0, height: '100%', 
+                  width: `${p.score}%`, 
+                  background: p.score >= 75 ? 'var(--green)' : p.score >= 45 ? 'var(--amber)' : 'var(--coral)',
+                  borderRadius: 4,
                   transition: 'width 1s ease-out'
                 }} 
               />
-              
-              {/* Industry Benchmark Marker */}
-              <div 
-                style={{ 
-                  position: 'absolute', 
-                  left: `${p.industryAvg}%`, 
-                  top: -4, width: 2, height: 14, 
-                  background: 'var(--text3)', 
-                  opacity: 0.5,
-                  zIndex: 2
-                }} 
-              />
             </div>
-            <div style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'right', marginTop: 2 }}>
+            <div style={{ fontSize: 10, color: 'var(--ink-muted)', textAlign: 'right', marginTop: 2 }}>
               Industry Avg: {Math.round(p.industryAvg)}
             </div>
           </div>

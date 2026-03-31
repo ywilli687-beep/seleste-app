@@ -60,13 +60,13 @@ export default function Dashboard() {
   // 1. Guard against missing VITE_API_URL in production
   if (isProd && !API_URL) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1.5rem', padding: '2rem', textAlign: 'center', backgroundColor: '#0a0a0f', color: '#f0ede8' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1.5rem', padding: '2rem', textAlign: 'center', backgroundColor: '#F8F9FB', color: '#1A1D21' }}>
         <div style={{ fontSize: '3rem' }}>⚙️</div>
-        <div style={{ fontFamily: 'var(--ff-display, serif)', fontSize: '1.75rem' }}>Configuration Required</div>
-        <p style={{ color: '#9b9890', maxWidth: 500, lineHeight: 1.6 }}>
-          The <strong>VITE_API_URL</strong> environment variable is missing. The dashboard cannot reach the growth intelligence engine without it.
+        <div style={{ fontFamily: 'var(--ff-display, sans-serif)', fontSize: '1.75rem', fontWeight: 600 }}>Configuration Required</div>
+        <p style={{ color: '#4B5563', maxWidth: 500, lineHeight: 1.6 }}>
+          The <strong style={{color: '#1A1A1A'}}>VITE_API_URL</strong> environment variable is missing. The dashboard cannot reach the growth intelligence engine without it.
         </p>
-        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px 24px', borderRadius: 8, fontSize: 13, border: '1px solid rgba(255,255,255,0.1)', textAlign: 'left', fontFamily: 'var(--ff-mono)' }}>
+        <div style={{ background: '#FFFFFF', padding: '16px 24px', borderRadius: 12, fontSize: 13, border: '1px solid #E5E7EB', textAlign: 'left', fontFamily: 'var(--ff-mono)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
           1. Go to Vercel Dashboard → Projects Settings<br/>
           2. Environment Variables → Add <strong>VITE_API_URL</strong><br/>
           3. Set it to your backend URL (e.g. https://api.seleste.app)
@@ -76,22 +76,22 @@ export default function Dashboard() {
   }
 
   if (isLoading || !isUserLoaded) {
-    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f0ede8', backgroundColor: '#0a0a0f' }}>Loading Growth Intelligence...</div>
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1A1D21', backgroundColor: '#F8F9FB', fontFamily: 'var(--ff-sans)' }}>Loading Growth Intelligence...</div>
   }
 
   if (error) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem', padding: '2rem', textAlign: 'center', backgroundColor: '#0a0a0f', color: '#f0ede8' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem', padding: '2rem', textAlign: 'center', backgroundColor: '#F8F9FB', color: '#1A1D21' }}>
         <div style={{ fontSize: '2rem' }}>📡</div>
-        <div style={{ fontFamily: 'var(--ff-display, serif)', fontSize: '1.75rem' }}>Growth Command Center Offline</div>
-        <p style={{ color: '#9b9890', maxWidth: 520, lineHeight: 1.6 }}>
+        <div style={{ fontFamily: 'var(--ff-display, sans-serif)', fontSize: '1.75rem', fontWeight: 600 }}>Growth Command Center Offline</div>
+        <p style={{ color: '#4B5563', maxWidth: 520, lineHeight: 1.6 }}>
           {(error as Error).message.includes('Unexpected token') 
             ? 'The API returned an invalid response (likely a 404). Please verify your backend URL is correct.' 
             : (error as Error).message}
         </p>
         <div style={{ display: 'flex', gap: 16 }}>
-          <button onClick={() => window.location.reload()} style={{ color: 'var(--accent)', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', padding: '8px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}>Retry Connection</button>
-          <button onClick={() => window.location.href = '/'} style={{ color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>Return Home</button>
+          <button onClick={() => window.location.reload()} style={{ color: '#1A1D21', background: '#FFFFFF', border: '1px solid #E5E7EB', padding: '10px 24px', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 500, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>Retry Connection</button>
+          <button onClick={() => window.location.href = '/'} style={{ color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14 }}>Return Home</button>
         </div>
       </div>
     )
