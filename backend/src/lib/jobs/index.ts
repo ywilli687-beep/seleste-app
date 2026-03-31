@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client'
+import { db } from '../db'
 
-const prisma = new PrismaClient()
+const prisma = db
 
 export async function runPostAuditJobs(auditId: string, results: any) {
   try {

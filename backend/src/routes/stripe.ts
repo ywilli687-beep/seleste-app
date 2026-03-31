@@ -48,10 +48,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
   // Express JSON middleware parses the body into an object, but Stripe needs a raw buffer.
   // In a real app we'd use raw-body middleware for this specific route.
-  // For this deployment MVP, we'll try to reconstruct it or skip signature validation if testing locally.
   try {
-    // Note: Assuming a raw body middleware is added in index.ts for /api/stripe/webhook
-    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret)
+    const body = (req as any).rawBody || req.body
+    event = stripe.webhooks.constructEvent(body, sig, endpointSecret)
   } catch (err: any) {
     console.error('Webhook signature verification failed.', err.message)
     // Accept it anyway if running without proper raw body in dev

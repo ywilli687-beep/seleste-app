@@ -26,7 +26,13 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || '*',
   credentials: true
 }))
-app.use(express.json())
+app.use(express.json({
+  verify: (req: any, res, buf) => {
+    if (req.originalUrl.startsWith('/api/stripe/webhook')) {
+      req.rawBody = buf
+    }
+  }
+}))
 
 // Rate limiting — 5 audits per hour per IP
 const auditLimiter = rateLimit({
