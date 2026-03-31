@@ -78,6 +78,7 @@
   color: #fff;
   letter-spacing: -0.04em;
   background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -106,7 +107,7 @@
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
-  font-size: 1.125rem;
+  font-size: 16px;
   font-weight: 500;
   color: #0f172a;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -142,6 +143,14 @@
   transform: translateY(-2px);
   box-shadow: 0 12px 40px rgba(79, 70, 229, 0.3);
   background: linear-gradient(135deg, #6366f1 0%, #1e1b4b 100%);
+}
+
+@media (max-width: 600px) {
+  .primary-button {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
 }
 
 .primary-button::after {
