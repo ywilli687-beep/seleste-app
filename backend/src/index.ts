@@ -14,6 +14,7 @@ import explainRoutes from './routes/explain'
 import agentsRoutes from './routes/agents'
 import cronRoutes from './routes/cron'
 import claimRoutes from './routes/claim'
+import callbackRoutes from './routes/callback'
 
 const app = express()
 
@@ -47,6 +48,7 @@ app.use('/api/report', ClerkExpressRequireAuth() as any, reportRoutes)
 app.use('/api/agents', ClerkExpressRequireAuth() as any, agentsRoutes)
 app.use('/api/claim', ClerkExpressRequireAuth() as any, claimRoutes)
 app.use('/api/cron', cronRoutes)
+app.use('/api/callback', callbackRoutes) // Public callback for agents
 
 const PORT = process.env.PORT || 4000
 app.listen(PORT, () => {

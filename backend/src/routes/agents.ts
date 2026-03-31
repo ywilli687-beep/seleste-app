@@ -105,6 +105,47 @@ router.get('/page/:userId', ClerkExpressRequireAuth(), async (req: RequireAuthPr
 })
 
 // @ts-ignore
+router.post('/approve/:actionId', ClerkExpressRequireAuth(), async (req: RequireAuthProp<any>, res) => {
+  try {
+    const { actionId } = req.params
+    const { userId } = req.auth
+
+    // 1. Find the action and ensure it belongs to the user's business
+    const action = await db.weeklyAction.findUnique({
+      where: { id: actionId },
+      include: { business: true }
+    })
+
+    if (!action) {
+      return res.status(404).json({ success: false, error: 'Action not found' })
+    }
+
+    if (action.business.createdByUser !== userId) {
+      return res.status(403).json({ success: false, error: 'Unauthorized to approve this action' })
+    }
+
+    // 2. Mark as approved
+    await db.weeklyAction.update({
+      where: { id: actionId },
+      data: { status: 'approved', completedAt: new Date() }
+    })
+
+    // 3. TRIGGER EXECUTION (OPTIONAL)
+    // If the action has draftContent and is a 'reputation' task, 
+    // we could trigger an execution webhook (n8n or direct API)
+    if (action.category === 'reputation' && action.draftContent) {
+      console.log(`[Execution] Triggering autonomous execution for ${action.title}...`)
+      // e.g. await triggerExecutionAgent(action)
+    }
+
+    res.json({ success: true, message: 'Action approved and queued for execution' })
+  } catch (error: any) {
+    console.error('Approval Error:', error)
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// @ts-ignore
 router.post('/weekly', ClerkExpressRequireAuth(), async (req: RequireAuthProp<any>, res) => {
   try {
     const { businessId } = req.body

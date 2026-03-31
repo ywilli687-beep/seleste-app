@@ -905,6 +905,7 @@ model WeeklyAction {
 
   title            String
   description      String
+  draftContent     String?  @db.Text
   effort           String
   estimatedLift    Int
   category         String
