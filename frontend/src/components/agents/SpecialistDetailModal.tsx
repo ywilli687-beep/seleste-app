@@ -1,5 +1,5 @@
 import React from 'react'
-import { X, ExternalLink, Activity, Clock, ShieldCheck, Zap } from 'lucide-react'
+import { X, ExternalLink, Activity, ShieldCheck, Zap } from 'lucide-react'
 import { getAgentInfo } from '../../lib/agents/config'
 
 interface AgentRunRecord {

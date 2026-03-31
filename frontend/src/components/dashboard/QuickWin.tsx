@@ -1,5 +1,5 @@
 import React from 'react'
-import { triggerNotification } from './NotificationStack'
+import { triggerNotification } from '@/lib/notifications'
 
 interface Props {
   action: string

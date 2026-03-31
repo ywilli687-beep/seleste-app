@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useAuth, useUser } from '@clerk/clerk-react'
-import { AgentsShell } from '@/components/agents/AgentsShell'
+import { AgentsShell, AgentsPageData } from '@/components/agents/AgentsShell'
 
 export default function Agents() {
   const { user, isLoaded } = useUser()
   const { getToken } = useAuth()
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<AgentsPageData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {

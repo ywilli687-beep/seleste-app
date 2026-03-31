@@ -906,25 +906,12 @@ export async function getPublicReport(slug: string) {
       city: business.city,
       vertical: business.vertical,
       slug: business.slug,
-      latestOverallScore: business.latestOverallScore,
-      latestGrade: business.latestGrade,
-      latestConversionScore: business.latestConversionScore,
-      latestTrustScore: business.latestTrustScore,
-      latestPerformanceScore: business.latestPerformanceScore,
-      latestUxScore: business.latestUxScore,
-      latestDiscoverScore: business.latestDiscoverScore,
-      latestContentScore: business.latestContentScore,
-      latestDataScore: business.latestDataScore,
-      latestTechnicalScore: business.latestTechnicalScore,
-      latestBrandScore: business.latestBrandScore,
-      latestScalabilityScore: business.latestScalabilityScore,
     },
     snapshot: {
       createdAt: latest.createdAt,
       totalScore: latest.overallScore,
       grade: latest.grade,
       revenueLeakage: latest.estimatedMonthlyLoss,
-      // Top 3 failing rules (penalties)
       topIssues: latest.appliedRules
         .filter(r => r.ruleType === 'PENALTY')
         .sort((a, b) => (b.penaltyValue || 0) - (a.penaltyValue || 0))

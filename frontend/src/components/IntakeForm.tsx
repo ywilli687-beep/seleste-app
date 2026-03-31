@@ -111,7 +111,7 @@ export default function IntakeForm({
           Your growth system, scored.
         </h2>
         <p style={{ color: 'var(--text2)', marginBottom: '2.5rem', lineHeight: 1.6 }}>
-          We fetch the actual page, extract {'>'}50 signals, run 47+ deterministic rules, benchmark against your vertical, and generate AI insights — all stored as structured data.
+          We check your real website against 47 proven criteria, compare you to similar businesses in your area, and show you exactly what to fix first.
         </p>
 
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -123,20 +123,25 @@ export default function IntakeForm({
               onKeyDown={e => e.key === 'Enter' && submit()}
               placeholder="https://yourbusiness.com"
               className="audit-input"
+              style={{ fontSize: '16px', width: '100%', boxSizing: 'border-box' }}
             />
           </Fld>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
+            gap: '12px',
+          }}>
             <Fld label="Business Name" hint="optional">
-              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Apex Auto Repair" className="audit-input" />
+              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Apex Auto Repair" className="audit-input" style={{ fontSize: '16px', width: '100%', boxSizing: 'border-box' }} />
             </Fld>
             <Fld label="Location" req>
-              <input type="text" value={loc} onChange={e => setLoc(e.target.value)} placeholder="City, State" className="audit-input" />
+              <input type="text" value={loc} onChange={e => setLoc(e.target.value)} placeholder="City, State" className="audit-input" style={{ fontSize: '16px', width: '100%', boxSizing: 'border-box' }} />
             </Fld>
           </div>
 
-          <Fld label="Business Vertical" req>
-            <select value={vert} onChange={e => setVert(e.target.value as Vertical)} className="audit-input">
+          <Fld label="Business Industry" req>
+            <select value={vert} onChange={e => setVert(e.target.value as Vertical)} className="audit-input" style={{ fontSize: '16px', width: '100%', boxSizing: 'border-box' }}>
               <option value="">Select your industry...</option>
               {VERTICALS.map(v => <option key={v.value} value={v.value}>{v.label}</option>)}
             </select>
@@ -150,7 +155,7 @@ export default function IntakeForm({
 
           {adv && (
             <Fld label="Monthly Revenue" hint="powers the leakage dollar estimate">
-              <select value={rev} onChange={e => setRev(e.target.value)} className="audit-input">
+              <select value={rev} onChange={e => setRev(e.target.value)} className="audit-input" style={{ fontSize: '16px', width: '100%', boxSizing: 'border-box' }}>
                 <option value="">Not specified</option>
                 <option value="10000">Under $10k/mo</option>
                 <option value="25000">$10k–$25k/mo</option>
@@ -176,9 +181,20 @@ export default function IntakeForm({
               disabled={!valid}
               className="primary-button"
               style={{
-                background: !valid ? 'rgba(200,169,110,.25)' : undefined,
+                width: '100%',
+                boxSizing: 'border-box',
+                minHeight: '52px',
+                padding: '14px 24px',
+                background: !valid ? 'rgba(200,169,110,.25)' : 'var(--accent)',
+                color: '#0a0a0f',
+                fontFamily: 'var(--ff-sans)',
+                fontSize: '16px',
+                fontWeight: 600,
+                border: 'none',
+                borderRadius: '8px',
                 cursor: valid ? 'pointer' : 'not-allowed',
-                fontSize: 14,
+                marginTop: '1.5rem',
+                letterSpacing: '0.01em',
               }}
             >
               {isSignedIn ? 'Run free audit' : 'Create account & run audit'} →

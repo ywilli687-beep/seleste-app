@@ -5,14 +5,13 @@ interface ExplainerPopoverProps {
   label: string
   text: string
   rect: DOMRect | null
-  onClose: () => void
 }
 
-export default function ExplainerPopover({ label, text, rect, onClose }: ExplainerPopoverProps) {
+export default function ExplainerPopover({ label, text, rect }: ExplainerPopoverProps) {
   const [mounted, setMounted] = useState(false)
   
   useEffect(() => {
-    setMounted(true)
+    setTimeout(() => setMounted(true), 0)
   }, [])
 
   if (!mounted || !rect) return null

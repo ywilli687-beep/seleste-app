@@ -95,8 +95,8 @@ export default function Pricing() {
       } else {
         alert('Checkout failed: ' + (data.error || 'Unknown error'))
       }
-    } catch (err: any) {
-      alert(err.message)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setLoadingPlan(null)
     }
@@ -176,7 +176,7 @@ export default function Pricing() {
             {[
               { q: 'What does "real-data audit" mean?', a: 'We actually fetch your website, extract 60+ signals, and score it against 47 deterministic rules. Not guesses — real measurements.' },
               { q: 'Can I cancel anytime?', a: 'Yes. Cancel from your settings page at any time with no penalties. Your data is yours.' },
-              { q: 'What\'s a "pillar"?', a: 'We score 10 areas: Discoverability, Performance, Conversion, Trust, UX, Content, Data, Technical, Scalability, and Brand.' },
+              { q: 'What\'s an "area"?', a: 'We score 10 key areas: Discoverability, Performance, Conversion, Trust, UX, Content, Data, Technical, Scalability, and Brand.' },
               { q: 'Do you offer refunds?', a: 'Yes. If you\'re not satisfied in the first 14 days, we\'ll refund you — no questions asked.' },
             ].map(f => (
               <div key={f.q}>

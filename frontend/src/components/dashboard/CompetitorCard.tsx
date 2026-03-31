@@ -13,7 +13,7 @@ export function CompetitorCard({ userScore, competitors, gap, isFirstAudit }: Pr
       <div className="card-v2" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <h3 className="text-h2" style={{ marginBottom: 24 }}>Local Competition</h3>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 120, marginBottom: 24, opacity: 0.5 }}>
-           {[...Array(10)].map((_,i) => <div key={i} className="skeleton-v2" style={{ flex: 1, height: Math.random() * 80 + 20 }} />)}
+           {[...Array(10)].map((_,i) => <div key={i} className="skeleton-v2" style={{ flex: 1, height: (i % 2 === 0 ? 60 : 40) + (i * 2) }} />)}
         </div>
         <span className="text-body text-small">Scanning your local market...<br/>Competitor data is being computed in the background.<br/>Check back in a few minutes.</span>
       </div>

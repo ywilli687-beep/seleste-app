@@ -5,7 +5,9 @@ export default function CookieBanner() {
 
   useEffect(() => {
     const accepted = localStorage.getItem('seleste_cookies')
-    if (!accepted) setVisible(true)
+    if (!accepted) {
+      setTimeout(() => setVisible(true), 0)
+    }
   }, [])
 
   function accept() {

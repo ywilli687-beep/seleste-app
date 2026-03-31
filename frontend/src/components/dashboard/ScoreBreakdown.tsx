@@ -1,4 +1,4 @@
-import { PillarScores } from '@/types/audit'
+
 
 interface ScoreBreakdownProps {
   pillars: { id: string; score: number; industryAvg: number }[]

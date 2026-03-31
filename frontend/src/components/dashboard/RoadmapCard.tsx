@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { triggerNotification } from './NotificationStack'
+import { triggerNotification } from '@/lib/notifications'
 
 interface Action {
   phase: number

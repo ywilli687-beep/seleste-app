@@ -2,14 +2,8 @@ import React from 'react'
 import type { DashboardData } from '../../types/dashboard'
 import { StatCards } from './StatCards'
 import { QuickWin } from './QuickWin'
-import { PillarCard } from './PillarCard'
 import { RoadmapCard } from './RoadmapCard'
-import { StreakCard } from './StreakCard'
-import { AchievementsCard } from './AchievementsCard'
-import { CompetitorCard } from './CompetitorCard'
-import { MarketStrip } from './MarketStrip'
 import { NotificationStack } from './NotificationStack'
-import { TrendChart } from './TrendChart'
 import { ScoreBreakdown } from './ScoreBreakdown'
 
 interface Props {
@@ -18,8 +12,6 @@ interface Props {
 }
 
 export function DashboardShell({ data, children }: Props) {
-  const isFirstAudit = data?.totalAudits === 1
-  const isStale = (data?.daysSinceAudit ?? 0) > 30
 
   const handleAuditNavigation = () => {
     window.location.href = '/' // Quick way back to index for audit

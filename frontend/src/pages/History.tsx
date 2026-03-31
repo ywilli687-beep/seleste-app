@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useAuth, useUser } from '@clerk/clerk-react'
-import HistoryShell from '@/components/history/HistoryShell'
+import HistoryShell, { BusinessRow } from '@/components/history/HistoryShell'
 
 export default function History() {
   const { user, isLoaded } = useUser()
   const { getToken } = useAuth()
-  const [businesses, setBusinesses] = useState<any>(null)
+  const [businesses, setBusinesses] = useState<BusinessRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {

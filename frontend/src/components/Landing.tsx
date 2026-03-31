@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import { useUser } from '@clerk/clerk-react'
+
 const PILLARS = [
   {e:'🔍',n:'Discoverability'},{e:'⚡',n:'Performance'},{e:'🎯',n:'Conversion'},
   {e:'🛡️',n:'Trust'},{e:'✨',n:'UX'},{e:'📝',n:'Content'},
@@ -12,48 +15,96 @@ const TESTIMONIALS = [
 
 const HOW_IT_WORKS = [
   { n: '01', title: 'Enter your URL', body: 'Paste any business website URL. Seleste fetches the actual live page — no screenshots, no guessing.' },
-  { n: '02', title: 'We extract 60+ signals', body: 'Our engine extracts structured data across SEO, performance, conversion, trust, content, tracking, and 4 more pillars.' },
-  { n: '03', title: '47 rules score your site', body: 'Every signal is measured against deterministic rules to produce your 10 pillar scores and overall grade.' },
+  { n: '02', title: 'We extract 60+ data points', body: 'Our engine analyzes key areas like SEO, performance, conversion, trust, content, tracking, and 4 more categories.' },
+  { n: '03', title: '47 criteria score your site', body: 'Every check is measured against proven growth rules to produce your 10 area scores and overall grade.' },
   { n: '04', title: 'Get your growth roadmap', body: 'Claude AI writes a specific growth narrative and ranks every fix by revenue impact — not generic advice.' },
 ]
 
-import { useUser } from '@clerk/clerk-react'
+
 
 // ... [pillars and testimonials remain same] ...
 
 export default function Landing({ onStart }: { onStart: () => void }) {
-  const { user, isSignedIn } = useUser()
+  const { isSignedIn } = useUser()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
 
-      {/* Nav */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(10,10,15,.97)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontFamily: 'var(--ff-display)', fontSize: '1.25rem', color: 'var(--accent)' }}>Seleste <span style={{ color: 'rgba(244,241,236,0.55)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8 }}>AUDIT ENGINE V2</span></div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <a href="/pricing" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Pricing</a>
-          <a href="/faq" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>FAQ</a>
-          {isSignedIn ? (
-            <a href="/dashboard" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Dashboard →</a>
-          ) : (
-            <a href="/sign-in" style={{ fontSize: 14, color: 'rgba(244,241,236,0.82)', textDecoration: 'none', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>Sign In</a>
+      <nav style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        background: 'rgba(10,10,15,.97)',
+        borderBottom: '1px solid var(--border)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 1.25rem',
+        height: '56px',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}>
+        <a href="/" style={{ fontFamily: 'var(--ff-display)', color: 'var(--text)', fontSize: '20px', textDecoration: 'none', flexShrink: 0 }}>
+          Seleste
+        </a>
+
+        <div className="nav-desktop-links" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <a href="/pricing" style={{ color: 'rgba(244,241,236,0.82)', fontFamily: 'var(--ff-sans)', fontSize: '14px', textDecoration: 'none' }}>Pricing</a>
+          <a href="/faq" style={{ color: 'rgba(244,241,236,0.82)', fontFamily: 'var(--ff-sans)', fontSize: '14px', textDecoration: 'none' }}>FAQ</a>
+          {!isSignedIn && (
+            <a href="/sign-in" style={{ color: 'rgba(244,241,236,0.82)', fontFamily: 'var(--ff-sans)', fontSize: '14px', textDecoration: 'none' }}>Sign in</a>
           )}
-          <button onClick={onStart} className="primary-button" style={{ padding: '8px 20px', borderRadius: 'var(--rs)', fontSize: 13 }}>Run Audit</button>
+          {isSignedIn && (
+            <a href="/dashboard" style={{ color: 'rgba(244,241,236,0.82)', fontFamily: 'var(--ff-sans)', fontSize: '14px', textDecoration: 'none' }}>Dashboard</a>
+          )}
+          <button onClick={onStart} style={{ background: 'var(--accent)', color: '#0a0a0f', fontFamily: 'var(--ff-sans)', fontSize: '14px', fontWeight: 600, textDecoration: 'none', padding: '8px 18px', borderRadius: '6px', whiteSpace: 'nowrap', border: 'none', cursor: 'pointer' }}>
+            Run Audit
+          </button>
         </div>
+
+        <button
+          className="nav-hamburger"
+          onClick={() => setMenuOpen((o: boolean) => !o)}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', display: 'none', flexDirection: 'column', justifyContent: 'center', gap: '5px', width: '40px', height: '40px' }}
+        >
+          <span style={{ display: 'block', width: '20px', height: '1.5px', background: 'rgba(244,241,236,0.82)', transition: 'transform .2s', transform: menuOpen ? 'rotate(45deg) translate(4.5px, 4.5px)' : 'none' }}/>
+          <span style={{ display: 'block', width: '20px', height: '1.5px', background: 'rgba(244,241,236,0.82)', transition: 'opacity .15s', opacity: menuOpen ? 0 : 1 }}/>
+          <span style={{ display: 'block', width: '20px', height: '1.5px', background: 'rgba(244,241,236,0.82)', transition: 'transform .2s', transform: menuOpen ? 'rotate(-45deg) translate(4.5px, -4.5px)' : 'none' }}/>
+        </button>
       </nav>
 
+      {menuOpen && (
+        <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, background: 'rgba(10,10,15,.98)', borderBottom: '1px solid var(--border)', zIndex: 99, display: 'flex', flexDirection: 'column' }}>
+          {[
+            { label: 'Pricing', href: '/pricing' },
+            { label: 'FAQ', href: '/faq' },
+            ...(!isSignedIn ? [{ label: 'Sign in', href: '/sign-in' }] : []),
+            ...(isSignedIn ? [{ label: 'Dashboard', href: '/dashboard' }] : []),
+          ].map(item => (
+            <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} style={{ color: 'rgba(244,241,236,0.82)', fontFamily: 'var(--ff-sans)', fontSize: '16px', textDecoration: 'none', padding: '16px 1.25rem', borderBottom: '1px solid var(--border)', minHeight: '52px', display: 'flex', alignItems: 'center' }}>
+              {item.label}
+            </a>
+          ))}
+          <button onClick={() => { setMenuOpen(false); onStart(); }} style={{ background: 'var(--accent)', color: '#0a0a0f', fontFamily: 'var(--ff-sans)', fontSize: '16px', fontWeight: 600, textDecoration: 'none', padding: '16px 1.25rem', minHeight: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
+            Run free audit
+          </button>
+        </div>
+      )}
+
       {/* ── HERO ── */}
-      <section style={{ padding: '120px 2rem 56px', textAlign: 'center', maxWidth: 1200, margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <section className="hero-section" style={{ padding: '120px 2rem 56px', textAlign: 'center', maxWidth: 1200, margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--adim)', border: '1px solid rgba(200,169,110,.22)', padding: '5px 14px', borderRadius: 99, marginBottom: '2rem', fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--accent)', letterSpacing: '.07em', textTransform: 'uppercase' }}>
           <span style={{ width: 6, height: 6, background: 'var(--green)', borderRadius: '50%', animation: 'blink 2s infinite', display: 'inline-block' }} />
           LIVE · REAL WEBSITE ANALYSIS
         </div>
         
-        <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', lineHeight: 1.05, maxWidth: 840, marginBottom: '1.5rem' }}>
+        <h1 className="hero-headline" style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(26px, 7.5vw, 52px)', lineHeight: 1.05, maxWidth: 840, marginBottom: '1.5rem', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
           Find out why your website isn't bringing in customers.
         </h1>
 
-        <p style={{ fontSize: '1.15rem', color: 'var(--text2)', maxWidth: 640, marginBottom: '2rem', lineHeight: 1.6 }}>
+        <p className="hero-sub" style={{ fontSize: 'clamp(14px, 4vw, 17px)', color: 'var(--text2)', maxWidth: 640, marginBottom: '2rem', lineHeight: 1.6, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
           Get a free, instant analysis of your business website. See exactly what's costing you customers — and how to fix it in 90 days.
         </p>
 

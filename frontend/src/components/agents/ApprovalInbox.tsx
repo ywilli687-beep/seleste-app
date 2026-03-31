@@ -1,6 +1,5 @@
-import React from 'react'
 import { 
-  Check, X, Sparkles
+  Check, X
 } from 'lucide-react'
 import { getAgentInfo } from '../../lib/agents/config'
 
@@ -80,7 +79,7 @@ export function ApprovalInbox({ proposals, onApprove, onReject }: ApprovalInboxP
                     background: '#ECFDF5', color: '#059669', 
                     padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600 
                   }}>
-                    +{proposal.impact} pts
+                    +{Number(proposal.impact)} pts
                   </span>
                 </div>
               </div>

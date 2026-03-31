@@ -2,8 +2,8 @@
 import { useState } from 'react'
 import { UserButton } from '@clerk/clerk-react'
 
-type AuditSnap = { id: string; createdAt: string; overallScore: number; grade: 'A'|'B'|'C'|'D'; scoreDelta: number | null }
-type BusinessRow = {
+export type AuditSnap = { id: string; createdAt: string; overallScore: number; grade: 'A'|'B'|'C'|'D'; scoreDelta: number | null }
+export type BusinessRow = {
   domain: string; businessId: string; businessName: string | null
   vertical: string; city: string | null; state: string | null
   latestScore: number; latestGrade: 'A'|'B'|'C'|'D'

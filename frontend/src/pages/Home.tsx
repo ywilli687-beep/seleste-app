@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import type { AuditResult, AuditRequest, LoadingStage } from '@/types/audit'
 import Landing from '@/components/Landing'
@@ -18,30 +18,7 @@ export default function Home() {
     pageTitle?: string; detectedCMS?: string | null; wordCount?: number; isSSL?: boolean
   } | null>(null)
 
-  // HANDLE PENDING AUDIT (Sign-up Gate Bridge)
-  useEffect(() => {
-    if (!user) return
-
-    const raw = sessionStorage.getItem('seleste_pending_audit')
-    if (!raw) return
-
-    let pending: AuditRequest
-    try {
-      pending = JSON.parse(raw)
-    } catch {
-      sessionStorage.removeItem('seleste_pending_audit')
-      return
-    }
-
-    sessionStorage.removeItem('seleste_pending_audit')
-    
-    // Slight delay to ensure Clerk is ready and user is fully hydrated
-    setTimeout(() => {
-      runAudit(pending)
-    }, 200)
-  }, [user])
-
-  const runAudit = async (req: AuditRequest) => {
+  const runAudit = useCallback(async (req: AuditRequest) => {
     setError(null)
     setStage('fetching')
     setHardPreview(null)
@@ -83,7 +60,30 @@ export default function Home() {
       setError(err instanceof Error ? err.message : 'Unknown error')
       setView('intake')
     }
-  }
+  }, [user?.id])
+
+  // HANDLE PENDING AUDIT (Sign-up Gate Bridge)
+  useEffect(() => {
+    if (!user) return
+
+    const raw = sessionStorage.getItem('seleste_pending_audit')
+    if (!raw) return
+
+    let pending: AuditRequest
+    try {
+      pending = JSON.parse(raw)
+    } catch {
+      sessionStorage.removeItem('seleste_pending_audit')
+      return
+    }
+
+    sessionStorage.removeItem('seleste_pending_audit')
+    
+    // Slight delay to ensure Clerk is ready and user is fully hydrated
+    setTimeout(() => {
+      runAudit(pending)
+    }, 200)
+  }, [user, runAudit])
 
   const reset = () => {
     setView('intake')

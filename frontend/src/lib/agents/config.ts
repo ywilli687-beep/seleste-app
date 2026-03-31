@@ -1,9 +1,10 @@
+import React from 'react'
 import { 
   Sparkles, Target, Zap, 
   Search, BarChart3, Megaphone, Layout, Type
 } from 'lucide-react'
 
-export const SPECIALIST_CONFIG: Record<string, { name: string; icon: any; color: string; bg: string }> = {
+export const SPECIALIST_CONFIG: Record<string, { name: string; icon: React.ElementType; color: string; bg: string }> = {
   reputation: { name: 'GBP Specialist', icon: Sparkles, color: '#7C3AED', bg: '#F5F3FF' },
   seo: { name: 'SEO Authority', icon: Search, color: '#2563EB', bg: '#EFF6FF' },
   conversion: { name: 'CRO Specialist', icon: Target, color: '#059669', bg: '#ECFDF5' },

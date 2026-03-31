@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { triggerNotification } from './NotificationStack'
+import { triggerNotification } from '@/lib/notifications'
 
 interface Achievement {
   id: string
@@ -39,7 +39,15 @@ export function AchievementsCard({ achievements, newlyEarnedIds }: Props) {
         }
       }
     })
-    setPulsingIds(set)
+    if (set.size > 0) {
+      setTimeout(() => {
+        setPulsingIds(prev => {
+          const next = new Set(prev)
+          set.forEach(id => next.add(id))
+          return next
+        })
+      }, 0)
+    }
   }, [newlyEarnedIds, achievements])
 
   const earnedCount = achievements.filter(a => a.earned).length

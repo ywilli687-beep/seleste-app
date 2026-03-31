@@ -3,7 +3,17 @@ import { ApprovalInbox } from './ApprovalInbox'
 import { getAgentInfo } from '../../lib/agents/config'
 import { SpecialistDetailModal } from './SpecialistDetailModal'
 
-interface AgentsPageData {
+interface WeeklyAction {
+  id: string
+  category: string
+  title: string
+  description: string
+  draftContent: string
+  status: 'pending' | 'approved' | 'completed' | 'ignored'
+  estimatedLift: number
+}
+
+export interface AgentsPageData {
   latestCycle: {
     id: string
     status: 'pending' | 'running' | 'complete' | 'partial' | 'failed'
@@ -15,7 +25,7 @@ interface AgentsPageData {
   } | null
   nextCycleAt: string | null     
   cycleCount: number             
-  weeklyActions: any[]  
+  weeklyActions: WeeklyAction[]  
   agentOutputs: {
     agentId: string
     agentName: string            
@@ -35,9 +45,11 @@ interface AgentsPageData {
     connectUrl: string            
     chipColor: string
   }[]
-  reportingOutput: any | null
-  growthArchitectOutput: any | null
-  optimizationOutput: any | null
+  reportingOutput: {
+    executiveSummary: string
+  } | null
+  growthArchitectOutput: Record<string, unknown> | null
+  optimizationOutput: Record<string, unknown> | null
   state: 'no_cycle' | 'cycle_running' | 'cycle_complete' | 'cycle_failed'
   planTier: 'free' | 'pro' | 'agency'
 }
@@ -125,11 +137,11 @@ export function AgentsShell({ data: initialData }: { data: AgentsPageData }) {
               draftContent: a.draftContent, 
               status: 'pending',
               category: a.category,
-              impact: a.estimatedLift
+              impact: Number(a.estimatedLift) || 0
             }))}
             onApprove={async (id: string) => {
               try {
-                const token = await (window as any).Clerk?.session?.getToken()
+                const token = await (window as unknown as { Clerk?: { session?: { getToken: () => Promise<string> } } }).Clerk?.session?.getToken()
                 const API_URL = import.meta.env.VITE_API_URL || ''
                 const res = await fetch(`${API_URL}/api/agents/approve/${id}`, {
                   method: 'POST',

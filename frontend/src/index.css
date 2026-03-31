@@ -1,13 +1,13 @@
 :root {
-  /* Core Palette (Modern SaaS Light) */
-  --page-bg: #F8F9FB;
-  --panel: #FFFFFF;
-  --panel-hover: #FAFBFC;
-  --border: #E5E9F0;
-  --border2: #D1D9E6;
-  --ink: #111827;
-  --ink-muted: #6B7280;
-  --primary: #111827;
+  /* Core Palette (Seleste Dark) */
+  --page-bg: #0a0a0f;
+  --panel: #111118;
+  --panel-hover: #161622;
+  --border: rgba(255, 255, 255, 0.08);
+  --border2: rgba(255, 255, 255, 0.12);
+  --ink: #f4f1ec;
+  --ink-muted: #8a857e;
+  --primary: #c8a96e;
   
   /* Semantic Colors */
   --green: #10B981;
@@ -35,6 +35,13 @@
   --ff-mono: 'JetBrains Mono', monospace;
   --r: 12px;
   --rs: 8px;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ff-sans);
 }
 
 .mono { font-family: var(--ff-mono); }
@@ -278,4 +285,44 @@
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+    overflow-x: hidden;
+  }
+
+  .hero-headline {
+    font-size: clamp(26px, 7.5vw, 52px) !important;
+    line-height: 1.12 !important;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100% !important;
+  }
+
+  .hero-sub {
+    font-size: clamp(14px, 4vw, 17px) !important;
+    line-height: 1.6 !important;
+    max-width: 100% !important;
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-desktop-links {
+    display: none !important;
+  }
+  .nav-hamburger {
+    display: flex !important;
+  }
 }

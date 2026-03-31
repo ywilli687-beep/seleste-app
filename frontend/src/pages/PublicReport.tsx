@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import PublicReportShell from '@/components/report/PublicReportShell'
+import PublicReportShell, { PublicReportProps } from '@/components/report/PublicReportShell'
 
 export default function PublicReport() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   
-  const [report, setReport] = useState<any>(null)
+  const [report, setReport] = useState<PublicReportProps['report'] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/clerk-react'
-import type { AuditResult, Recommendation, PillarId } from '@/types/audit'
+import type { AuditResult, Recommendation } from '@/types/audit'
 import { PILLARS } from '@/lib/constants'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import ExplainIcon from '@/components/ExplainIcon'
@@ -21,9 +21,10 @@ export default function ResultsView({
   result: AuditResult
   onNewAudit: () => void
 }) {
+  const [copied, setCopied] = useState(false)
   const {
     pillarScores, overallScore, grade, gradeLabel, revenueLeak, confidence,
-    recommendations, benchmark, aiNarrative, aiQuickWins, aiTopIssues,
+    recommendations, benchmark, aiNarrative, aiTopIssues,
     appliedRules, roadmap, signals, input, delta, verticalPercentile,
   } = result
 
@@ -33,7 +34,6 @@ export default function ResultsView({
   const [explanations, setExplanations] = useState<Record<string, string>>({})
   const [loadingKey, setLoadingKey] = useState<string | null>(null)
   const [openKey, setOpenKey] = useState<{ key: string, label: string, rect: DOMRect } | null>(null)
-  const [copied, setCopied] = useState(false)
   
   const { getToken } = useAuth()
 
@@ -46,7 +46,7 @@ export default function ResultsView({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  async function fetchExplanation(key: string, label: string, e: React.MouseEvent, context: any) {
+  async function fetchExplanation(key: string, label: string, e: React.MouseEvent, context: Record<string, unknown>) {
     const rect = (e.currentTarget as Element).getBoundingClientRect()
     if (explanations[key]) {
       setOpenKey(openKey?.key === key ? null : { key, label, rect })
@@ -238,15 +238,15 @@ export default function ResultsView({
           <Card title="Key Findings">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.75rem' }}>
               <MStat label="Revenue Leak" val={`${revenueLeak.totalPct}%`} color="var(--red)" sub="opp. lost/mo" />
-              <MStat label="Top Pillar" val={`${pillarScores[sorted[0].id]}/100`} color="var(--green)" sub={sorted[0].name} />
-              <MStat label="Lowest Pillar" val={`${pillarScores[sorted[sorted.length - 1].id]}/100`} color="var(--red)" sub={sorted[sorted.length - 1].name} />
+              <MStat label="Top Area" val={`${pillarScores[sorted[0].id]}/100`} color="var(--green)" sub={sorted[0].name} />
+              <MStat label="Lowest Area" val={`${pillarScores[sorted[sorted.length - 1].id]}/100`} color="var(--red)" sub={sorted[sorted.length - 1].name} />
               <MStat label="Rules Hit" val={`${appliedRules.length}`} color="var(--amber)" sub="caps & penalties" />
             </div>
           </Card>
 
-          <Card title="How Complete Is This Report">
+          <Card title="Report Quality">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <span style={{ fontSize: 13, color: 'var(--text2)' }}>Report completeness</span>
+              <span style={{ fontSize: 13, color: 'var(--text2)' }}>Data completeness</span>
               <div style={{ flex: 1, height: 7, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${confidence.pct}%`, background: `linear-gradient(90deg, var(--amber), var(--green))`, borderRadius: 99 }} />
               </div>
@@ -329,6 +329,40 @@ export default function ResultsView({
               ))}
             </div>
           </Card>
+          {result.slug && (
+            <div style={{
+              background: 'var(--bg2)',
+              border: '1px solid var(--border)',
+              borderRadius: '12px',
+              padding: '1.25rem 1.5rem',
+              marginTop: '2rem',
+              marginBottom: '1rem',
+            }}>
+              <p style={{ fontFamily: 'var(--ff-sans)', fontSize: '12px', color: 'var(--text3)', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Share your results
+              </p>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 14px' }}>
+                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: '13px', color: 'var(--text2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                  {typeof window !== 'undefined' ? `${window.location.origin}/report/${result.slug}` : `/report/${result.slug}`}
+                </span>
+                <button
+                  onClick={() => {
+                    const url = `${window.location.origin}/report/${result.slug}`
+                    navigator.clipboard.writeText(url).then(() => {
+                      setCopied(true)
+                      setTimeout(() => setCopied(false), 2000)
+                    })
+                  }}
+                  style={{ background: copied ? 'var(--green)' : 'var(--accent)', color: '#0a0a0f', border: 'none', borderRadius: '6px', padding: '7px 16px', fontFamily: 'var(--ff-sans)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, transition: 'background 0.2s', minHeight: '34px' }}
+                >
+                  {copied ? '✓ Copied' : 'Copy link'}
+                </button>
+              </div>
+              <p style={{ fontFamily: 'var(--ff-sans)', fontSize: '11px', color: 'var(--text3)', margin: '8px 0 0' }}>
+                Anyone with this link can view your report — no account needed.
+              </p>
+            </div>
+          )}
 
           {result.auditId && (
             <div style={{ background: 'rgba(74,222,128,.05)', border: '1px solid rgba(74,222,128,.15)', borderRadius: 'var(--r)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -336,7 +370,7 @@ export default function ResultsView({
               <div>
                 <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>Audit saved to intelligence layer</div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>
-                  ID: {result.auditId} · 80+ structured fields persisted · benchmarks updated
+                  ID: {result.auditId} · 80+ details persisted · comparison data updated
                 </div>
               </div>
               <a href="/dashboard" style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>View in dashboard →</a>
@@ -347,7 +381,7 @@ export default function ResultsView({
           {aiNarrative && (
             <ErrorBoundary label="AI narrative" fallback={
               <div style={{ padding: '1.25rem', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, color: 'var(--text2)' }}>
-                AI analysis unavailable — scores and recommendations are deterministic and accurate.
+                AI analysis unavailable — scores and recommendations are accurate and detailed.
               </div>
             }>
               <div style={{ background: 'linear-gradient(135deg, rgba(200,169,110,.06), rgba(167,139,250,.04))', border: '1px solid rgba(200,169,110,.18)', borderRadius: 'var(--r)', padding: '1.5rem' }}>
@@ -387,8 +421,8 @@ export default function ResultsView({
             </ErrorBoundary>
           )}
 
-          {/* Pillar scores */}
-          <Card title="Pillar Breakdown — Weighted Scores">
+          {/* Area scores */}
+          <Card title="Full Breakdown — Performance by Area">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {PILLARS.map(p => {
                 const sc = pillarScores[p.id] ?? 0
@@ -440,7 +474,7 @@ export default function ResultsView({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {recommendations[recTab].length === 0
                 ? <p style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', padding: '1.5rem' }}>Strong performance here — no critical issues in this category.</p>
-                : recommendations[recTab].map((rec, i) => <RecCard key={i} rec={rec} num={i + 1} />)
+                : recommendations[recTab].map((rec, i) => <RecCard key={i} rec={rec} />)
               }
             </div>
           </Card>
@@ -547,7 +581,7 @@ export default function ResultsView({
           </button>
         </div>
       </div>
-      {openKey && <ExplainerPopover label={openKey.label} text={explanations[openKey.key]} rect={openKey.rect} onClose={() => setOpenKey(null)} />}
+      {openKey && <ExplainerPopover label={openKey.label} text={explanations[openKey.key]} rect={openKey.rect} />}
     </div>
   )
 }
@@ -595,12 +629,14 @@ function ScoreDial({ score }: { score: number }) {
   useEffect(() => {
     const c = ref.current; if (!c) return
     const ctx = c.getContext('2d')
-    if (!ctx) { setHasCanvas(false); return }
+    if (!ctx) {
+      setTimeout(() => setHasCanvas(false), 0)
+      return
+    }
     
     const cx = 95, cy = 95, r = 72
     const thick = 14
     const sa = -Math.PI / 2
-    const ea = sa + (Math.PI * 2)
     ctx.clearRect(0, 0, 190, 190)
     
     // Background track
@@ -628,7 +664,7 @@ function ScoreDial({ score }: { score: number }) {
   )
 }
 
-function RecCard({ rec, num }: { rec: Recommendation; num: number }) {
+function RecCard({ rec }: { rec: Recommendation }) {
   const ib = rec.iconColor === 'red' ? 'var(--rdim)' : rec.iconColor === 'green' ? 'var(--gdim)' : 'var(--bdim)'
   return (
     <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>

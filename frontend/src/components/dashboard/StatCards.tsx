@@ -10,14 +10,7 @@ interface Props {
   xpToNext: number
 }
 
-export function StatCards({ score, delta, revenueLeak, levelName, xpTotal, xpToNext }: Props) {
-  // Approximate XP progress % just for visuals
-  let progressPct = 0
-  const totalInLevel = xpToNext // roughly... if xpToNext is remaining
-  // Actually xpToNext is Remaining XP.
-  // We can't know the exact floor of the level without the full level table. 
-  // But let's just use a dummy fill animation for visual flair
-  
+export function StatCards({ score, revenueLeak, levelName, xpToNext }: Props) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
       <div className="card-v2" style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '24px' }}>
