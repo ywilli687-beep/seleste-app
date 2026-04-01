@@ -37,18 +37,37 @@ export default function IntakeForm({
   const [loc, setLoc]       = useState('')
   const [vert, setVert]     = useState<Vertical | ''>('')
   const [rev, setRev]       = useState('')
+  
+  const [hasSubmitted, setHasSubmitted] = useState(false)
+  const [autoSubmit, setAutoSubmit] = useState(false)
 
   // Pre-fill URL if coming from history page re-audit link
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const reaudit = params.get('reaudit')
-    if (reaudit) setUrl(reaudit)
+    const queryUrl = params.get('url')
+    const queryName = params.get('name')
+    const queryLoc = params.get('location')
+    const queryVert = params.get('vertical')
+
+    if (reaudit === '1' || reaudit === 'true') {
+      if (queryUrl) setUrl(decodeURIComponent(queryUrl))
+      if (queryName) setName(decodeURIComponent(queryName))
+      if (queryLoc) setLoc(decodeURIComponent(queryLoc))
+      if (queryVert) setVert(queryVert as Vertical)
+      setAutoSubmit(true)
+    } else if (reaudit) {
+      // Legacy support for just passing the URL string
+      setUrl(decodeURIComponent(reaudit))
+    }
   }, [])
+
   const [localError, setLocalError] = useState<string | null>(null)
   const [adv, setAdv]             = useState(false)
   const valid = url.trim() && loc.trim() && vert
 
   const submit = () => {
+    setHasSubmitted(true)
     setLocalError(null)
     if (!valid) return
     
@@ -88,6 +107,15 @@ export default function IntakeForm({
       monthlyRevenue: rev ? parseInt(rev) : undefined,
     })
   }
+
+  // Auto-submit logic for re-audits
+  useEffect(() => {
+    if (autoSubmit && url && loc && vert) {
+      const timer = setTimeout(() => submit(), 300)
+      return () => clearTimeout(timer)
+    }
+  }, [autoSubmit, url, loc, vert])
+
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 80 }}>
@@ -166,7 +194,14 @@ export default function IntakeForm({
             </Fld>
           )}
 
-          {(error || localError) && (
+          {autoSubmit && (
+            <div style={{ background: 'rgba(200,169,110,.1)', border: '1px solid var(--accent)', borderRadius: 'var(--rs)', padding: '0.75rem 1rem', fontSize: 13, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 10, animation: 'pulse 2s infinite' }}>
+              <span style={{ display: 'inline-block', width: 8, height: 8, background: 'var(--accent)', borderRadius: '50%' }} />
+              <span>Re-running audit for {name || url}...</span>
+            </div>
+          )}
+
+          {hasSubmitted && (error || localError) && (
             <div style={{ background: 'var(--rdim)', border: '1px solid rgba(248,113,113,.2)', borderRadius: 'var(--rs)', padding: '1rem', fontSize: 13, color: 'var(--red)', display: 'flex', gap: 10 }}>
               <span style={{ flexShrink: 0 }}>⚠</span>
               <span>{localError || error}</span>

@@ -143,7 +143,7 @@ export default function HistoryShell({ businesses }: { businesses: BusinessRow[]
                   <div><Sparkline history={biz.history} /></div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <a
-                      href={`/?reaudit=${encodeURIComponent('https://' + biz.domain)}`}
+                      href={`/?reaudit=1&url=${encodeURIComponent('https://' + biz.domain)}&name=${encodeURIComponent(biz.businessName || '')}&location=${encodeURIComponent([biz.city, biz.state].filter(Boolean).join(', '))}&vertical=${biz.vertical}`}
                       onClick={e => e.stopPropagation()}
                       style={{ fontSize: 11, padding: '5px 10px', background: 'var(--accent)', color: '#0a0a0f', borderRadius: 6, textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}
                     >

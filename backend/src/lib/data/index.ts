@@ -799,6 +799,9 @@ export async function getDashboardData(userId: string, isPro: boolean = false) {
   const result = {
     myBusinessesCount,
     businessName: business.businessName || business.domain,
+    vertical: business.vertical,
+    city: business.city,
+    state: business.state,
     slug: business.slug,
     overallScore: latestAudit.overallScore,
     scoreDelta: latestAudit.scoreDelta,

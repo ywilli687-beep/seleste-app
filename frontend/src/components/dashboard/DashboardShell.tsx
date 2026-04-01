@@ -219,16 +219,16 @@ export function DashboardShell({ data, children }: Props) {
                                 )}
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    sessionStorage.setItem('seleste_pending_audit', JSON.stringify({
-                                      url: audit.inputUrl,
-                                      city: '',
-                                      vertical: 'UNKNOWN'
-                                    }))
-                                    window.location.href = '/?reaudit=1'
-                                  }}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      const locStr = [data.city, data.state].filter(Boolean).join(', ')
+                                      const u = encodeURIComponent(audit.inputUrl)
+                                      const n = encodeURIComponent(data.businessName || '')
+                                      const l = encodeURIComponent(locStr)
+                                      const v = data.vertical
+                                      window.location.href = `/?reaudit=1&url=${u}&name=${n}&location=${l}&vertical=${v}`
+                                    }}
                                   style={{
                                     background: 'transparent',
                                     border: '1px solid var(--border)',
