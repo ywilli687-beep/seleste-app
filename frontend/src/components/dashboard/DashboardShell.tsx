@@ -15,7 +15,17 @@ interface Props {
 export function DashboardShell({ data, children, onReaudit }: Props) {
 
   const handleAuditNavigation = () => {
-    window.location.href = '/' // Quick way back to index for audit
+    const latest = data?.recentAudits?.[0]
+    if (latest && onReaudit) {
+      onReaudit({
+        url: latest.inputUrl,
+        businessName: data.businessName || '',
+        location: [data.city, data.state].filter(Boolean).join(', '),
+        vertical: data.vertical
+      })
+    } else {
+      window.location.href = '/' // Fallback to intake form if no history
+    }
   }
 
   return (
