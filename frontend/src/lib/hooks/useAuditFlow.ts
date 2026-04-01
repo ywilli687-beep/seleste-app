@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import type { AuditResult, AuditRequest, LoadingStage } from '@/types/audit'
 
-export type View = 'landing' | 'intake' | 'loading' | 'results'
+export type View = 'landing' | 'intake' | 'loading' | 'results' | 'error'
 
 export function useAuditFlow() {
   const { user } = useUser()
@@ -13,19 +13,22 @@ export function useAuditFlow() {
   const [hardPreview, setHardPreview] = useState<{
     pageTitle?: string; detectedCMS?: string | null; wordCount?: number; isSSL?: boolean
   } | null>(null)
+  
+  const isRunning = useRef(false)
 
   const API_URL = import.meta.env.VITE_API_URL || ''
 
   const runAudit = useCallback(async (req: AuditRequest) => {
+    if (isRunning.current) return
+    isRunning.current = true
+    
     setError(null)
     setStage('fetching')
     setHardPreview(null)
     setView('loading')
 
     try {
-      // Simulate progression since we have a single POST route
-      setStage('fetching')
-      
+      // Stage 1 - Target connection
       const res = await fetch(`${API_URL}/api/audit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -35,21 +38,21 @@ export function useAuditFlow() {
         }),
       })
 
-      setStage('ai_signals') // AI reads page content
-      await new Promise(r => setTimeout(r, 600))
+      // Stage 2 - Signal Extraction
+      setStage('ai_signals')
       
-      setStage('scoring') // Running rules engine
-      await new Promise(r => setTimeout(r, 400))
-      
-      setStage('narrative') // Writing AI growth analysis
-      await new Promise(r => setTimeout(r, 300))
-
       const data = await res.json()
       if (!data.success || !data.result) {
         throw new Error(data.error || 'Intelligence extraction failed')
       }
 
-      setStage('saving') // Saving to intelligence layer
+      setStage('scoring')
+      await new Promise(r => setTimeout(r, 600))
+      
+      setStage('narrative')
+      await new Promise(r => setTimeout(r, 400))
+
+      setStage('saving')
       await new Promise(r => setTimeout(r, 300))
       setStage('done')
 
@@ -60,8 +63,10 @@ export function useAuditFlow() {
       setView('results')
     } catch (err: any) {
       console.error('[Audit Error]', err)
-      setError(err.message || 'Analysis failed')
-      setView('intake')
+      setError(err.message || 'Analysis failed — please verify your URL and try again.')
+      setView('error')
+    } finally {
+      isRunning.current = false
     }
   }, [user?.id, API_URL])
 
@@ -71,11 +76,13 @@ export function useAuditFlow() {
     location: string
     vertical: string
   }) => {
+    if (isRunning.current) return
     if (!user) {
       window.location.href = '/sign-in'
       return
     }
 
+    isRunning.current = true
     setError(null)
     setResult(null)
     setHardPreview(null)
@@ -83,10 +90,6 @@ export function useAuditFlow() {
     setStage('fetching')
 
     try {
-      // Stage 1 - Simulated Fetch
-      await new Promise(r => setTimeout(r, 400))
-      setStage('fetching')
-
       const res = await fetch(`${API_URL}/api/audit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -98,17 +101,17 @@ export function useAuditFlow() {
       })
 
       setStage('ai_signals')
-      await new Promise(r => setTimeout(r, 800))
+      const data = await res.json()
+      
+      if (!data.success || !data.result) {
+        throw new Error(data.error || 'Re-analysis failed')
+      }
 
       setStage('scoring')
       await new Promise(r => setTimeout(r, 500))
 
       setStage('narrative')
-      const data = await res.json()
-      
-      if (!data.success || !data.result) {
-        throw new Error(data.error || 'Re-audit failed')
-      }
+      await new Promise(r => setTimeout(r, 300))
 
       setStage('saving')
       await new Promise(r => setTimeout(r, 300))
@@ -118,9 +121,10 @@ export function useAuditFlow() {
       setView('results')
     } catch (err: any) {
       console.error('[Re-audit Error]', err)
-      setError(err.message || 'Re-audit failed')
-      setView('results') // If re-audit fails, stay on current page but maybe show error to user? 
-      // Prompt says: "skip intake form entirely". If error happens, I'll go back to results view
+      setError(err.message || 'Re-analysis failed — please try again.')
+      setView('error') 
+    } finally {
+      isRunning.current = false
     }
   }, [user, API_URL])
 
