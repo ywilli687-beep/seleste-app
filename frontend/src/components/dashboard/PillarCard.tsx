@@ -34,7 +34,7 @@ export function PillarCard({ pillars }: PillarCardProps) {
 
   return (
     <div className="card-v2" style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%' }}>
-      <h3 className="text-h2">Pillar Breakdown</h3>
+      <h3 className="text-h2">Category Analysis</h3>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
         {pillars.map((p, i) => {
           const w = widths[i]
