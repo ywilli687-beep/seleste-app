@@ -9,9 +9,10 @@ import { ScoreBreakdown } from './ScoreBreakdown'
 interface Props {
   data: DashboardData
   children?: React.ReactNode
+  onReaudit?: (payload: { url: string, businessName: string, location: string, vertical: string }) => void
 }
 
-export function DashboardShell({ data, children }: Props) {
+export function DashboardShell({ data, children, onReaudit }: Props) {
 
   const handleAuditNavigation = () => {
     window.location.href = '/' // Quick way back to index for audit
@@ -218,16 +219,26 @@ export function DashboardShell({ data, children }: Props) {
                                   </span>
                                 )}
                               </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      const locStr = [data.city, data.state].filter(Boolean).join(', ')
-                                      const u = encodeURIComponent(audit.inputUrl)
-                                      const n = encodeURIComponent(data.businessName || '')
-                                      const l = encodeURIComponent(locStr)
-                                      const v = data.vertical
-                                      window.location.href = `/?reaudit=1&url=${u}&name=${n}&location=${l}&vertical=${v}`
+                                      if (onReaudit) {
+                                        onReaudit({
+                                          url: audit.inputUrl,
+                                          businessName: data.businessName || '',
+                                          location: [data.city, data.state].filter(Boolean).join(', '),
+                                          vertical: data.vertical
+                                        })
+                                      } else {
+                                        // Fallback if prop not passed
+                                        const locStr = [data.city, data.state].filter(Boolean).join(', ')
+                                        const u = encodeURIComponent(audit.inputUrl)
+                                        const n = encodeURIComponent(data.businessName || '')
+                                        const l = encodeURIComponent(locStr)
+                                        const v = data.vertical
+                                        window.location.href = `/?reaudit=1&url=${u}&name=${n}&location=${l}&vertical=${v}`
+                                      }
                                     }}
                                   style={{
                                     background: 'transparent',

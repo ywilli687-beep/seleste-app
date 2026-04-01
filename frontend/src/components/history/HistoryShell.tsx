@@ -35,7 +35,13 @@ function Sparkline({ history }: { history: AuditSnap[] }) {
   )
 }
 
-export default function HistoryShell({ businesses }: { businesses: BusinessRow[] }) {
+export default function HistoryShell({ 
+  businesses, 
+  onReaudit 
+}: { 
+  businesses: BusinessRow[],
+  onReaudit?: (payload: { url: string, businessName: string, location: string, vertical: string }) => void
+}) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [search, setSearch] = useState('')
 
@@ -121,7 +127,7 @@ export default function HistoryShell({ businesses }: { businesses: BusinessRow[]
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {/* Header row */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 80px 70px 80px 90px 130px', gap: '1rem', padding: '6px 1.25rem', fontSize: 10, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-              <span>Business</span><span>Vertical</span><span>Score</span>
+              <span>Business</span><span>Industry</span><span>Score</span>
               <span>Grade</span><span>Leak</span><span>Trend</span><span>Action</span>
             </div>
 
@@ -142,13 +148,29 @@ export default function HistoryShell({ businesses }: { businesses: BusinessRow[]
                   <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: biz.latestLeakage > 30 ? 'var(--red)' : biz.latestLeakage > 15 ? 'var(--amber)' : 'var(--green)' }}>{biz.latestLeakage}%</div>
                   <div><Sparkline history={biz.history} /></div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <a
-                      href={`/?reaudit=1&url=${encodeURIComponent('https://' + biz.domain)}&name=${encodeURIComponent(biz.businessName || '')}&location=${encodeURIComponent([biz.city, biz.state].filter(Boolean).join(', '))}&vertical=${biz.vertical}`}
-                      onClick={e => e.stopPropagation()}
-                      style={{ fontSize: 11, padding: '5px 10px', background: 'var(--accent)', color: '#0a0a0f', borderRadius: 6, textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (onReaudit) {
+                          onReaudit({
+                            url: 'https://' + biz.domain,
+                            businessName: biz.businessName || '',
+                            location: [biz.city, biz.state].filter(Boolean).join(', '),
+                            vertical: biz.vertical
+                          })
+                        } else {
+                          // Fallback
+                          const u = encodeURIComponent('https://' + biz.domain)
+                          const n = encodeURIComponent(biz.businessName || '')
+                          const l = encodeURIComponent([biz.city, biz.state].filter(Boolean).join(', '))
+                          const v = biz.vertical
+                          window.location.href = `/?reaudit=1&url=${u}&name=${n}&location=${l}&vertical=${v}`
+                        }
+                      }}
+                      style={{ fontSize: 11, padding: '5px 10px', background: 'var(--accent)', color: '#0a0a0f', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
                     >
                       Re-audit
-                    </a>
+                    </button>
                     <a
                       href={`https://${biz.domain}`}
                       target="_blank"

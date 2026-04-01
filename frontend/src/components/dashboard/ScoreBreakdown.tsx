@@ -20,7 +20,7 @@ const PILLAR_LABELS: Record<string, string> = {
 export function ScoreBreakdown({ pillars }: ScoreBreakdownProps) {
   return (
     <div className="card-v2">
-      <h3 className="text-small" style={{ marginBottom: 24 }}>Growth Pillar Breakdown</h3>
+      <h3 className="text-small" style={{ marginBottom: 24 }}>Growth Category Breakdown</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' }}>
         {pillars.map((p) => (
           <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

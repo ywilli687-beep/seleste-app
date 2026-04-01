@@ -1,11 +1,11 @@
 import type { LoadingStage } from '@/types/audit'
 
 const STAGES: Array<{ id: LoadingStage; label: string; detail: string }> = [
-  { id: 'fetching',     label: 'Fetching real website',        detail: 'HTTP · follows redirects · reads full HTML' },
-  { id: 'hard_signals', label: 'Extracting hard signals',       detail: 'SSL · analytics · schema · CMS · tech stack' },
-  { id: 'ai_signals',   label: 'AI reads page content',         detail: 'CTAs · booking · trust signals · content quality' },
-  { id: 'scoring',      label: 'Running rules engine',          detail: '47+ rules · caps and penalties · 10 pillar scores' },
-  { id: 'narrative',    label: 'Writing AI growth analysis',    detail: 'Specific insights from what was found on this page' },
+  { id: 'fetching',     label: 'Scanning real website',        detail: 'HTTP · follows redirects · reads full HTML' },
+  { id: 'hard_signals', label: 'Extracting key data',       detail: 'SSL · analytics · markup · tech stack' },
+  { id: 'ai_signals',   label: 'Reading page content',         detail: 'Booking · trust · content quality' },
+  { id: 'scoring',      label: 'Analyzing performance',          detail: '47+ criteria · caps and penalties · 10 categories' },
+  { id: 'narrative',    label: 'Writing growth analysis',    detail: 'Specific insights from what was found on this page' },
   { id: 'saving',       label: 'Saving to intelligence layer',  detail: '80+ structured fields · score history updated' },
   { id: 'done',         label: 'Complete',                      detail: '' },
 ]

@@ -1,16 +1,16 @@
 import { useState } from 'react'
 
 const FAQS = [
-  { q: 'What exactly does Seleste analyze?', a: 'Seleste fetches your actual live website, extracts 60+ structured signals across SEO, performance, conversion, trust, UX, content, tracking, technical quality, scalability, and brand — then scores each against 47 deterministic rules.' },
+  { q: 'What exactly does Seleste analyze?', a: 'Seleste scans your actual live website, extracts 60+ structured data points across SEO, performance, conversion, trust, UX, content, tracking, technical quality, scalability, and brand — then scores each against 47 rule-based checks.' },
   { q: 'How long does an audit take?', a: 'Most audits complete in 45–90 seconds. Complex sites with lots of content may take up to 2 minutes. You can watch the progress in real-time on the loading screen.' },
   { q: 'Is my business data private?', a: 'Yes. We only analyze publicly accessible pages. Your results and business data are private to your account and never shared or sold.' },
-  { q: 'Can I audit a competitor\'s website?', a: 'Our terms require you to only audit businesses you own or have explicit permission to analyze. However, the dashboard includes competitive benchmarking against anonymized businesses in your vertical.' },
-  { q: 'What is the "Revenue Leak" figure?', a: 'Revenue Leak is our estimate of monthly revenue potentially lost due to digital gaps. It\'s calculated from your pillar scores combined with your industry\'s average customer value and conversion rates.' },
+  { q: 'Can I audit a competitor\'s website?', a: 'Our terms require you to only audit businesses you own or have explicit permission to analyze. However, the dashboard includes competitive standard comparisons against anonymized businesses in your industry.' },
+  { q: 'What is the "Revenue Leak" figure?', a: 'Revenue Leak is our estimate of monthly revenue potentially lost due to digital gaps. It\'s calculated from your performance category scores combined with your industry\'s average customer value and conversion rates.' },
   { q: 'What does the grade mean?', a: 'Grades follow the same A–F scale you know. A (80–100): excellent digital presence. B (65–79): competitive. C (50–64): fair. D (35–49): needs work. F (<35): urgent attention required.' },
   { q: 'How often should I re-audit?', a: 'Monthly at minimum. We recommend re-auditing after any major website change. The Growth plan includes automatic weekly re-audits with alerts when your score changes significantly.' },
   { q: 'Can I export my report?', a: 'Yes — use the Print/PDF button in the top-right of your audit report. This generates a formatted PDF you can share with your team or clients.' },
   { q: 'I\'m an agency. Can I manage multiple clients?', a: 'The Agency plan supports up to 25 businesses from a single account, with white-label PDF reports and client-facing dashboard sharing.' },
-  { q: 'What if I disagree with my score?', a: 'Our scoring is deterministic and rule-based, so you can see exactly why each score was given. If you believe a signal was incorrectly detected, contact support@seleste.app and we\'ll review it.' },
+  { q: 'What if I disagree with my score?', a: 'Our scoring is rule-based and objective, so you can see exactly why each score was given. If you believe a finding was incorrectly detected, contact support@seleste.app and we\'ll review it.' },
 ]
 
 export default function FAQ() {
