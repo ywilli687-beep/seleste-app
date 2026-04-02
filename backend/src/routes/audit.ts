@@ -1,17 +1,32 @@
 import { Router, Request, Response } from 'express'
-import { db } from '@/lib/db'
 import { z } from 'zod'
+import { isSafeUrl, checkRateLimit } from '@/lib/validation'
 import { fetchPage, extractHardSignals } from '@/lib/fetcher'
-import Anthropic from '@anthropic-ai/sdk'
+import { extractSignals, writeNarrative } from '@/lib/ai'
 import {
-  upsertBusiness, upsertBusinessSignals, saveAuditSnapshot,
-  getVerticalPercentile, updateMarketSegment
+  applyRules,
+  computePillarScores,
+  computeWeightedScore,
+  computeGrade,
+  computeRevenueLeak,
+  computeConfidence,
+  selectRecommendations,
+  buildRoadmap,
+  STATIC_BENCHMARKS,
+} from '@/lib/engine'
+import {
+  upsertBusiness,
+  upsertBusinessSignals,
+  saveAuditSnapshot,
+  computeScoreDelta,
+  getVerticalPercentile,
+  updateMarketSegment,
+  getLiveBenchmark,
 } from '@/lib/data'
-import { awardXP, type XPEventType } from '@/lib/gamification'
+import { awardXP } from '@/lib/gamification'
 import { AUDIT_VERSION } from '@/lib/constants'
-import type { AuditResult } from '@/types/audit'
+import type { AuditResult, Vertical } from '@/types/audit'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const router = Router()
 
 const AuditSchema = z.object({
@@ -30,123 +45,164 @@ const AuditSchema = z.object({
 
 router.post('/', async (req: Request, res: Response) => {
   try {
+    // ── 0. Validate input ──────────────────────────────────────────────────────
     const input = AuditSchema.parse(req.body)
-    
-    // ── 1. Fast Page Fetch ─────────────────────────────────────────────────────
-    console.log('[STAGE 1] Fetching target:', input.url)
-    const page = await fetchPage(input.url)
-    if (page.error && !page.html) {
-        return res.status(422).json({ success: false, error: `Analysis failed: ${page.error}` })
+
+    // ── 0a. SSRF protection — block private/internal URLs ──────────────────────
+    if (!isSafeUrl(input.url)) {
+      return res.status(400).json({ success: false, error: 'URL is not allowed.' })
     }
 
-    // ── 2. Fast Hard Signals ───────────────────────────────────────────────────
+    // ── 0b. Rate limiting ──────────────────────────────────────────────────────
+    const ip = (req.headers['x-forwarded-for'] as string ?? '').split(',')[0].trim()
+      || req.socket.remoteAddress
+      || 'unknown'
+    if (!checkRateLimit(ip)) {
+      return res.status(429).json({ success: false, error: 'Too many requests. Please wait a minute.' })
+    }
+
+    // ── 1. Fetch real page ─────────────────────────────────────────────────────
+    console.log('[AUDIT] Stage 1: Fetching', input.url)
+    const page = await fetchPage(input.url)
+    if (page.error && !page.html) {
+      return res.status(422).json({ success: false, error: `Could not reach that website: ${page.error}` })
+    }
+
+    // ── 2. Deterministic hard signals (no AI) ──────────────────────────────────
+    console.log('[AUDIT] Stage 2: Extracting hard signals')
     const hard = extractHardSignals(page)
 
-    // ── 3. High-Speed Consolidated Anthropic Scan (Single Call) ─────────────────
-    console.log('[STAGE 3] Performing Intelligence Deep-Scan (Sonnet 3.5)...')
-    
-    const prompt = `Perform a comprehensive digital audit for a ${input.vertical} in ${input.location}.
-Website HTML Analysis:
-URL: ${input.url}
-Title: ${hard.pageTitle}
-Vertical: ${input.vertical}
+    // Enforce HTML cap before sending to AI (80k chars)
+    const cappedHtml = page.html.slice(0, 80000)
 
-${page.html?.slice(0, 30000)}
+    // ── 3. AI soft signal extraction (temperature: 0 — no drift) ──────────────
+    // Hard signals are injected into the prompt and locked.
+    // Only soft signals (hasCTA, hasBooking, hasBrandDiff, etc.) are AI-inferred.
+    console.log('[AUDIT] Stage 3: AI soft signal extraction (temp:0)')
+    const signals = await extractSignals(cappedHtml, page.finalUrl, hard, input.vertical)
 
-Analyze for:
-1. Conversion System (Pillar 1)
-2. Trust & Credibility (Pillar 2)
-3. Performance (Pillar 3)
-...all 10 pillars.
+    // ── 4. Deterministic rules engine ─────────────────────────────────────────
+    // This is the source of truth for all scores. AI cannot change these.
+    console.log('[AUDIT] Stage 4: Running rules engine')
+    const { caps, penalties, applied } = applyRules(signals)
+    const pillarScores = computePillarScores(signals, caps, penalties)
+    const overallScore = computeWeightedScore(pillarScores)
+    const { grade, label: gradeLabel } = computeGrade(overallScore)
+    const revenueLeak = computeRevenueLeak(pillarScores, input.monthlyRevenue)
+    const confidence = computeConfidence(signals)
 
-Return ONLY VALID JSON matching this exact structure:
-{
-  "overallScore": number (0-100),
-  "pillarScores": {
-    "conversion": number, "trust": number, "performance": number, "ux": number,
-    "discoverability": number, "content": number, "data": number, "technical": number,
-    "brand": number, "scalability": number
-  },
-  "grade": "A"|"B"|"C"|"D",
-  "gradeLabel": "Strong Performer"|"Above Average"|"Needs Improvement"|"At Risk",
-  "revenueLeak": number,
-  "confidence": number,
-  "recommendations": [{"prio": "high"|"med", "title": string, "impact": string}],
-  "aiNarrative": string (HTML formatted paragraphs),
-  "aiQuickWins": [string],
-  "aiTopIssues": [string],
-  "roadmap": [{"q": number, "task": string, "impact": string}],
-  "signals": { ...PageSignals structure... }
-}`
+    // ── 5. Recommendations + roadmap (deterministic, based on fired rules) ─────
+    const recommendations = selectRecommendations(pillarScores, input.vertical)
+    const roadmap = buildRoadmap(pillarScores, signals, applied)
 
-    const msg = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-latest',
-      max_tokens: 3000,
-      temperature: 0,
-      messages: [{ role: 'user', content: prompt }]
-    })
+    // ── 6. Benchmark — live DB first, static fallback ──────────────────────────
+    const [city, state] = input.location.split(',').map(s => s.trim())
+    const liveBenchmark = await getLiveBenchmark(input.vertical, state).catch(() => null)
+    const staticBm = STATIC_BENCHMARKS[input.vertical as Vertical]
+    const benchmarkAvg = liveBenchmark?.avg ?? staticBm.avg
+    const benchmarkTop = liveBenchmark?.top ?? staticBm.top
+    const benchmark = {
+      avg: benchmarkAvg,
+      top: benchmarkTop,
+      count: liveBenchmark?.count,
+    }
 
-    const text = msg.content.filter(b => b.type === 'text').map(b => b.text).join('')
-    const match = text.match(/\{[\s\S]*\}/)
-    if (!match) throw new Error('Intelligence extraction timed out or failed.')
-    const intelligence = JSON.parse(match[0])
+    // ── 7. AI narrative (narrative copy only — scores already computed above) ──
+    console.log('[AUDIT] Stage 7: Writing AI narrative')
+    const { narrative: aiNarrative, quickWins: aiQuickWins, topIssues: aiTopIssues } =
+      await writeNarrative(input, pillarScores, overallScore, signals, applied)
 
-    // ── 4. Persist Analysis ────────────────────────────────────────────────────
-    console.log('[STAGE 4] Saving analysis to OS...')
+    // ── 8. DB writes — ordered, all awaited ───────────────────────────────────
+    console.log('[AUDIT] Stage 8: Persisting to database')
+
+    // 8a. Upsert the permanent business record with real pillar scores
     const business = await upsertBusiness({
       url: page.finalUrl,
       businessName: input.businessName,
       vertical: input.vertical,
       location: input.location,
-      overallScore: intelligence.overallScore,
-      grade: intelligence.grade,
-      pillarScores: intelligence.pillarScores,
+      overallScore,
+      grade,
+      pillarScores,
+      userId: input.userId ?? null,
     })
 
-    const verticalPercentile = await getVerticalPercentile(input.vertical, intelligence.overallScore)
+    // 8b. Upsert living signal record for this business
+    await upsertBusinessSignals(business.id, signals)
 
+    // 8c. Score delta vs previous audit
+    const delta = await computeScoreDelta(business.id, pillarScores, overallScore)
+
+    // 8d. Vertical percentile (returns null if < 5 records — UI must handle null)
+    const verticalPercentile = await getVerticalPercentile(input.vertical, overallScore)
+
+    // 8e. Assemble the full result object
     const resultForDb: AuditResult = {
-      auditId: '',
+      auditId: '',         // filled after snapshot is created
       businessId: business.id,
       slug: business.slug as string,
       input,
-      signals: intelligence.signals,
-      appliedRules: [],
-      pillarScores: intelligence.pillarScores,
-      overallScore: intelligence.overallScore,
-      grade: intelligence.grade,
-      gradeLabel: intelligence.gradeLabel,
-      revenueLeak: intelligence.revenueLeak,
-      confidence: intelligence.confidence,
-      recommendations: intelligence.recommendations,
-      benchmark: { avg: 65, top: 85 }, // Defaults
+      signals,
+      appliedRules: applied,
+      pillarScores,
+      overallScore,
+      grade,
+      gradeLabel,
+      revenueLeak,
+      confidence,
+      recommendations,
+      benchmark,
       verticalPercentile,
-      aiNarrative: intelligence.aiNarrative,
-      aiQuickWins: intelligence.aiQuickWins,
-      aiTopIssues: intelligence.aiTopIssues,
-      roadmap: intelligence.roadmap,
+      aiNarrative,
+      aiQuickWins,
+      aiTopIssues,
+      roadmap,
       createdAt: new Date().toISOString(),
       auditVersion: AUDIT_VERSION,
     }
 
+    // 8f. Save immutable audit snapshot with full rule trace
     const snapshot = await saveAuditSnapshot({
       businessId: business.id,
       result: resultForDb,
-      userId: input.userId ?? undefined,
+      delta,
+      benchmarkAvg,
+      benchmarkTop,
+      userId: input.userId ?? null,
     })
 
+    // ── 9. Respond with complete result ───────────────────────────────────────
     res.json({ success: true, result: { ...resultForDb, auditId: snapshot.id } })
 
-    // Async jobs
-    const [city, st] = input.location.split(',').map(s => s.trim())
-    updateMarketSegment(input.vertical, st, city).catch(() => null)
+    // ── 10. Fire-and-forget async jobs (never awaited — cannot block response) ─
+    updateMarketSegment(input.vertical, state, city).catch((err) =>
+      console.error('[AUDIT] updateMarketSegment failed:', err)
+    )
     if (input.userId) {
-        awardXP({ type: 'first_audit', userId: input.userId, businessId: business.id, auditId: snapshot.id }).catch(() => null)
+      awardXP({
+        type: 'first_audit',
+        userId: input.userId,
+        businessId: business.id,
+        auditId: snapshot.id,
+      }).catch((err) => console.error('[AUDIT] awardXP failed:', err))
     }
 
   } catch (err: any) {
-    console.error('[CRITICAL AUDIT ERROR]', err)
-    res.status(500).json({ success: false, error: err.message || 'The intelligence engine is temporarily overloaded.' })
+    console.error('[AUDIT] Critical error:', err)
+
+    // Zod validation errors — return field-level messages
+    if (err?.name === 'ZodError') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid input.',
+        details: err.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`),
+      })
+    }
+
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Audit failed. Please try again.',
+    })
   }
 })
 

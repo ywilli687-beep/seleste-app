@@ -5,8 +5,14 @@
   "buildCommand": "npm install && npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://seleste-backend.onrender.com/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": "https://seleste-app-4.onrender.com"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "env": {
     "VITE_CLERK_PUBLISHABLE_KEY": "pk_test_Y2xlcmsuY29tb2RvLWdyb3VuZGxpbmctNzIuY2xlcmsuYWNjb3VudHMuZGV2JA"
