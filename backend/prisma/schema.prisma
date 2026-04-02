@@ -995,3 +995,13 @@ model BusinessWorkspace {
   
   @@unique([workspaceId, businessId])
 }
+
+model Waitlist {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  source     String?  // e.g. "results_cta", "footer", "marketing_page"
+  score      Int?     // User's audit score if available
+  vertical   String?  // User's business vertical
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

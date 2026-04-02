@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { X, ExternalLink, Activity, ShieldCheck, Zap } from 'lucide-react'
 import { getAgentInfo } from '../../lib/agents/config'
+import { WaitlistModal } from '../ui/WaitlistModal'
 
 interface AgentRunRecord {
   id: string
@@ -13,9 +14,11 @@ interface SpecialistDetailModalProps {
   agentId: string
   runs: AgentRunRecord[]
   onClose: () => void
+  planTier: 'free' | 'pro' | 'agency'
 }
 
-export function SpecialistDetailModal({ agentId, runs, onClose }: SpecialistDetailModalProps) {
+export function SpecialistDetailModal({ agentId, runs, onClose, planTier }: SpecialistDetailModalProps) {
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false)
   const category = agentId.toLowerCase().includes('reporting') ? 'data' : 
                    agentId.toLowerCase().includes('seo') ? 'seo' :
                    agentId.toLowerCase().includes('gbp') ? 'reputation' :
@@ -26,6 +29,14 @@ export function SpecialistDetailModal({ agentId, runs, onClose }: SpecialistDeta
 
   const avgDuration = runs.length > 0 ? (runs.reduce((acc, r) => acc + r.durationMs, 0) / runs.length / 1000).toFixed(2) : '0'
   const successRate = runs.length > 0 ? ((runs.filter(r => r.status === 'complete').length / runs.length) * 100).toFixed(0) : '100'
+
+  const handleRelaunch = () => {
+    if (planTier === 'free') {
+      setIsWaitlistOpen(true)
+    } else {
+      alert(`Relaunching ${agent.name}...`)
+    }
+  }
 
   return (
     <div style={{ 
@@ -148,6 +159,7 @@ export function SpecialistDetailModal({ agentId, runs, onClose }: SpecialistDeta
              Close Deep Dive
            </button>
            <button 
+             onClick={handleRelaunch}
              style={{ 
                padding: '10px 24px', border: 'none', background: '#111827', 
                borderRadius: 12, fontSize: 14, fontWeight: 700, color: 'white', cursor: 'pointer',
@@ -158,6 +170,12 @@ export function SpecialistDetailModal({ agentId, runs, onClose }: SpecialistDeta
            </button>
         </div>
       </div>
+
+      <WaitlistModal 
+        isOpen={isWaitlistOpen}
+        onClose={() => setIsWaitlistOpen(false)}
+        source="agent_relaunch"
+      />
     </div>
   )
 }

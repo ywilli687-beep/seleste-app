@@ -15,3 +15,32 @@ export const PILLARS = [
 ] as const
 
 export type PillarId = typeof PILLARS[number]['id']
+
+export type Grade = 'A' | 'B' | 'C' | 'D'
+
+export const getGrade = (score: number): Grade => {
+  if (score >= 75) return 'A'
+  if (score >= 60) return 'B'
+  if (score >= 45) return 'C'
+  return 'D'
+}
+
+export const getGradeLabel = (grade: Grade): string => {
+  switch (grade) {
+    case 'A': return 'Strong Performer'
+    case 'B': return 'Above Average'
+    case 'C': return 'Needs Improvement'
+    case 'D': return 'At Risk'
+    default: return 'At Risk'
+  }
+}
+
+export const getGradeColor = (grade: Grade): string => {
+  switch (grade) {
+    case 'A': return 'var(--green)'
+    case 'B': return 'var(--accent)'
+    case 'C': return 'var(--amber)'
+    case 'D': return 'var(--red)'
+    default: return 'var(--red)'
+  }
+}

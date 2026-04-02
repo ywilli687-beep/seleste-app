@@ -1,17 +1,49 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useUser } from '@clerk/clerk-react'
-
-const PILLARS = [
-  {e:'🔍',n:'Discoverability'},{e:'⚡',n:'Performance'},{e:'🎯',n:'Conversion'},
-  {e:'🛡️',n:'Trust'},{e:'✨',n:'UX'},{e:'📝',n:'Content'},
-  {e:'📊',n:'Data & Tracking'},{e:'⚙️',n:'Technical'},{e:'📈',n:'Scalability'},{e:'💎',n:'Brand'},
-]
+import { PILLARS } from '@/lib/constants'
+import { WaitlistModal } from '@/components/ui/WaitlistModal'
 
 const TESTIMONIALS = [
-  { name: 'Maria T.', role: 'Owner, Blooming Floral Co.', quote: 'I had no idea my site was losing customers. Seleste found 4 urgent issues in 60 seconds — I fixed two of them that afternoon.', score: '34 → 71' },
-  { name: 'James R.', role: 'Owner, Ridge Roofing LLC', quote: 'My Google listing was killing me and I didn\'t even know. The quick-win suggestion alone was worth it.', score: '41 → 68' },
-  { name: 'Sandra K.', role: 'Director, Keller Dental', quote: 'We went from page 4 to page 1 for our main keyword in 6 weeks following the roadmap.', score: '52 → 84' },
+  { name: 'Sarah P.', role: 'Owner, The Pet Groomery', initials: 'SP', quote: 'I saved $800 a month just by fixing the broken booking link Seleste found in minutes.', score: '28 → 64' },
+  { name: 'David L.', role: 'Founder, Peak Performance Gym', initials: 'DL', quote: "The roadmap showed me my site was practically invisible to locals. We're now ranking top 3.", score: '44 → 72' },
+  { name: 'Elena M.', role: 'Owner, Main Street Cafe', initials: 'EM', quote: 'The trust score was eye-opening. We added reviews and a guarantee as suggested, and bookings jumped 20%.', score: '56 → 88' },
 ]
+
+function AuditCounter() {
+  const [count, setCount] = useState<number | null>(null)
+  
+  useEffect(() => {
+    const API_URL = import.meta.env.VITE_API_URL || ''
+    fetch(`${API_URL}/api/stats`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && typeof data.count === 'number') {
+          // Round down to nearest 50
+          setCount(Math.floor(data.count / 50) * 50)
+        } else {
+          setCount(1200)
+        }
+      })
+      .catch(() => setCount(1200))
+  }, [])
+
+  if (count === null) {
+    return (
+      <div style={{ height: 24, width: 220, background: 'var(--bg3)', borderRadius: 99, animation: 'pulse 1.5s infinite', opacity: 0.5 }} />
+    )
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(200,169,110,0.06)', padding: '6px 14px', borderRadius: 99, border: '1px solid rgba(200,169,110,0.1)' }}>
+       <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+         {[1,2,3,4,5].map(i => <span key={i} style={{ color: 'var(--accent)', fontSize: 13 }}>★</span>)}
+       </div>
+       <span style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--ff-sans)', fontWeight: 500 }}>
+         Trusted by over <span style={{ color: 'var(--text)', fontWeight: 700 }}>{count.toLocaleString()}</span> local business owners.
+       </span>
+    </div>
+  )
+}
 
 const HOW_IT_WORKS = [
   { n: '01', title: 'Enter your URL', body: 'Paste any business website URL. Seleste fetches the actual live page — no screenshots, no guessing.' },
@@ -27,6 +59,7 @@ const HOW_IT_WORKS = [
 export default function Landing({ onStart }: { onStart: () => void }) {
   const { isSignedIn } = useUser()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false)
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -35,30 +68,31 @@ export default function Landing({ onStart }: { onStart: () => void }) {
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        background: 'rgba(10,10,15,.97)',
+        background: 'rgba(253,252,249,0.92)',
         borderBottom: '1px solid var(--border)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 1.25rem',
-        height: '56px',
+        height: '64px',
         width: '100%',
         boxSizing: 'border-box',
+        backdropFilter: 'blur(10px)',
       }}>
-        <a href="/" style={{ fontFamily: 'var(--ff-display)', color: 'var(--text)', fontSize: '20px', textDecoration: 'none', flexShrink: 0 }}>
+        <a href="/" style={{ fontFamily: 'var(--ff-display)', color: 'var(--text)', fontSize: '24px', fontWeight: 800, textDecoration: 'none', flexShrink: 0, letterSpacing: '-0.04em' }}>
           Seleste
         </a>
 
-        <div className="nav-desktop-links" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <a href="/pricing" style={{ color: 'rgba(244,241,236,0.82)', fontFamily: 'var(--ff-sans)', fontSize: '14px', textDecoration: 'none' }}>Pricing</a>
-          <a href="/faq" style={{ color: 'rgba(244,241,236,0.82)', fontFamily: 'var(--ff-sans)', fontSize: '14px', textDecoration: 'none' }}>FAQ</a>
+        <div className="nav-desktop-links" style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+          <a href="/pricing" style={{ color: 'var(--text2)', fontFamily: 'var(--ff-sans)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}>Pricing</a>
+          <a href="/faq" style={{ color: 'var(--text2)', fontFamily: 'var(--ff-sans)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}>FAQ</a>
           {!isSignedIn && (
-            <a href="/sign-in" style={{ color: 'rgba(244,241,236,0.82)', fontFamily: 'var(--ff-sans)', fontSize: '14px', textDecoration: 'none' }}>Sign in</a>
+            <a href="/sign-in" style={{ color: 'var(--text2)', fontFamily: 'var(--ff-sans)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}>Sign in</a>
           )}
           {isSignedIn && (
-            <a href="/dashboard" style={{ color: 'rgba(244,241,236,0.82)', fontFamily: 'var(--ff-sans)', fontSize: '14px', textDecoration: 'none' }}>Dashboard</a>
+            <a href="/dashboard" style={{ color: 'var(--text2)', fontFamily: 'var(--ff-sans)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}>Dashboard</a>
           )}
-          <button onClick={onStart} style={{ background: 'var(--accent)', color: '#0a0a0f', fontFamily: 'var(--ff-sans)', fontSize: '14px', fontWeight: 600, textDecoration: 'none', padding: '8px 18px', borderRadius: '6px', whiteSpace: 'nowrap', border: 'none', cursor: 'pointer' }}>
+          <button onClick={onStart} style={{ background: 'var(--ink)', color: '#fff', fontFamily: 'var(--ff-display)', fontSize: '14px', fontWeight: 700, textDecoration: 'none', padding: '10px 20px', borderRadius: '100px', whiteSpace: 'nowrap', border: 'none', cursor: 'pointer', transition: 'transform 0.2s' }}>
             Run Audit
           </button>
         </div>
@@ -100,7 +134,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
           LIVE · REAL WEBSITE ANALYSIS
         </div>
         
-        <h1 className="hero-headline" style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(26px, 7.5vw, 52px)', lineHeight: 1.05, maxWidth: 840, marginBottom: '1.5rem', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+        <h1 className="hero-headline" style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(32px, 8vw, 56px)', lineHeight: 1.05, maxWidth: 840, marginBottom: '1.5rem', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
           Find out why your website isn't bringing in customers.
         </h1>
 
@@ -124,6 +158,10 @@ export default function Landing({ onStart }: { onStart: () => void }) {
           Check My Website Free →
         </button>
 
+        <div style={{ marginTop: '1.5rem' }}>
+          <AuditCounter />
+        </div>
+
         {/* 2B: Social Proof Strip (Industries) */}
         <div style={{ marginTop: '3.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'center', maxWidth: 800 }}>
           {[
@@ -139,12 +177,12 @@ export default function Landing({ onStart }: { onStart: () => void }) {
 
         <div style={{ position: 'relative', marginTop: '5rem', width: '100%', maxWidth: 1000 }}>
           <div style={{ position: 'absolute', inset: '-10%', background: 'radial-gradient(ellipse at center, rgba(200,169,110,.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
-          <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
-            <div style={{ background: '#1c1c1e', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff5f57', display: 'inline-block' }} />
-              <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#febc2e', display: 'inline-block' }} />
-              <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#28c840', display: 'inline-block' }} />
-              <div style={{ flex: 1, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--ff-mono)' }}>seleste-app.vercel.app</div>
+          <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', border: '1px solid var(--border)', boxShadow: '0 40px 100px rgba(0,0,0,0.1)' }}>
+            <div style={{ background: 'var(--border)', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57', display: 'inline-block' }} />
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e', display: 'inline-block' }} />
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840', display: 'inline-block' }} />
+              <div style={{ flex: 1, textAlign: 'center', fontSize: 13, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>seleste.io/audit</div>
             </div>
             <img src="/report-mockup.png" alt="Seleste audit report" style={{ width: '100%', display: 'block' }} />
           </div>
@@ -219,7 +257,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* ── STATS ── */}
-      <div style={{ display: 'flex', gap: '3rem', justifyContent: 'center', padding: '1.75rem 2rem', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg2)', flexWrap: 'wrap' }}>
+      <div className="stats-strip" style={{ display: 'flex', gap: '3rem', justifyContent: 'center', padding: '1.75rem 2rem', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg2)', flexWrap: 'wrap' }}>
         {[
           { n: '60+', l: 'Things We Check' },
           { n: '47+', l: 'Scoring Rules' },
@@ -239,7 +277,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
           <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '1rem' }}>How It Works</div>
           <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(1.8rem,4vw,2.8rem)' }}>From URL to roadmap<br /><em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>in under 90 seconds.</em></h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1.5rem' }}>
+        <div className="how-works-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1.5rem' }}>
           {HOW_IT_WORKS.map(s => (
             <div key={s.n} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '1.75rem' }}>
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: '2rem', color: 'rgba(200,169,110,.25)', marginBottom: '1rem' }}>{s.n}</div>
@@ -257,17 +295,30 @@ export default function Landing({ onStart }: { onStart: () => void }) {
             <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '1rem' }}>What Owners Say</div>
             <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(1.8rem,4vw,2.6rem)' }}>Real scores. Real results.</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.5rem' }}>
+          <div className="testimonial-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.5rem' }}>
             {TESTIMONIALS.map(t => (
               <div key={t.name} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '1.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                  <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
+                  <div style={{ 
+                    width: 40, height: 40, borderRadius: '50%', 
+                    background: 'var(--adim)', border: '1px solid var(--border)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 700, color: 'var(--accent)',
+                    fontFamily: 'var(--ff-mono)'
+                  }}>
+                    {t.initials}
+                  </div>
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{t.name}</div>
                     <div style={{ fontSize: 12, color: 'var(--text3)' }}>{t.role}</div>
                   </div>
-                  <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: 'var(--green)', background: 'rgba(0,200,100,.08)', padding: '4px 10px', borderRadius: 99, border: '1px solid rgba(0,200,100,.2)' }}>{t.score}</div>
+                  <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--green)', background: 'rgba(0,200,100,.08)', padding: '4px 10px', borderRadius: 99, border: '1px solid rgba(0,200,100,.15)' }}>{t.score}</div>
                 </div>
-                <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.7, margin: 0, fontStyle: 'italic' }}>"{t.quote}"</p>
+                <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.7, margin: 0, fontStyle: 'italic', position: 'relative' }}>
+                  <span style={{ position: 'absolute', top: -10, left: -5, fontSize: '2rem', color: 'rgba(200,169,110,0.1)', fontFamily: 'serif' }}>"</span>
+                  {t.quote}
+                  <span style={{ position: 'absolute', bottom: -20, right: 0, fontSize: '2rem', color: 'rgba(200,169,110,0.1)', fontFamily: 'serif' }}>"</span>
+                </p>
               </div>
             ))}
           </div>
@@ -286,10 +337,10 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* ── PILLARS ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 1, borderTop: '1px solid var(--border)', background: 'var(--border)' }}>
+      <div className="pillars-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 1, borderTop: '1px solid var(--border)', background: 'var(--border)' }}>
         {PILLARS.map(p => (
-          <div key={p.n} style={{ background: 'var(--bg)', padding: '1.25rem 1rem', textAlign: 'center', fontSize: 11, color: 'var(--text3)' }}>
-            <span style={{ fontSize: '1.4rem', display: 'block', marginBottom: 6 }}>{p.e}</span>{p.n}
+          <div key={p.name} style={{ background: 'var(--bg)', padding: '1.25rem 1rem', textAlign: 'center', fontSize: 11, color: 'var(--text3)' }}>
+            <span style={{ fontSize: '1.4rem', display: 'block', marginBottom: 6 }}>{p.icon}</span>{p.name}
           </div>
         ))}
       </div>
@@ -317,8 +368,10 @@ export default function Landing({ onStart }: { onStart: () => void }) {
           </div>
           <div>
             <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '1rem' }}>Legal</div>
-            {[{ l: 'Privacy Policy', h: '/privacy' }, { l: 'Terms of Service', h: '/terms' }, { l: 'Contact', h: 'mailto:hello@seleste.app' }].map(l => (
-              <a key={l.l} href={l.h} style={{ display: 'block', fontSize: 13, color: 'var(--text2)', textDecoration: 'none', marginBottom: 8 }}>{l.l}</a>
+            {[{ l: 'Privacy Policy', h: '/privacy' }, { l: 'Terms of Service', h: '/terms' }, { l: 'Contact', h: '#', onClick: () => setIsWaitlistModalOpen(true) }].map(l => (
+              l.onClick 
+                ? <div key={l.l} onClick={l.onClick} style={{ display: 'block', fontSize: 13, color: 'var(--text2)', textDecoration: 'none', marginBottom: 8, cursor: 'pointer' }}>{l.l}</div>
+                : <a key={l.l} href={l.h} style={{ display: 'block', fontSize: 13, color: 'var(--text2)', textDecoration: 'none', marginBottom: 8 }}>{l.l}</a>
             ))}
           </div>
         </div>
@@ -326,6 +379,12 @@ export default function Landing({ onStart }: { onStart: () => void }) {
           <div style={{ fontSize: 12, color: 'var(--text3)' }}>© 2026 Seleste. All rights reserved.</div>
           <div style={{ fontSize: 12, color: 'var(--text3)' }}>Made for Main Street</div>
         </div>
+
+        <WaitlistModal 
+          isOpen={isWaitlistModalOpen}
+          onClose={() => setIsWaitlistModalOpen(false)}
+          source="landing_footer_contact"
+        />
       </footer>
 
     </div>

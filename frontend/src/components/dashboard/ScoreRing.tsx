@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { getGrade, getGradeColor } from '@/lib/constants'
 
 export function ScoreRing({ score, size = 120 }: { score: number, size?: number }) {
   const [animatedScore, setAnimatedScore] = useState(0)
@@ -23,10 +24,7 @@ export function ScoreRing({ score, size = 120 }: { score: number, size?: number 
   const circumference = 314.16 // 2 * Math.PI * 50
   const dashoffset = circumference * (1 - animatedScore / 100)
   
-  const color = 
-    score >= 80 ? 'var(--green)' :
-    score >= 60 ? 'var(--blue)' :
-    score >= 40 ? 'var(--amber)' : 'var(--coral)'
+  const color = getGradeColor(getGrade(score))
 
   return (
     <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

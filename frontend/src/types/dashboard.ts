@@ -1,4 +1,5 @@
 export type DashboardData = {
+  id: string
   myBusinessesCount: number
   businessName: string | null
   vertical: string
@@ -7,8 +8,8 @@ export type DashboardData = {
   slug: string
   overallScore: number
   scoreDelta: number | null
-  grade: 'A' | 'B' | 'C' | 'D'
-  previousGrade: 'A' | 'B' | 'C' | 'D' | null
+  grade: 'A' | 'B' | 'C' | 'D' | 'F'
+  previousGrade: 'A' | 'B' | 'C' | 'D' | 'F' | null
   pillars: { id: string; score: number; industryAvg: number }[]
   revenueLeakMonthly: number | null
   
@@ -16,6 +17,7 @@ export type DashboardData = {
   xpTotal: number
   levelId: number
   levelName: string
+  xpRequired: number
   xpToNextLevel: number
   unlockedFeatures: string[]
   achievements: { id: string; earned: boolean; earnedAt?: string; lockedLabel: string; name: string; chipColor: string }[]

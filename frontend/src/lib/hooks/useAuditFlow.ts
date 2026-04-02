@@ -16,7 +16,7 @@ export function useAuditFlow() {
   
   const isRunning = useRef(false)
 
-  const API_URL = import.meta.env.VITE_API_URL || ''
+  const API_URL = '' // Use relative path for Vercel proxy
 
   const runAudit = useCallback(async (req: AuditRequest) => {
     if (isRunning.current) return
@@ -29,7 +29,10 @@ export function useAuditFlow() {
 
     try {
       // Stage 1 - Target connection
-      const res = await fetch(`${API_URL}/api/audit`, {
+      const targetUrl = `${API_URL}/api/audit`
+      console.log(`[DEBUG] Attempting audit at: ${targetUrl}`, req)
+      
+      const res = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -10,7 +10,7 @@ export type Vertical =
   | 'DENTAL' | 'LEGAL' | 'REAL_ESTATE' | 'FITNESS' | 'BEAUTY_SALON'
   | 'PLUMBING' | 'HVAC' | 'LANDSCAPING' | 'CLEANING' | 'PET_SERVICES'
 
-export type Grade = 'A' | 'B' | 'C' | 'D'
+export type Grade = 'A' | 'B' | 'C' | 'D' | 'F'
 export type RuleType = 'CAP' | 'PENALTY'
 export type AuditTrigger = 'MANUAL' | 'SCHEDULED' | 'API' | 'BULK_IMPORT'
 export type OpportunityLevel = 'VERY_HIGH' | 'HIGH' | 'MEDIUM' | 'LOW' | 'MINIMAL'

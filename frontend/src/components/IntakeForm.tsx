@@ -244,7 +244,7 @@ export default function IntakeForm({
         {/* What gets captured */}
         <div style={{ marginTop: '2rem', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '1.5rem' }}>
           <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '1rem' }}>What gets captured and stored</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '.75rem' }}>
+          <div className="capture-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '.75rem' }}>
             {[
               ['50+ things we check', 'Every boolean structured'],
               ['10 area scores', 'Full audit trail'],

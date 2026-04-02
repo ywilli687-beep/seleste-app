@@ -1,59 +1,87 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
+import { MarketingLayout } from '../components/MarketingLayout'
 
 const FAQS = [
-  { q: 'What exactly does Seleste analyze?', a: 'Seleste scans your actual live website, extracts 60+ structured data points across SEO, performance, conversion, trust, UX, content, tracking, technical quality, scalability, and brand — then scores each against 47 rule-based checks.' },
-  { q: 'How long does an audit take?', a: 'Most audits complete in 45–90 seconds. Complex sites with lots of content may take up to 2 minutes. You can watch the progress in real-time on the loading screen.' },
-  { q: 'Is my business data private?', a: 'Yes. We only analyze publicly accessible pages. Your results and business data are private to your account and never shared or sold.' },
-  { q: 'Can I audit a competitor\'s website?', a: 'Our terms require you to only audit businesses you own or have explicit permission to analyze. However, the dashboard includes competitive standard comparisons against anonymized businesses in your industry.' },
-  { q: 'What is the "Revenue Leak" figure?', a: 'Revenue Leak is our estimate of monthly revenue potentially lost due to digital gaps. It\'s calculated from your performance category scores combined with your industry\'s average customer value and conversion rates.' },
-  { q: 'What does the grade mean?', a: 'Grades follow the same A–F scale you know. A (80–100): excellent digital presence. B (65–79): competitive. C (50–64): fair. D (35–49): needs work. F (<35): urgent attention required.' },
-  { q: 'How often should I re-audit?', a: 'Monthly at minimum. We recommend re-auditing after any major website change. The Growth plan includes automatic weekly re-audits with alerts when your score changes significantly.' },
-  { q: 'Can I export my report?', a: 'Yes — use the Print/PDF button in the top-right of your audit report. This generates a formatted PDF you can share with your team or clients.' },
-  { q: 'I\'m an agency. Can I manage multiple clients?', a: 'The Agency plan supports up to 25 businesses from a single account, with white-label PDF reports and client-facing dashboard sharing.' },
-  { q: 'What if I disagree with my score?', a: 'Our scoring is rule-based and objective, so you can see exactly why each score was given. If you believe a finding was incorrectly detected, contact support@seleste.app and we\'ll review it.' },
+  {
+    q: 'How does the analysis engine work?',
+    a: 'Seleste scans your website in real-time, extracting 60+ critical data points ranging from technical speed to content authority. We run these against 47 industry-standard rules to build your growth score.'
+  },
+  {
+    q: 'Are the scores accurate for local businesses?',
+    a: 'Yes. Our intelligence layer is specifically tuned for local business requirements. We compare your metrics against the standards of your specific industry and location, not generic global websites.'
+  },
+  {
+    q: 'Do I need technical skills to understand the report?',
+    a: 'Not at all. While the backend analysis is complex, we present our findings in plain English with clear, high-priority actions any business owner can understand and implement.'
+  },
+  {
+    q: 'Can I cancel my Pro plan at any time?',
+    a: 'Absolutely. We believe in earning your trust every month. You can downgrade or cancel from your workspace settings with a single click — no hidden fees or cancellation penalties.'
+  },
+  {
+    q: 'What industries do you support?',
+    a: 'We have optimized intelligence for home services, landscaping, dental, restaurant, legal, fitness, and many more categories where local market authority is critical for growth.'
+  },
+  {
+    q: 'How often should I run an audit?',
+    a: 'Market authority is dynamic. We recommend running a deep-scan every 30 days to track your progress as you implement optimizations and to see how your industry standards shift over time.'
+  }
 ]
 
 export default function FAQ() {
-  const [open, setOpen] = useState<number | null>(null)
+  const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingBottom: '6rem' }}>
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(10,10,15,.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
-        <a href="/" style={{ fontFamily: 'var(--ff-display)', fontSize: '1.25rem', color: 'var(--accent)', textDecoration: 'none' }}>Seleste</a>
-        <div style={{ display: 'flex', gap: 16 }}>
-          <a href="/pricing" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Pricing</a>
-          <a href="/sign-up" style={{ background: 'var(--accent)', color: '#0a0a0f', padding: '8px 20px', borderRadius: 'var(--rs)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Get Started</a>
-        </div>
-      </nav>
+    <MarketingLayout>
+      <div style={{ backgroundColor: 'var(--bg)', padding: '6rem 2rem' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+          <header style={{ textAlign: 'center', marginBottom: '5rem' }}>
+            <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: '3.5rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text)' }}>
+              Common Questions.
+            </h1>
+            <p style={{ fontSize: '1.25rem', color: 'var(--text2)', lineHeight: 1.6 }}>
+              Everything you need to know about our growth intelligence platform for local businesses.
+            </p>
+          </header>
 
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '120px 2rem 0' }}>
-        <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-          <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 'clamp(2rem, 5vw, 3rem)', marginBottom: '1rem' }}>Frequently Asked <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>Questions</em></h1>
-          <p style={{ color: 'var(--text2)', fontSize: '1rem' }}>Can't find an answer? Email us at <a href="mailto:support@seleste.app" style={{ color: 'var(--accent)' }}>support@seleste.app</a></p>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {FAQS.map((faq, i) => (
-            <div
-              key={i}
-              style={{ background: 'var(--bg2)', borderRadius: i === 0 ? 'var(--r) var(--r) 0 0' : i === FAQS.length - 1 ? '0 0 var(--r) var(--r)' : 0, border: '1px solid var(--border)', marginTop: i === 0 ? 0 : -1 }}
-            >
-              <button
-                onClick={() => setOpen(open === i ? null : i)}
-                style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', textAlign: 'left' }}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {FAQS.map((f, i) => (
+              <div 
+                key={i} 
+                style={{ 
+                  background: 'var(--bg2)', 
+                  borderRadius: 'var(--r)', 
+                  border: '1px solid var(--border)', 
+                  overflow: 'hidden'
+                }}
               >
-                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', fontFamily: 'var(--ff-sans)' }}>{faq.q}</span>
-                <span style={{ color: 'var(--accent)', flexShrink: 0, fontSize: 18, transition: 'transform .2s', transform: open === i ? 'rotate(45deg)' : 'none' }}>+</span>
-              </button>
-              {open === i && (
-                <div style={{ padding: '0 1.5rem 1.25rem', fontSize: 14, color: 'var(--text2)', lineHeight: 1.75 }}>
-                  {faq.a}
-                </div>
-              )}
-            </div>
-          ))}
+                <button 
+                  onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                  style={{ 
+                    width: '100%', 
+                    padding: '1.5rem', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    background: 'transparent', 
+                    border: 'none', 
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                >
+                  <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{f.q}</span>
+                  <span style={{ fontSize: 20, color: 'var(--accent)', transition: 'transform 0.2s', transform: openIndex === i ? 'rotate(45deg)' : 'none' }}>+</span>
+                </button>
+                {openIndex === i && (
+                  <div style={{ padding: '0 1.5rem 1.5rem', fontSize: 14, color: 'var(--text2)', lineHeight: 1.7 }}>
+                    {f.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </MarketingLayout>
   )
 }

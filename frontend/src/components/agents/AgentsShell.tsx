@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { ApprovalInbox } from './ApprovalInbox'
 import { getAgentInfo } from '../../lib/agents/config'
 import { SpecialistDetailModal } from './SpecialistDetailModal'
+import { WaitlistModal } from '../ui/WaitlistModal'
 
 interface WeeklyAction {
   id: string
@@ -57,6 +58,7 @@ export interface AgentsPageData {
 export function AgentsShell({ data: initialData }: { data: AgentsPageData }) {
   const [data, setData] = useState(initialData)
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false)
 
   // Polling logic for when the cycle is running
   useEffect(() => {
@@ -72,7 +74,11 @@ export function AgentsShell({ data: initialData }: { data: AgentsPageData }) {
   const { latestCycle, agentOutputs, integrations } = data
 
   const handleRunManual = () => {
-    alert("Triggering manual cycle...")
+    if (data.planTier === 'free') {
+      setIsWaitlistOpen(true)
+    } else {
+      alert("Triggering manual cycle...")
+    }
   }
 
   return (
@@ -94,13 +100,26 @@ export function AgentsShell({ data: initialData }: { data: AgentsPageData }) {
           </div>
           <button 
             className="btn-primary-v2" 
-            style={{ padding: '10px 20px', fontSize: 13, background: 'white', color: 'black' }}
+            style={{ 
+              padding: '10px 20px', 
+              fontSize: 13, 
+              background: data.planTier === 'free' ? 'rgba(255,255,255,0.05)' : 'white', 
+              color: data.planTier === 'free' ? 'rgba(255,255,255,0.5)' : 'black',
+              border: data.planTier === 'free' ? '1px solid rgba(255,255,255,0.1)' : 'none',
+              opacity: 1
+            }}
             onClick={handleRunManual}
-            disabled={data.planTier === 'free'}
           >
             {data.planTier === 'free' ? 'Upgrade to Pro for Manual Runs' : 'Run Cycle Manually →'}
           </button>
         </header>
+
+        <WaitlistModal 
+          isOpen={isWaitlistOpen}
+          onClose={() => setIsWaitlistOpen(false)}
+          source="agents_manual_run"
+        />
+
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           
@@ -269,6 +288,7 @@ export function AgentsShell({ data: initialData }: { data: AgentsPageData }) {
               agentId={selectedAgent}
               runs={[]} // historical runs placeholder
               onClose={() => setSelectedAgent(null)}
+              planTier={data.planTier}
             />
           )}
 

@@ -797,6 +797,7 @@ export async function getDashboardData(userId: string, isPro: boolean = false) {
   const prevGrade = prevScore ? computeGrade(prevScore).grade : null
 
   const result = {
+    id: business.id,
     myBusinessesCount,
     businessName: business.businessName || business.domain,
     vertical: business.vertical,
@@ -820,6 +821,7 @@ export async function getDashboardData(userId: string, isPro: boolean = false) {
       { id: 'scalability', score: latestAudit.scalabilityScore, industryAvg: segment?.avgScalabilityScore||50 },
     ],
     revenueLeakMonthly: latestAudit.estimatedMonthlyLoss,
+    xpRequired: getLevelInfo(xpTotal).xpRequired,
     
     xpTotal,
     levelId: level,

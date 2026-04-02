@@ -13,6 +13,7 @@ interface Props {
 }
 
 export function DashboardShell({ data, children, onReaudit }: Props) {
+  const [drawerOpen, setDrawerOpen] = React.useState(false)
 
   const handleAuditNavigation = () => {
     const latest = data?.recentAudits?.[0]
@@ -28,79 +29,105 @@ export function DashboardShell({ data, children, onReaudit }: Props) {
     }
   }
 
-  return (
-    <div className="grid-shell">
-      <div className="sidebar">
-        <div className="logo-container">
-          <span className="logo-text">Seleste</span>
-          <span className="logo-version">V2.1</span>
+  const SidebarContent = () => (
+    <>
+      <div className="logo-container">
+        <span className="logo-text">Seleste</span>
+        <span className="logo-version">V2.1</span>
+      </div>
+      
+      <nav className="nav-group">
+        <div className="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          Command Center
         </div>
         
-        <nav className="nav-group">
-          <div className="nav-item active">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-            Command Center
-          </div>
-          
-          <div className="nav-item" onClick={() => window.location.href = '/dashboard/agents'}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-            AI Specialists
-          </div>
+        <div className="nav-item" onClick={() => window.location.href = '/dashboard/agents'}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          AI Specialists
+        </div>
 
-          <div className="nav-item" onClick={() => window.location.href = '/history'}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-            Audit History
-          </div>
-          
-          <div className="nav-item" onClick={handleAuditNavigation}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-            </svg>
-            Run New Audit
-          </div>
-        </nav>
+        <div className="nav-item" onClick={() => window.location.href = '/history'}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          Audit History
+        </div>
+        
+        <div className="nav-item" onClick={handleAuditNavigation}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+          </svg>
+          Run New Audit
+        </div>
+      </nav>
 
-        {data?.isAgency && data?.workspaces?.length > 0 && (
-          <div style={{ marginTop: 'auto', paddingBottom: 20 }}>
-            <div style={{ fontSize: 11, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Agency Workspaces</div>
-            <select
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                background: 'var(--bg)',
-                border: '1px solid var(--border)',
-                color: 'var(--text)',
-                borderRadius: 'var(--rs)',
-                fontSize: 13,
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-              onChange={(e) => {
-                // Here we would switch workspace context if we had a global context for it,
-                // for UI rendering simulation we simply log or alert:
-                alert(`Switched to workspace: ${e.target.value}`)
-              }}
-            >
-              {data.workspaces.map(w => (
-                <option key={w.id} value={w.id}>{w.name} ({w.businessCount})</option>
-              ))}
-            </select>
-          </div>
-        )}
+      {data?.isAgency && data?.workspaces?.length > 0 && (
+        <div style={{ marginTop: 'auto', paddingBottom: 20 }}>
+          <div style={{ fontSize: 11, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Agency Workspaces</div>
+          <select
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              background: 'var(--bg)',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              borderRadius: 'var(--rs)',
+              fontSize: 13,
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+            onChange={(e) => {
+              alert(`Switched to workspace: ${e.target.value}`)
+            }}
+          >
+            {data.workspaces.map(w => (
+              <option key={w.id} value={w.id}>{w.name} ({w.businessCount})</option>
+            ))}
+          </select>
+        </div>
+      )}
+    </>
+  )
+
+  return (
+    <>
+      <div className="mobile-top-bar">
+        <span className="logo-text" style={{ fontSize: '1.25rem' }}>Seleste</span>
+        <button 
+          onClick={() => setDrawerOpen(true)} 
+          style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', padding: 8 }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
       </div>
+
+      <div 
+        className="drawer-overlay" 
+        data-open={drawerOpen} 
+        onClick={() => setDrawerOpen(false)} 
+      />
+      <div className="drawer" data-open={drawerOpen} onClick={() => setDrawerOpen(false)}>
+        <SidebarContent />
+      </div>
+
+      <div className="grid-shell">
+        <div className="sidebar">
+          <SidebarContent />
+        </div>
       
       <div className="main-content">
         <NotificationStack />
@@ -120,8 +147,8 @@ export function DashboardShell({ data, children, onReaudit }: Props) {
 
           <button
             onClick={() => {
-              if (!data?.slug) return
-              const code = `<a href="https://seleste.app/report/${data.slug}" target="_blank"><img src="https://api.seleste.app/api/badge/${data.slug}" alt="Seleste Verified Rating" /></a>`
+              if (!data?.id) return
+              const code = `<a href="${window.location.origin}/report/${data.slug}" target="_blank"><img src="${import.meta.env.VITE_API_URL || ''}/api/badge/${data.id}" alt="Seleste Verified Rating" /></a>`
               navigator.clipboard.writeText(code)
               alert('Badge embed code copied to clipboard!')
             }}
@@ -168,11 +195,12 @@ export function DashboardShell({ data, children, onReaudit }: Props) {
                 revenueLeak={data?.revenueLeakMonthly}
                 levelName={data?.levelName ?? 'Visibility Builder'}
                 xpTotal={data?.xpTotal ?? 0}
+                xpRequired={data?.xpRequired ?? 0}
                 xpToNext={data?.xpToNextLevel ?? 0}
               />
 
               {/* Bottom: Roadmap & Breakdown & History */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 24 }}>
+              <div className="dash-main-grid" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 24 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                   <RoadmapCard 
                     roadmap={data?.roadmap ?? []} 
@@ -279,5 +307,6 @@ export function DashboardShell({ data, children, onReaudit }: Props) {
         </div>
       </div>
     </div>
-  )
+  </>
+)
 }

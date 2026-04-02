@@ -7,10 +7,14 @@ interface Props {
   revenueLeak: number | null
   levelName: string
   xpTotal: number
+  xpRequired: number
   xpToNext: number
 }
 
-export function StatCards({ score, revenueLeak, levelName, xpToNext }: Props) {
+export function StatCards({ score, revenueLeak, levelName, xpTotal, xpRequired, xpToNext }: Props) {
+  const nextTarget = xpTotal + xpToNext
+  const progress = Math.max(5, Math.min(100, ((xpTotal - xpRequired) / (nextTarget - xpRequired)) * 100))
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
       <div className="card-v2" style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '24px' }}>
@@ -28,7 +32,7 @@ export function StatCards({ score, revenueLeak, levelName, xpToNext }: Props) {
       <div className="card-v2" style={{ padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <span className="text-small" style={{ marginBottom: 16 }}>Estimated Leakage</span>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <span className="text-h1" style={{ fontSize: 32 }}>${revenueLeak?.toLocaleString() || '0'}</span>
+          <span className="text-h1" style={{ fontSize: 32 }}>${(revenueLeak === null || revenueLeak === 0) ? '0' : revenueLeak.toLocaleString()}</span>
           <span className="text-body">/ month</span>
         </div>
       </div>
@@ -38,14 +42,18 @@ export function StatCards({ score, revenueLeak, levelName, xpToNext }: Props) {
           <span className="text-small">Current Level</span>
           <span className="chip" style={{ background: '#F3E8FF', color: '#7E22CE' }}>{levelName}</span>
         </div>
-        <span className="text-h2" style={{ fontSize: 18 }}>{xpToNext} XP to next level</span>
+        <span className="text-h2" style={{ fontSize: 13 }}>{xpToNext} XP to next level</span>
         <div style={{ height: 6, background: 'var(--page-bg)', borderRadius: 3, marginTop: 16, overflow: 'hidden', position: 'relative' }}>
            <div style={{ 
              position: 'absolute', top: 0, left: 0, height: '100%', 
              background: 'var(--purple)', borderRadius: 3,
-             width: '60%',
+             width: `${progress}%`,
+             transition: 'width 0.6s ease-out'
            }} />
         </div>
+        <p style={{ fontSize: 10, color: 'var(--ink-muted)', marginTop: 12, lineHeight: 1.4 }}>
+          Earn XP by running audits, improving your scores, and completing roadmap actions. Higher levels unlock advanced growth intelligence.
+        </p>
       </div>
     </div>
   )

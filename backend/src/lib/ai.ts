@@ -146,7 +146,7 @@ Return ONLY valid JSON, no markdown:
 }`
 
   const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-3-5-sonnet-latest',
     max_tokens: 2000,
     temperature: 0,   // deterministic output — same HTML always produces same signals
     messages: [{ role: 'user', content: prompt }],
@@ -308,7 +308,7 @@ Return ONLY valid JSON, no markdown:
 }`
 
   const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-3-5-sonnet-latest',
     max_tokens: 1000,
     messages: [{ role: 'user', content: prompt }],
   })

@@ -32,12 +32,19 @@ function generateSvg(score: number, grade: string, businessName: string): string
 </svg>`
 }
 
-// GET /api/badge/:slug
-router.get('/:slug', async (req: Request, res: Response) => {
+// GET /api/badge/:idOrSlug
+router.get('/:idOrSlug', async (req: Request, res: Response) => {
   try {
-    const slug = req.params.slug as string
-    const business = await db.business.findUnique({
-      where: { slug }
+    const identifier = req.params.idOrSlug as string
+    
+    // Attempt lookup by ID first, then slug
+    const business = await db.business.findFirst({
+      where: {
+        OR: [
+          { id: identifier },
+          { slug: identifier }
+        ]
+      }
     })
 
     if (!business || business.latestOverallScore === null) {

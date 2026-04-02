@@ -244,17 +244,17 @@ export function computeGrade(score: number): { grade: 'A' | 'B' | 'C' | 'D'; lab
   if (score >= 75) return { grade: 'A', label: 'Strong Performer' }
   if (score >= 60) return { grade: 'B', label: 'Above Average' }
   if (score >= 45) return { grade: 'C', label: 'Needs Improvement' }
-  return { grade: 'D', label: 'Critical Gaps Found' }
+  return { grade: 'D', label: 'At Risk' }
 }
 
 // ── Revenue Leakage ────────────────────────────────────────────────────────────
 
 export function computeRevenueLeak(scores: PillarScores, monthlyRevenue?: number): RevenueLeak {
-  const cl = Math.max(0, (100 - scores.conversion) * 0.0025)
-  const tl = Math.max(0, (100 - scores.trust) * 0.0015)
-  const pl = Math.max(0, (100 - scores.performance) * 0.001)
-  const ul = Math.max(0, (100 - scores.ux) * 0.0008)
-  const total = Math.min(0.65, cl + tl + pl + ul)
+  const cl = Math.max(0, (100 - scores.conversion) * 0.004)   // Max 40%
+  const tl = Math.max(0, (100 - scores.trust) * 0.002)        // Max 20%
+  const pl = Math.max(0, (100 - scores.performance) * 0.0015) // Max 15%
+  const ul = Math.max(0, (100 - scores.ux) * 0.001)          // Max 10%
+  const total = Math.min(0.85, cl + tl + pl + ul)
   const totalPct = Math.round(total * 100)
   return {
     totalPct,

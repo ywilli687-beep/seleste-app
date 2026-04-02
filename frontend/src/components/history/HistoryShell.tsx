@@ -11,8 +11,10 @@ export type BusinessRow = {
   auditCount: number; history: AuditSnap[]
 }
 
-const gradeColor = (g: string) => g === 'A' ? 'var(--green)' : g === 'B' ? 'var(--accent)' : g === 'C' ? 'var(--amber)' : 'var(--red)'
-const scoreColor = (s: number) => s >= 75 ? 'var(--green)' : s >= 60 ? 'var(--accent)' : s >= 45 ? 'var(--amber)' : 'var(--red)'
+import { getGrade, getGradeColor } from '@/lib/constants'
+
+const gradeColor = (g: string) => getGradeColor(g as any)
+const scoreColor = (s: number) => getGradeColor(getGrade(s))
 
 function Sparkline({ history }: { history: AuditSnap[] }) {
   if (history.length < 2) return <span style={{ fontSize: 11, color: 'var(--text3)' }}>—</span>

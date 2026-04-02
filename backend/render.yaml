@@ -12,4 +12,4 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: FRONTEND_URL
-        value: https://seleste-frontend.vercel.app # Update this once Vercel is live
+        value: https://seleste-app-7jcj.vercel.app

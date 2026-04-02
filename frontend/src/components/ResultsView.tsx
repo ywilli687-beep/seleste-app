@@ -2,16 +2,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/clerk-react'
 import type { AuditResult, Recommendation } from '@/types/audit'
-import { PILLARS } from '@/lib/constants'
+import { PILLARS, getGradeLabel, getGradeColor } from '@/lib/constants'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import ExplainIcon from '@/components/ExplainIcon'
 import ExplainerPopover from '@/components/ExplainerPopover'
 import InsightTooltip from '@/components/ui/InsightTooltip'
+import { WaitlistModal } from '@/components/ui/WaitlistModal'
 
 const ghost: React.CSSProperties = {
-  background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(244,241,236,0.82)',
-  padding: '6px 16px', borderRadius: 'var(--rs)', cursor: 'pointer',
-  fontFamily: 'var(--ff-sans)', fontSize: 14, fontWeight: 500,
+  background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--ink-muted)',
+  padding: '8px 16px', borderRadius: '100px', cursor: 'pointer',
+  fontFamily: 'var(--ff-sans)', fontSize: 13, fontWeight: 600,
+  transition: 'all 0.2s',
 }
 
 export default function ResultsView({
@@ -22,6 +24,15 @@ export default function ResultsView({
   onNewAudit: () => void
 }) {
   const [copied, setCopied] = useState(false)
+  const [badgeCopied, setBadgeCopied] = useState(false)
+  const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false)
+  
+  const handleCopyBadge = () => {
+    const code = `<a href="${window.location.origin}/results/${result.auditId}" target="_blank">\n  <img src="${window.location.origin}/api/badge/${result.businessId}" alt="Seleste Verified Grow" width="140" />\n</a>`
+    navigator.clipboard.writeText(code)
+    setBadgeCopied(true)
+    setTimeout(() => setBadgeCopied(false), 2000)
+  }
   const {
     pillarScores, overallScore, grade, gradeLabel, revenueLeak, confidence,
     recommendations, benchmark, aiNarrative, aiTopIssues,
@@ -37,7 +48,7 @@ export default function ResultsView({
   
   const { getToken } = useAuth()
 
-  const shareUrl = result.slug ? `${window.location.origin}/report/${result.slug}` : null
+  const shareUrl = result.auditId ? `${window.location.origin}/results/${result.auditId}` : null
 
   const handleCopyLink = () => {
     if (!shareUrl) return
@@ -84,12 +95,12 @@ export default function ResultsView({
   const sorted = [...PILLARS].sort((a, b) => pillarScores[b.id] - pillarScores[a.id])
 
   return (
-    <div style={{ paddingBottom: '6rem' }}>
+    <div style={{ paddingBottom: '80px', position: 'relative' }}>
 
       {/* Fixed nav */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(10,10,15,.97)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
-        <div onClick={onNewAudit} style={{ fontFamily: 'var(--ff-display)', fontSize: '1.25rem', color: 'var(--accent)', cursor: 'pointer' }}>
-          Seleste <span style={{ color: 'rgba(244,241,236,0.55)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8 }}>AUDIT ENGINE V2</span>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(253,252,249,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
+        <div onClick={onNewAudit} style={{ fontFamily: 'var(--ff-display)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--ink)', cursor: 'pointer', letterSpacing: '-0.04em' }}>
+          Seleste <span style={{ color: 'var(--ink-muted)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8, letterSpacing: '0.1em' }}>REPORT</span>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <a href="/dashboard" style={{ ...ghost, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Intelligence →</a>
@@ -147,18 +158,22 @@ export default function ResultsView({
                 <div style={{ fontSize: 10, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 8, textAlign: 'center' }}>Score Legend</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
                   {[
-                    { r: '90-100', l: 'High Performance', c: 'var(--green)' },
-                    { r: '70-89',  l: 'Good',             c: 'var(--accent)' },
-                    { r: '50-69',  l: 'Average',          c: 'var(--amber)' },
-                    { r: '<50',    l: 'At Risk',          c: 'var(--red)' }
-                  ].map(item => (
-                    <div key={item.r} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.c }} />
-                      <div style={{ fontSize: 10, color: 'var(--text2)', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontWeight: 600, color: item.c }}>{item.r}</span> {item.l}
+                    { r: '75–100', g: 'A' as const },
+                    { r: '60–74',  g: 'B' as const },
+                    { r: '45–59',  g: 'C' as const },
+                    { r: '0–44',   g: 'D' as const }
+                  ].map(item => {
+                    const label = getGradeLabel(item.g)
+                    const color = getGradeColor(item.g)
+                    return (
+                      <div key={item.r} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
+                        <div style={{ fontSize: 10, color: 'var(--text2)', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: 600, color: color }}>{item.r}</span> {label}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 
@@ -567,21 +582,56 @@ export default function ResultsView({
         </div>
       </div>
 
-      {/* Sticky bar */}
-      <div className="no-print" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 90, background: 'rgba(10,10,15,.97)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border)', padding: '12px 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ fontSize: 13, color: 'var(--text2)' }}>
-          <strong style={{ color: 'var(--text)' }}>{biz}</strong> scored <strong style={{ color: gradeColor(overallScore) }}>{overallScore}/100</strong>
-          {delta && <span style={{ color: delta.scoreDelta >= 0 ? 'var(--green)' : 'var(--red)', marginLeft: 10 }}>({delta.scoreDelta >= 0 ? '+' : ''}{delta.scoreDelta} vs last)</span>}
-          {result.auditId && <span style={{ marginLeft: 12, color: 'var(--green)', fontSize: 11 }}>● Saved</span>}
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <a href="/dashboard" style={{ ...ghost, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Intelligence →</a>
-          <button onClick={onNewAudit} style={{ background: 'var(--accent)', border: 'none', color: '#0a0a0f', padding: '8px 20px', borderRadius: 'var(--rs)', cursor: 'pointer', fontFamily: 'var(--ff-sans)', fontSize: 13, fontWeight: 600 }}>
-            Audit Another →
-          </button>
+      {/* ── Fixed CTA Bar ── */}
+      <div className="no-print fixed-cta-bar" style={{ 
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000, 
+        background: 'rgba(10,10,15,.75)', backdropFilter: 'blur(16px)', 
+        borderTop: '1px solid var(--border)', padding: '16px 2rem', 
+        display: 'flex', alignItems: 'center', justifyContent: 'center' 
+      }}>
+        <div className="fixed-cta-inner" style={{ maxWidth: 1100, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+           <div className="cta-score-pill" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: gradeColor(overallScore) }} />
+              <span style={{ fontSize: 13, fontWeight: 500 }}>{biz} Performance: <span style={{ color: gradeColor(overallScore) }}>{overallScore}/100</span></span>
+           </div>
+           <div className="cta-button-group" style={{ display: 'flex', gap: 12 }}>
+              <button onClick={handleCopyLink} style={ghost}>
+                 {copied ? '✓ URL Copied' : '🔗 Share Report'}
+              </button>
+              <button onClick={onNewAudit} style={ghost}>
+                 Audit Another Business
+              </button>
+              
+              {overallScore >= 75 ? (
+                <button onClick={handleCopyBadge} style={{ 
+                  background: badgeCopied ? 'var(--green)' : 'var(--accent)', 
+                  border: 'none', color: '#0a0a0f', padding: '8px 20px', 
+                  borderRadius: 'var(--rs)', cursor: 'pointer', fontFamily: 'var(--ff-sans)', 
+                  fontSize: 13, fontWeight: 700 
+                }}>
+                  {badgeCopied ? '✓ Code Copied!' : '🏆 Embed Verified Badge'}
+                </button>
+              ) : (
+                <button onClick={() => setIsWaitlistModalOpen(true)} style={{ 
+                  background: 'rgba(200,169,110,0.05)', border: '1px solid var(--accent)', 
+                  color: 'var(--accent)', padding: '8px 20px', borderRadius: 'var(--rs)', 
+                  cursor: 'pointer', fontFamily: 'var(--ff-sans)', fontSize: 13, fontWeight: 700 
+                }}>
+                  Join Growth Pro Waitlist
+                </button>
+              )}
+           </div>
         </div>
       </div>
       {openKey && <ExplainerPopover label={openKey.label} text={explanations[openKey.key]} rect={openKey.rect} />}
+      
+      <WaitlistModal 
+        isOpen={isWaitlistModalOpen}
+        onClose={() => setIsWaitlistModalOpen(false)}
+        source="results_cta_bar"
+        score={overallScore}
+        vertical={input.vertical}
+      />
     </div>
   )
 }

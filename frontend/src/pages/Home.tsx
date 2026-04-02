@@ -6,6 +6,7 @@ import Landing from '@/components/Landing'
 import IntakeForm from '@/components/IntakeForm'
 import LoadingScreen from '@/components/LoadingScreen'
 import ResultsView from '@/components/ResultsView'
+import { SEO } from '@/components/SEO'
 
 type View = 'landing' | 'intake' | 'loading' | 'results' | 'error'
 
@@ -23,6 +24,7 @@ export default function Home() {
 
   return (
     <>
+      <SEO />
       {view === 'landing'  && <Landing onStart={() => setView('intake')} />}
       {view === 'intake'   && <IntakeForm onSubmit={runAudit} onBack={() => setView('landing')} error={error} />}
       {view === 'loading'  && <LoadingScreen stage={stage} hard={hardPreview} />}

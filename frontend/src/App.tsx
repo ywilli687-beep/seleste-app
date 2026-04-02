@@ -12,10 +12,14 @@ import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import FAQ from './pages/FAQ'
 import Changelog from './pages/Changelog'
+import Features from './pages/Features'
+import Blog from './pages/Blog'
+import Contact from './pages/Contact'
 import PublicReport from './pages/PublicReport'
 import CookieBanner from './components/CookieBanner'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { HelmetProvider } from 'react-helmet-async'
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 const queryClient = new QueryClient({
@@ -33,8 +37,9 @@ if (!clerkPubKey) {
 
 export default function App() {
   return (
-    <ClerkProvider publishableKey={clerkPubKey || ''}>
-      <QueryClientProvider client={queryClient}>
+    <HelmetProvider>
+      <ClerkProvider publishableKey={clerkPubKey || ''}>
+        <QueryClientProvider client={queryClient}>
         <BrowserRouter>
         <CookieBanner />
         <Routes>
@@ -48,6 +53,9 @@ export default function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/changelog" element={<Changelog />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/contact" element={<Contact />} />
 
           {/* Protected */}
           <Route path="/dashboard" element={
@@ -78,5 +86,6 @@ export default function App() {
       </BrowserRouter>
     </QueryClientProvider>
   </ClerkProvider>
+</HelmetProvider>
 )
 }

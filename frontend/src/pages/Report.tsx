@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth, useUser } from '@clerk/clerk-react'
 import type { AuditResult } from '@/types/audit'
 import ResultsView from '@/components/ResultsView'
+import { SEO } from '@/components/SEO'
 
 export default function Report() {
   const { id } = useParams<{ id: string }>()
@@ -43,5 +44,13 @@ export default function Report() {
 
   if (!result) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-muted)', backgroundColor: 'var(--page-bg)' }}>Loading report...</div>
 
-  return <ResultsView result={result} onNewAudit={() => navigate('/')} />
+  return (
+    <>
+      <SEO 
+        title={`${result.input.businessName || 'Business'} Growth Report`}
+        description={`Audit report for ${result.input.businessName || result.input.url}. Overall growth score: ${result.overallScore}/100.`}
+      />
+      <ResultsView result={result} onNewAudit={() => navigate('/')} />
+    </>
+  )
 }
