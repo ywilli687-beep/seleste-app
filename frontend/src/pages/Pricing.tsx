@@ -86,7 +86,7 @@ export default function Pricing() {
 
         <div style={{ marginTop: '8rem', textAlign: 'center' }}>
           <p className="text-body" style={{ marginBottom: '1.5rem' }}>Trusted by over 1,200 local business owners.</p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', opacity: 0.4, grayscale: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', opacity: 0.4, filter: 'grayscale(1)' }}>
              {/* [Logos placeholder style] */}
           </div>
         </div>

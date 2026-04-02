@@ -96,7 +96,7 @@ export default function ResultsView({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const sorted = [...PILLARS].sort((a, b) => pillarScores[b.id] - pillarScores[a.id])
+  const sorted = [...PILLARS].sort((a, b) => areaScores[b.id] - areaScores[a.id])
 
   return (
     <div style={{ paddingBottom: '80px', position: 'relative' }}>
@@ -290,22 +290,22 @@ export default function ResultsView({
           <Card title="What We Found On Your Site">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {([
-                ['Main action button',          signals.hasCTA,             'A clear primary action like \'Book Now\' or \'Get a Quote\' guides users toward conversion. Without it, visitors hesitate or leave without taking action.'],
-                ['Online booking',              signals.hasBooking,         'Allowing customers to book immediately reduces friction and captures intent at its peak. Businesses with online booking typically see a 30% increase in conversion.'],
-                ['Contact form',                signals.hasContactForm,     'A simple way for leads to reach you 24/7. It captures contact info even when you\'re closed, ensuring no potential customer is ignored.'],
-                ['Prices or packages',          signals.hasPricing,         'Transparency builds trust and filters out unqualified leads. Most visitors won\'t call to ask for a price—they\'ll just choose a competitor who shows it.'],
-                ['Reviews or testimonials',     signals.hasReviews,         'Social proof is the #1 trust factor for local businesses. Without it, you lose customers at the final decision stage to more \'proven\' competitors.'],
-                ['Secure connection (HTTPS)',   signals.hasSSL,             'Security is non-negotiable. Modern browsers flag non-secure sites as \'Dangerous\', causing immediate trust loss and high bounce rates.'],
-                ['Mobile optimized',            signals.isMobileOptimized,  'Over 60% of local searches happen on mobile. If your site is hard to use on a phone, you are literally throwing away more than half of your potential business.'],
-                ['Google Business linked',      signals.hasGBP,             'Connecting your site to GMB powers your visibility in Google Maps. Without this link, you\'re invisible to customers searching for services near them.'],
-                ['Optimized for Google search', signals.hasSchema,          'Technical \'Schema\' code tells Google exactly what you do. This increases your chances of appearing in high-value \'rich results\' and maps.'],
-                ['Website analytics',           signals.hasAnalytics,       'You can\'t improve what you don\'t measure. Analytics show you where people leave, allowing you to fix leaks and increase marketing ROI.'],
-                ['Paid ad tracking',            signals.hasPixel,           'Pixels let you \'retarget\' past visitors with ads. This is the most cost-effective way to bring back people who were interested but didn\'t buy yet.'],
-                ['Business address',            signals.hasAddress,         'Physical location is a massive credibility signal for local businesses. It confirms you are real and within a convenient distance for the customer.'],
-                ['Services listed clearly',     signals.hasServiceList,     'Visitors decide within seconds if you can help them. If your services aren\'t front-and-center, they\'ll leave to find someone who lists them clearly.'],
-                ['FAQ section',                 signals.hasFAQ,             'Answers common objections before they become hurdles. Reducing hesitation directly leads to faster decisions and more inbound calls.'],
-                ['Blog or news section',        signals.hasBlog,            'Regular updates signal an active, authoritative business. It also provides \'hooks\' for Google to rank you for more keywords over time.'],
-                ['Logo visible',                signals.hasLogo,            'Fundamental brand recognition. A professional logo builds immediate trust and makes your business feel established and reliable.'],
+                ['Main action button',          growthMarkers.hasCTA,             'A clear primary action like \'Book Now\' or \'Get a Quote\' guides users toward conversion. Without it, visitors hesitate or leave without taking action.'],
+                ['Online booking',              growthMarkers.hasBooking,         'Allowing customers to book immediately reduces friction and captures intent at its peak. Businesses with online booking typically see a 30% increase in conversion.'],
+                ['Contact form',                growthMarkers.hasContactForm,     'A simple way for leads to reach you 24/7. It captures contact info even when you\'re closed, ensuring no potential customer is ignored.'],
+                ['Prices or packages',          growthMarkers.hasPricing,         'Transparency builds trust and filters out unqualified leads. Most visitors won\'t call to ask for a price—they\'ll just choose a competitor who shows it.'],
+                ['Reviews or testimonials',     growthMarkers.hasReviews,         'Social proof is the #1 trust factor for local businesses. Without it, you lose customers at the final decision stage to more \'proven\' competitors.'],
+                ['Secure connection (HTTPS)',   growthMarkers.hasSSL,             'Security is non-negotiable. Modern browsers flag non-secure sites as \'Dangerous\', causing immediate trust loss and high bounce rates.'],
+                ['Mobile optimized',            growthMarkers.isMobileOptimized,  'Over 60% of local searches happen on mobile. If your site is hard to use on a phone, you are literally throwing away more than half of your potential business.'],
+                ['Google Business linked',      growthMarkers.hasGBP,             'Connecting your site to GMB powers your visibility in Google Maps. Without this link, you\'re invisible to customers searching for services near them.'],
+                ['Optimized for Google search', growthMarkers.hasSchema,          'Technical \'Schema\' code tells Google exactly what you do. This increases your chances of appearing in high-value \'rich results\' and maps.'],
+                ['Website analytics',           growthMarkers.hasAnalytics,       'You can\'t improve what you don\'t measure. Analytics show you where people leave, allowing you to fix leaks and increase marketing ROI.'],
+                ['Paid ad tracking',            growthMarkers.hasPixel,           'Pixels let you \'retarget\' past visitors with ads. This is the most cost-effective way to bring back people who were interested but didn\'t buy yet.'],
+                ['Business address',            growthMarkers.hasAddress,         'Physical location is a massive credibility signal for local businesses. It confirms you are real and within a convenient distance for the customer.'],
+                ['Services listed clearly',     growthMarkers.hasServiceList,     'Visitors decide within seconds if you can help them. If your services aren\'t front-and-center, they\'ll leave to find someone who lists them clearly.'],
+                ['FAQ section',                 growthMarkers.hasFAQ,             'Answers common objections before they become hurdles. Reducing hesitation directly leads to faster decisions and more inbound calls.'],
+                ['Blog or news section',        growthMarkers.hasBlog,            'Regular updates signal an active, authoritative business. It also provides \'hooks\' for Google to rank you for more keywords over time.'],
+                ['Logo visible',                growthMarkers.hasLogo,            'Fundamental brand recognition. A professional logo builds immediate trust and makes your business feel established and reliable.'],
               ] as [string, boolean, string][]).map(([label, val, tip]) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, padding: '3px 0' }}>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -319,8 +319,8 @@ export default function ResultsView({
               ))}
               <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                 <span style={{ color: 'var(--text)' }}>Word count</span>
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: signals.wordCount >= 300 ? 'var(--green)' : 'var(--red)', fontWeight: 500 }}>
-                  {signals.wordCount}
+                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: growthMarkers.wordCount >= 300 ? 'var(--green)' : 'var(--red)', fontWeight: 500 }}>
+                  {growthMarkers.wordCount}
                 </span>
               </div>
             </div>
@@ -466,7 +466,7 @@ export default function ResultsView({
                     <div style={{ fontSize: 13, display: 'flex', alignItems: 'center' }}>
                       {p.icon} {p.name}
                       <ExplainIcon 
-                        onClick={(e) => fetchExplanation(`pillar_${p.id}`, p.name, e, { type: 'pillar', pillarName: p.name, pillarScore: sc, pillarWeight: p.weight * 100, industryAvg: bm, businessName: biz, industry: input.industry })}
+                        onClick={(e) => fetchExplanation(`pillar_${p.id}`, p.name, e, { type: 'pillar', pillarName: p.name, pillarScore: sc, pillarWeight: p.weight * 100, industryAvg: bm, businessName: biz, industry: input.vertical })}
                         loading={loadingKey === `pillar_${p.id}`} loaded={!!explanations[`pillar_${p.id}`]}
                       />
                     </div>
