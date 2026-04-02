@@ -98,6 +98,13 @@ app.get('/api/health', (req, res) => {
 })
 app.use('/api/waitlist', waitlistRoutes)
 
+// Global error handler — must be last. Converts all unhandled errors to JSON.
+app.use((err: any, req: any, res: any, _next: any) => {
+  console.error('[Global Error]', err?.message || err)
+  const status = err?.status || err?.statusCode || 500
+  res.status(status).json({ success: false, error: err?.message || 'Internal Server Error' })
+})
+
 const PORT = process.env.PORT || 4000
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`)
