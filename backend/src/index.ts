@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import { ClerkExpressRequireAuth } from '@clerk/clerk-sdk-node'
+import { requireAuth } from '@/lib/auth'
 import rateLimit from 'express-rate-limit'
 
 dotenv.config()
@@ -82,11 +82,11 @@ app.use('/api/explain', explainRoutes)
 app.use('/api/public-report', publicReportRoutes)
 app.use('/api/badge', badgeRoutes)
 app.use('/api/stats', statsRoutes)
-app.use('/api/dashboard', ClerkExpressRequireAuth() as any, dashboardRoutes)
-app.use('/api/history', ClerkExpressRequireAuth() as any, historyRoutes)
-app.use('/api/report', ClerkExpressRequireAuth() as any, reportRoutes)
-app.use('/api/agents', ClerkExpressRequireAuth() as any, agentsRoutes)
-app.use('/api/claim', ClerkExpressRequireAuth() as any, claimRoutes)
+app.use('/api/dashboard', requireAuth, dashboardRoutes)
+app.use('/api/history', requireAuth, historyRoutes)
+app.use('/api/report', requireAuth, reportRoutes)
+app.use('/api/agents', requireAuth, agentsRoutes)
+app.use('/api/claim', requireAuth, claimRoutes)
 
 // Auto-outbound & Stripe
 app.use('/api/stripe', stripeRoutes)
