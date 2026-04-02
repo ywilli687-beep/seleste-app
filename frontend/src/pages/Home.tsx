@@ -31,35 +31,83 @@ export default function Home() {
       {view === 'results'  && result && <ResultsView result={result} onNewAudit={reset} />}
       
       {view === 'error' && (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg)', padding: '2rem' }}>
-          <div style={{ maxWidth: 500, width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '2.5rem', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1.5rem' }}>⚠️</div>
-            <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text)' }}>Analysis Interrupted</h2>
-            <p style={{ color: 'var(--coral)', marginBottom: '2rem', lineHeight: 1.6, fontSize: '14px', background: 'rgba(239,68,68,0.08)', padding: '12px', borderRadius: 'var(--rs)', border: '1px solid rgba(239,68,68,0.2)' }}>
+        <div style={{ 
+          minHeight: '100vh', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          backgroundColor: 'var(--bg)', 
+          padding: '2rem' 
+        }}>
+          <div style={{ 
+            maxWidth: 480, 
+            width: '100%', 
+            background: 'var(--panel)', 
+            border: '1px solid var(--border)', 
+            borderRadius: '24px', 
+            padding: '3rem', 
+            textAlign: 'center', 
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)' 
+          }}>
+            <div style={{ 
+              fontSize: '3rem', 
+              marginBottom: '1.5rem',
+              filter: 'drop-shadow(0 0 15px rgba(239, 68, 68, 0.3))' 
+            }}>⚠️</div>
+            
+            <h2 style={{ 
+              fontFamily: 'var(--ff-display)', 
+              fontSize: '1.75rem', 
+              marginBottom: '1rem', 
+              color: 'var(--ink)',
+              letterSpacing: '-0.02em' 
+            }}>Analysis Interrupted</h2>
+            
+            <p style={{ 
+              color: 'var(--coral)', 
+              marginBottom: '2rem', 
+              lineHeight: 1.6, 
+              fontSize: '15px', 
+              background: 'rgba(239, 68, 68, 0.05)', 
+              padding: '16px', 
+              borderRadius: '16px', 
+              border: '1px solid rgba(239, 68, 68, 0.1)',
+              fontWeight: 500 
+            }}>
               {error || 'An unexpected error occurred during the intelligence deep-scan.'}
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <button 
                 onClick={reset}
                 style={{ 
-                  background: 'var(--primary)', 
-                  color: '#0a0a0f', 
-                  padding: '12px 24px', 
-                  borderRadius: 'var(--rs)', 
+                  background: 'var(--ink)', 
+                  color: '#fff', 
+                  padding: '14px 24px', 
+                  borderRadius: '100px', 
                   border: 'none', 
-                  fontWeight: 600, 
+                  fontWeight: 700, 
                   cursor: 'pointer',
-                  fontSize: '14px',
-                  transition: 'opacity 0.2s'
+                  fontSize: '16px',
+                  fontFamily: 'var(--ff-display)',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
               >
                 Try again
               </button>
+              
               <button 
                 onClick={() => window.location.href = '/'}
-                style={{ background: 'transparent', color: 'var(--text2)', border: 'none', cursor: 'pointer', fontSize: '13px' }}
+                style={{ 
+                  background: 'transparent', 
+                  color: 'var(--ink-muted)', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  transition: 'color 0.2s'
+                }}
               >
                 Return Home
               </button>

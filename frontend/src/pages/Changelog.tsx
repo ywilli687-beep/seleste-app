@@ -1,80 +1,41 @@
-import React from 'react'
-import { MarketingLayout } from '../components/MarketingLayout'
+import MarketingLayout from '@/components/MarketingLayout'
 
-const LOGS = [
-  {
-    version: 'Audit Engine v2.4',
-    date: 'March 20, 2024',
-    title: 'Deeper Technical Scan Architecture',
-    changes: [
-      'Implemented 12 new technical data points including structured data validation.',
-      'Revised scoring logic for localized Industry Standards.',
-      'Faster report generation (average reduction of 15 seconds).',
-      'Improved accuracy of revenue leak assessments.'
-    ]
-  },
-  {
-    version: 'Audit Engine v2.3',
-    date: 'February 15, 2024',
-    title: 'New Service Categories',
-    changes: [
-      'Added optimized intelligence for Lawn Care and HVAC categories.',
-      'Enhanced AI narrative engine for more actionable growth roadmaps.',
-      'Refined grade thresholds to better reflect market authority targets.'
-    ]
-  },
-  {
-    version: 'Audit Engine v2.2',
-    date: 'January 10, 2024',
-    title: 'Intelligence Dashboard Alpha',
-    changes: [
-      'Initial release of the authenticated dashboard for history tracking.',
-      'Added baseline scores for all 10 analysis categories.',
-      'Clerk authentication integration for better data security.'
-    ]
-  }
+const RELEASES = [
+  { date: "Oct 28, 2026", version: "v1.2.0", title: "New high-speed audit engine", tasks: ["Launched single-pass AI analysis replacing sequential steps", "Reduced report generation time to under 15 seconds", "Improved accuracy of growth roadmap suggestions"] },
+  { date: "Oct 15, 2026", version: "v1.1.0", title: "Waitlist and Community access", tasks: ["Added free waitlist for high-volume users", "New dashboard view for tracking historical scans", "Integrated support for restaurant and local retail layouts"] },
+  { date: "Sep 30, 2026", version: "v1.0.5", title: "Infrastructure Hardening", tasks: ["Connected to Render backend for 99.9% uptime", "Implemented Vercel Edge proxying for CORS security", "Fixed 'failed to fetch' error in mobile browsers"] }
 ]
 
 export default function Changelog() {
+  const sectionStyle: React.CSSProperties = { padding: '120px 2rem', maxWidth: '800px', margin: '0 auto', boxSizing: 'border-box' }
+  const releaseStyle: React.CSSProperties = { borderBottom: '1px solid var(--border)', paddingBottom: '4rem', marginBottom: '4rem' }
+  const tagStyle: React.CSSProperties = { background: 'var(--accent)', color: '#000', fontSize: '12px', fontWeight: 800, padding: '4px 12px', borderRadius: '100px', display: 'inline-block', marginBottom: '1rem' }
+
   return (
     <MarketingLayout>
-      <div style={{ backgroundColor: 'var(--bg)', padding: '6rem 2rem' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <header style={{ textAlign: 'center', marginBottom: '5rem' }}>
-            <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: '3.5rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text)' }}>
-              Engine Evolution.
-            </h1>
-            <p style={{ fontSize: '1.25rem', color: 'var(--text2)', lineHeight: 1.6 }}>
-              A history of improvements to our intelligence engine and industry standards.
-            </p>
-          </header>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5rem' }}>
-            {LOGS.map((log, i) => (
-              <section key={log.version} style={{ borderLeft: '2px solid var(--border)', paddingLeft: '2rem', position: 'relative' }}>
-                <div style={{ 
-                  position: 'absolute', top: 0, left: -22, width: 42, height: 42, 
-                  background: 'var(--bg)', borderRadius: '50%', border: '2px solid var(--accent)', 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 10
-                }}>v{i === 0 ? 'Latest' : 2.4 - i * 0.1}</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-                  <h3 style={{ fontFamily: 'var(--ff-display)', color: 'var(--text)', fontSize: '1.5rem', margin: 0 }}>{log.title}</h3>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', fontWeight: 600 }}>{log.date}</span>
-                </div>
-                <div style={{ background: 'var(--bg2)', padding: '1.5rem', borderRadius: 'var(--r)', border: '1px solid var(--border)' }}>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {log.changes.map(c => (
-                      <li key={c} style={{ fontSize: 13, color: 'var(--text2)', display: 'flex', gap: 10, lineHeight: 1.6 }}>
-                        <span style={{ color: 'var(--accent)' }}>•</span> {c}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </section>
-            ))}
-          </div>
+      <section style={sectionStyle}>
+        <div style={{ textAlign: 'center', marginBottom: '8rem' }}>
+          <h1 className="text-h1" style={{ marginBottom: '1.5rem' }}>Changelog</h1>
+          <p className="text-body" style={{ maxWidth: '640px', margin: '0 auto' }}>
+            A rolling log of everything we've updated to help you grow your business faster.
+          </p>
         </div>
-      </div>
+
+        <div>
+          {RELEASES.map((r, i) => (
+            <div key={i} style={releaseStyle}>
+              <div style={tagStyle}>{r.version}</div>
+              <div style={{ color: 'var(--ink-muted)', fontSize: '13px', fontFamily: 'var(--ff-mono)', marginBottom: '0.75rem' }}>{r.date}</div>
+              <h2 className="text-h2" style={{ marginBottom: '1.5rem' }}>{r.title}</h2>
+              <ul style={{ paddingLeft: '1.25rem', margin: 0 }}>
+                {r.tasks.map((t, j) => (
+                   <li key={j} style={{ color: 'var(--ink-muted)', marginBottom: '0.75rem', fontSize: '15px', lineHeight: 1.6 }}>{t}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
     </MarketingLayout>
   )
 }

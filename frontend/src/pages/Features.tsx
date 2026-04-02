@@ -1,95 +1,101 @@
-import React from 'react'
-import { MarketingLayout } from '../components/MarketingLayout'
+import MarketingLayout from '@/components/MarketingLayout'
 
 export default function Features() {
+  const sectionStyle: React.CSSProperties = {
+    padding: '120px 2rem',
+    maxWidth: '1200px',
+    margin: '0 auto',
+    boxSizing: 'border-box'
+  }
+
+  const gridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gap: '3rem',
+    marginTop: '5rem'
+  }
+
+  const featureCardStyle: React.CSSProperties = {
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: '24px',
+    padding: '3rem',
+    transition: 'transform 0.3s'
+  }
+
+  const iconStyle: React.CSSProperties = {
+    fontSize: '2.5rem',
+    marginBottom: '1.5rem',
+    display: 'block'
+  }
+
   return (
     <MarketingLayout>
-      <div style={{ backgroundColor: 'var(--bg)', padding: '6rem 2rem' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <header style={{ textAlign: 'center', marginBottom: '6rem' }}>
-            <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: '3.5rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text)' }}>
-              Intelligence That Drives Growth.
-            </h1>
-            <p style={{ fontSize: '1.25rem', color: 'var(--text2)', maxWidth: 700, margin: '0 auto', lineHeight: 1.6 }}>
-              We extract 60+ critical data points from your local business website to benchmark your performance against 
-              high-growth standards in your specific industry.
-            </p>
-          </header>
+      <section style={sectionStyle}>
+        <div style={{ textAlign: 'center', marginBottom: '8rem' }}>
+          <h1 className="text-h1" style={{ marginBottom: '1.5rem' }}>Growth tools for Main Street</h1>
+          <p className="text-body" style={{ maxWidth: '640px', margin: '0 auto', fontSize: '1.1rem' }}>
+            We built Seleste to give local business owners the same data-driven advantages that big tech companies use every day.
+          </p>
+        </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4rem', marginBottom: '6rem' }}>
-            <div>
-              <div style={{ background: 'var(--bg2)', padding: '2.5rem', borderRadius: 'var(--r)', border: '1px solid var(--border)', height: '100%' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🔍</div>
-                <h3 style={{ fontFamily: 'var(--ff-display)', fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text)' }}>
-                  Deep-Scan Analysis
-                </h3>
-                <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.7 }}>
-                  Our proprietary engine doesn't just skim the surface. We analyze your technical foundations, user experience, 
-                  content authority, and trust indicators using 47 rule-based logic checks.
-                </p>
-              </div>
-            </div>
-            <div>
-              <div style={{ background: 'var(--bg2)', padding: '2.5rem', borderRadius: 'var(--r)', border: '1px solid var(--border)', height: '100%' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📈</div>
-                <h3 style={{ fontFamily: 'var(--ff-display)', fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text)' }}>
-                  Industry Comparisons
-                </h3>
-                <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.7 }}>
-                  Stop guessing. We compare your growth metrics against real-world standards for landscaping, dental practices, 
-                  home services, and more. See exactly where you lead and where you lag.
-                </p>
-              </div>
-            </div>
-            <div>
-              <div style={{ background: 'var(--bg2)', padding: '2.5rem', borderRadius: 'var(--r)', border: '1px solid var(--border)', height: '100%' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚡</div>
-                <h3 style={{ fontFamily: 'var(--ff-display)', fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text)' }}>
-                  Instant Recommendations
-                </h3>
-                <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.7 }}>
-                  Within seconds, you'll receive high-impact growth actions tailored to your score. No generic advice — just 
-                  precise optimizations that move the needle for your business authority.
-                </p>
-              </div>
-            </div>
-            <div>
-              <div style={{ background: 'var(--bg2)', padding: '2.5rem', borderRadius: 'var(--r)', border: '1px solid var(--border)', height: '100%' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🛡️</div>
-                <h3 style={{ fontFamily: 'var(--ff-display)', fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text)' }}>
-                  Authority Tracking
-                </h3>
-                <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.7 }}>
-                  Your score isn't a one-time event. Use our intelligence dashboard to track your progress over time, 
-                  unlock achievements as you fix critical gaps, and maintain a 30-day snapshot of your market position.
-                </p>
-              </div>
-            </div>
+        <div style={gridStyle}>
+          <div style={featureCardStyle}>
+            <span style={iconStyle}>🔍</span>
+            <h2 className="text-h2" style={{ marginBottom: '1.25rem' }}>Live Website Analysis</h2>
+            <p className="text-body">
+              Seleste doesn't just look at code; it looks at your business from a customer's point of view. We scan 47 different areas of your site to find exactly where you're losing traffic.
+            </p>
           </div>
 
-          <div style={{ textAlign: 'center', background: 'linear-gradient(135deg, var(--bg2) 0%, rgba(200, 169, 110, 0.05) 100%)', padding: '5rem 3rem', borderRadius: 'var(--r)', border: '1px solid var(--border)' }}>
-            <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: '2.25rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text)' }}>
-              Ready for your intelligence report?
-            </h2>
-            <p style={{ color: 'var(--text2)', maxWidth: 600, margin: '0 auto 2.5rem', fontSize: '1.125rem' }}>
-              Run your audit now and uncover your growth potential in under 60 seconds.
+          <div style={featureCardStyle}>
+            <span style={iconStyle}>🗺️</span>
+            <h2 className="text-h2" style={{ marginBottom: '1.25rem' }}>Growth Roadmap</h2>
+            <p className="text-body">
+              Stop guessing what to fix first. We rank every technical issue by its direct impact on your sales, giving you a clear path to follow over the next 90 days.
             </p>
-            <a href="/" style={{ 
-              display: 'inline-block',
-              padding: '1rem 2.5rem', 
-              background: 'var(--accent)', 
-              color: '#0a0a0f', 
-              fontSize: '15px', 
-              fontWeight: 700, 
-              borderRadius: 'var(--rs)', 
-              textDecoration: 'none',
-              boxShadow: '0 10px 20px rgba(200, 169, 110, 0.15)'
-            }}>
-              Start Free Scan →
-            </a>
+          </div>
+
+          <div style={featureCardStyle}>
+            <span style={iconStyle}>🤖</span>
+            <h2 className="text-h2" style={{ marginBottom: '1.25rem' }}>AI-Driven Strategy</h2>
+            <p className="text-body">
+              Our growth engine writes specific, plain-English advice for your business. No more technical jargon or dense reports you can't understand.
+            </p>
+          </div>
+
+          <div style={featureCardStyle}>
+            <span style={iconStyle}>📈</span>
+            <h2 className="text-h2" style={{ marginBottom: '1.25rem' }}>Industry Tracking</h2>
+            <p className="text-body">
+              See how your online presence measures up against other businesses in your area. We show you the gaps your competitors are leaving for you to fill.
+            </p>
+          </div>
+
+          <div style={featureCardStyle}>
+            <span style={iconStyle}>🛡️</span>
+            <h2 className="text-h2" style={{ marginBottom: '1.25rem' }}>Trust Verification</h2>
+            <p className="text-body">
+              We check for the small things that build big trust: secure connections, clear contact info, and visible customer proof that turns visitors into buyers.
+            </p>
+          </div>
+
+          <div style={featureCardStyle}>
+            <span style={iconStyle}>⚡</span>
+            <h2 className="text-h2" style={{ marginBottom: '1.25rem' }}>Speed Diagnostics</h2>
+            <p className="text-body">
+              A slow site is a dead site. We identify the exact images or scripts that are slowing down your visitors, especially on mobile devices.
+            </p>
           </div>
         </div>
-      </div>
+      </section>
+
+      <section style={{ background: 'var(--panel)', padding: '100px 2rem', textAlign: 'center', borderTop: '1px solid var(--border)' }}>
+        <h2 className="text-h2" style={{ fontSize: '3rem', marginBottom: '2rem' }}>Ready to grow?</h2>
+        <a href="/" style={{ ...featureCardStyle, background: 'var(--accent)', color: '#000', padding: '16px 40px', borderRadius: '100px', fontWeight: 800, textDecoration: 'none', display: 'inline-block' }}>
+          Run your first scan free
+        </a>
+      </section>
     </MarketingLayout>
   )
 }

@@ -30,7 +30,7 @@ export default function Dashboard() {
       const claimAudit = async () => {
         try {
           const token = await getToken()
-          const API_URL = import.meta.env.VITE_API_URL || ''
+          const API_URL = '' // Use relative path
           await fetch(`${API_URL}/api/claim`, {
             method: 'POST',
             headers: { 
@@ -55,7 +55,7 @@ export default function Dashboard() {
     queryKey: ['dashboard', user?.id],
     queryFn: async () => {
       const token = await getToken()
-      const BASE_API_URL = import.meta.env.VITE_API_URL || ''
+      const BASE_API_URL = '' // Use relative path for Vercel proxy
       const res = await fetch(`${BASE_API_URL}/api/dashboard/${user?.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })

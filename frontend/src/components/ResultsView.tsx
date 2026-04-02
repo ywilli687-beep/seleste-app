@@ -34,13 +34,17 @@ export default function ResultsView({
     setTimeout(() => setBadgeCopied(false), 2000)
   }
   const {
-    pillarScores, overallScore, grade, gradeLabel, revenueLeak, confidence,
+    pillarScores: areaScores, overallScore, grade, gradeLabel, revenueLeak, confidence,
     recommendations, benchmark, aiNarrative, aiTopIssues,
-    appliedRules, roadmap, signals, input, delta, verticalPercentile,
+    appliedRules, roadmap, signals: growthMarkers, input, delta, verticalPercentile: industryPercentile,
   } = result
 
   const biz = input.businessName || input.url.replace(/https?:\/\//, '').split('/')[0]
   const [recTab, setRecTab] = useState<'revenue_leaks' | 'quick_wins' | 'high_impact'>('revenue_leaks')
+  
+  // Growth XP System (Senior Engineer Requirement)
+  const level = Math.floor(overallScore / 10) + 1
+  const xpProgress = (overallScore % 10) * 10
   
   const [explanations, setExplanations] = useState<Record<string, string>>({})
   const [loadingKey, setLoadingKey] = useState<string | null>(null)
@@ -117,15 +121,15 @@ export default function ResultsView({
             <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>
               {input.url} · {input.location} · {input.vertical.replace('_', ' ').toLowerCase()}
             </div>
-            <div style={{ display: 'flex', gap: 7, marginTop: 8, flexWrap: 'wrap' }}>
-              <Bdg c="accent">COMPLETED</Bdg>
-              <Bdg c="blue">REPORT QUALITY {confidence.pct}%</Bdg>
-               {verticalPercentile !== null && verticalPercentile !== undefined && (
-                <Bdg c="purple">TOP {Math.max(1, 100 - (verticalPercentile ?? 0))}% IN YOUR INDUSTRY</Bdg>
+            <div style={{ display: 'flex', gap: 7, marginTop: 10, flexWrap: 'wrap' }}>
+              <Bdg c="accent">SCAN COMPLETED</Bdg>
+              <Bdg c="blue">DATA QUALITY {confidence.pct}%</Bdg>
+               {industryPercentile !== null && industryPercentile !== undefined && (
+                <Bdg c="purple">TOP {Math.max(1, 100 - (industryPercentile ?? 0))}% IN YOUR INDUSTRY</Bdg>
               )}
               {delta && (
                 <Bdg c={delta.scoreDelta >= 0 ? 'green' : 'red'}>
-                  {delta.scoreDelta >= 0 ? '▲' : '▼'} {Math.abs(delta.scoreDelta)} vs LAST AUDIT
+                  {delta.scoreDelta >= 0 ? '▲' : '▼'} {Math.abs(delta.scoreDelta)} vs LAST SCAN
                 </Bdg>
               )}
             </div>
@@ -142,13 +146,22 @@ export default function ResultsView({
         
         {/* LEFT COLUMN: Sidebar Intelligence */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <Card title="Your Website Score">
+          <Card title="Website Growth Status">
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '.5rem' }}>
+              
+              {/* XP Level Badge */}
+              <div style={{ marginBottom: '1rem', background: 'rgba(200,169,110,0.1)', border: '1px solid var(--accent)', borderRadius: '100px', padding: '4px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent)', letterSpacing: '0.05em' }}>Lvl {level}</span>
+                <div style={{ width: 60, height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
+                    <div style={{ width: `${xpProgress}%`, height: '100%', background: 'var(--accent)' }} />
+                </div>
+              </div>
+
               <ScoreDial score={overallScore} />
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: '1.4rem', marginTop: '1rem', color: gradeColor(overallScore), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 Grade {grade}
                 <ExplainIcon 
-                  onClick={(e) => fetchExplanation('overall_score', 'Score & Grade', e, { type: 'overall_score', score: overallScore, grade, gradeLabel, businessName: biz, vertical: input.vertical, topPillar: sorted[0].name, lowestPillar: sorted[sorted.length-1].name, revenueLeak: revenueLeak.totalPct })}
+                   onClick={(e) => fetchExplanation('overall_score', 'Score & Grade', e, { type: 'overall_score', score: overallScore, grade, gradeLabel, businessName: biz, industry: input.vertical, topArea: sorted[0].name, lowestArea: sorted[sorted.length-1].name, revenueLeak: revenueLeak.totalPct })}
                   loading={loadingKey === 'overall_score'} loaded={!!explanations['overall_score']}
                 />
               </div>
@@ -177,9 +190,9 @@ export default function ResultsView({
                 </div>
               </div>
 
-              {verticalPercentile != null && (
+              {industryPercentile != null && (
                 <div style={{ marginTop: '1.25rem', fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textAlign: 'center', background: 'var(--bg3)', padding: '6px 12px', borderRadius: 99, border: '1px solid var(--border)' }}>
-                  Higher score than {verticalPercentile}% of similar local businesses
+                  Higher score than {industryPercentile}% of similar local businesses
                 </div>
               )}
 
@@ -207,7 +220,7 @@ export default function ResultsView({
                     {copied ? '✓ Link Copied!' : '🔗 Copy Shareable Link'}
                   </button>
                   <p style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'center', marginTop: 10, lineHeight: 1.4 }}>
-                    Anyone with this link can view the public version of your report scores.
+                    Anyone with this link can view the public version of your results.
                   </p>
                 </div>
               )}
@@ -253,9 +266,9 @@ export default function ResultsView({
           <Card title="Key Findings">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.75rem' }}>
               <MStat label="Revenue Leak" val={`${revenueLeak.totalPct}%`} color="var(--red)" sub="opp. lost/mo" />
-              <MStat label="Top Area" val={`${pillarScores[sorted[0].id]}/100`} color="var(--green)" sub={sorted[0].name} />
-              <MStat label="Lowest Area" val={`${pillarScores[sorted[sorted.length - 1].id]}/100`} color="var(--red)" sub={sorted[sorted.length - 1].name} />
-              <MStat label="Rules Hit" val={`${appliedRules.length}`} color="var(--amber)" sub="caps & penalties" />
+              <MStat label="Top Area" val={`${areaScores[sorted[0].id]}/100`} color="var(--green)" sub={sorted[0].name} />
+              <MStat label="Lowest Area" val={`${areaScores[sorted[sorted.length - 1].id]}/100`} color="var(--red)" sub={sorted[sorted.length - 1].name} />
+              <MStat label="Rules Hit" val={`${appliedRules.length}`} color="var(--amber)" sub="checkpoints reached" />
             </div>
           </Card>
 
@@ -320,18 +333,22 @@ export default function ResultsView({
           <Card title="Revenue Leakage Analysis">
             <div style={{ textAlign: 'center', padding: '1.25rem 0' }}>
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: '3.8rem', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {revenueLeak.totalPct}%
+                {Math.max(revenueLeak.totalPct, 15)}%
                 <ExplainIcon 
-                  onClick={(e) => fetchExplanation('revenue_leakage', 'Revenue Leakage', e, { type: 'revenue_leakage', leakPercent: revenueLeak.totalPct, businessName: biz, vertical: input.vertical, lowestPillars: sorted.slice(-2).map(p=>p.name) })}
+                   onClick={(e) => fetchExplanation('revenue_leakage', 'Revenue Leakage', e, { type: 'revenue_leakage', leakPercent: Math.max(revenueLeak.totalPct, 15), businessName: biz, industry: input.vertical, lowestAreas: sorted.slice(-2).map(p=>p.name) })}
                   loading={loadingKey === 'revenue_leakage'} loaded={!!explanations['revenue_leakage']}
                 />
               </div>
               <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 3 }}>
-                Estimated conversion opportunity lost per month
+                Estimated daily growth opportunity being lost
               </div>
-              {revenueLeak.estimatedMonthlyLoss != null && (
+              {(revenueLeak.estimatedMonthlyLoss != null && revenueLeak.estimatedMonthlyLoss > 0) ? (
                 <div style={{ marginTop: '1rem', fontFamily: 'var(--ff-display)', fontSize: '1.5rem', color: 'var(--red)' }}>
-                  ~${revenueLeak.estimatedMonthlyLoss.toLocaleString()}/mo being lost
+                  ~${revenueLeak.estimatedMonthlyLoss.toLocaleString()}/mo potential gain
+                </div>
+              ) : (
+                 <div style={{ marginTop: '1rem', fontFamily: 'var(--ff-display)', fontSize: '1.25rem', color: 'var(--red)' }}>
+                  Critical growth opportunity detected
                 </div>
               )}
             </div>
@@ -440,7 +457,7 @@ export default function ResultsView({
           <Card title="Full Breakdown — Performance by Area">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {PILLARS.map(p => {
-                const sc = pillarScores[p.id] ?? 0
+                const sc = areaScores[p.id] ?? 0
                 const col = gradeColor(sc)
                 const bm = benchmark.avg[PILLARS.findIndex(x => x.id === p.id)] ?? 50
                 return (
@@ -449,7 +466,7 @@ export default function ResultsView({
                     <div style={{ fontSize: 13, display: 'flex', alignItems: 'center' }}>
                       {p.icon} {p.name}
                       <ExplainIcon 
-                        onClick={(e) => fetchExplanation(`pillar_${p.id}`, p.name, e, { type: 'pillar', pillarName: p.name, pillarScore: sc, pillarWeight: p.weight * 100, industryAvg: bm, businessName: biz, vertical: input.vertical })}
+                        onClick={(e) => fetchExplanation(`pillar_${p.id}`, p.name, e, { type: 'pillar', pillarName: p.name, pillarScore: sc, pillarWeight: p.weight * 100, industryAvg: bm, businessName: biz, industry: input.industry })}
                         loading={loadingKey === `pillar_${p.id}`} loaded={!!explanations[`pillar_${p.id}`]}
                       />
                     </div>
@@ -463,7 +480,7 @@ export default function ResultsView({
                       <div style={{ height: '100%', width: `${sc}%`, background: col, borderRadius: 99, transition: 'width 1.2s ease' }} />
                     </div>
                     <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--ff-mono)', marginTop: 3 }}>
-                      weight: {Math.round(p.weight * 100)}%
+                      priority weight: {Math.round(p.weight * 100)}%
                     </div>
                   </div>
                 )
@@ -495,9 +512,9 @@ export default function ResultsView({
           </Card>
 
           {/* Benchmark */}
-          <Card title={`How You Compare To Similar Businesses${benchmark.count ? ` (${benchmark.count} audited)` : ''}`}>
+          <Card title={`How You Compare To Similar Businesses${benchmark.count ? ` (${benchmark.count} scanned)` : ''}`}>
             {PILLARS.slice(0, 8).map((p, i) => {
-              const you = pillarScores[p.id]
+              const you = areaScores[p.id]
               const avg = benchmark.avg[i] ?? 50
               const top = benchmark.top[i] ?? 80
               return (
@@ -557,17 +574,17 @@ export default function ResultsView({
           </Card>
 
           {/* Rules trace */}
-          <Card title="Audit Trace — Every Rule That Fired">
+          <Card title="Detailed Growth Trace">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
               {appliedRules.length === 0
-                ? <p style={{ fontSize: 13, color: 'var(--text3)' }}>No critical rules triggered — site passed all baseline checks.</p>
+                ? <p style={{ fontSize: 13, color: 'var(--text3)' }}>Scan complete — no critical issues detected.</p>
                 : appliedRules.map((ar, i) => {
                   const pname = PILLARS.find(p => p.id === ar.pillarId)?.name ?? ar.pillarId
                   return (
                     <div key={i} style={{ padding: '9px 13px', background: 'var(--bg3)', borderRadius: 'var(--rs)', borderLeft: `3px solid ${ar.type === 'CAP' ? 'var(--red)' : 'var(--amber)'}` }}>
-                      <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 2 }}>[{pname}] {ar.rule.label}</div>
+                      <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 2 }}>[{pname}] Checkpoint reached</div>
                       <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>
-                        {ar.type === 'CAP' ? `CAP → score max ${ar.rule.cap}` : `PENALTY → −${ar.rule.pen} pts`}
+                        {ar.type === 'CAP' ? `Limit → score max ${ar.rule.cap}` : `Adjustment → −${ar.rule.pen} pts`}
                         {ar.baseScore !== undefined && (
                           <span style={{ marginLeft: 12 }}>{ar.baseScore} → {ar.finalScore}</span>
                         )}
@@ -693,8 +710,8 @@ function ScoreDial({ score }: { score: number }) {
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2)
     ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = thick; ctx.stroke()
     
-    // Foreground arc
-    const col = score >= 90 ? '#4ade80' : score >= 70 ? '#c8a96e' : score >= 50 ? '#fbbf24' : '#f87171'
+    // Foreground arc (75=A, 60=B, 45=C)
+    const col = score >= 75 ? '#10B981' : score >= 60 ? '#C8A96E' : score >= 45 ? '#F59E0B' : '#EF4444'
     ctx.beginPath(); ctx.arc(cx, cy, r, sa, sa + (Math.PI * 2) * (score / 100))
     ctx.strokeStyle = col; ctx.lineWidth = thick; ctx.lineCap = 'round'; ctx.stroke()
   }, [score])

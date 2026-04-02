@@ -28,10 +28,8 @@ export function useAuditFlow() {
     setView('loading')
 
     try {
-      // Stage 1 - Target connection
+      // Stage 1 - Target connection & Initial Fetch
       const targetUrl = `${API_URL}/api/audit`
-      console.log(`[DEBUG] Attempting audit at: ${targetUrl}`, req)
-      
       const res = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -41,14 +39,18 @@ export function useAuditFlow() {
         }),
       })
 
+      const data = await res.json()
+      
+      // Validation check before Stage 2
+      if (!data.success || !data.result || !data.result.auditId) {
+        throw new Error(data.error || 'Failed to establish connection — invalid fetch identity.')
+      }
+
       // Stage 2 - Signal Extraction
       setStage('ai_signals')
       
-      const data = await res.json()
-      if (!data.success || !data.result) {
-        throw new Error(data.error || 'Intelligence extraction failed')
-      }
-
+      // Simulate real-time parsing feel
+      await new Promise(r => setTimeout(r, 800))
       setStage('scoring')
       await new Promise(r => setTimeout(r, 600))
       
@@ -57,17 +59,20 @@ export function useAuditFlow() {
 
       setStage('saving')
       await new Promise(r => setTimeout(r, 300))
+      
       setStage('done')
-
       setResult(data.result)
+      
+      // Persistent ref for anonymous recovery
       if (data.result.auditId) {
         localStorage.setItem('last_anonymous_audit', data.result.auditId)
       }
+      
       setView('results')
     } catch (err: any) {
-      console.error('[Audit Error]', err)
-      setError(err.message || 'Analysis failed — please verify your URL and try again.')
-      setView('error')
+      console.error('[Audit Flow Error]', err)
+      setError(err.message || 'Audit Interrupted — unable to complete the analysis deep-scan.')
+      setView('error') // NEVER reset to 'intake' or 'form' here
     } finally {
       isRunning.current = false
     }

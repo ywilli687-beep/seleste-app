@@ -1,91 +1,99 @@
 import React from 'react'
 
-export function MarketingLayout({ children }: { children: React.ReactNode }) {
+export default function MarketingLayout({ children }: { children: React.ReactNode }) {
+  const navStyle: React.CSSProperties = {
+    position: 'sticky',
+    top: 0,
+    zIndex: 100,
+    height: '64px',
+    background: 'rgba(10, 10, 15, 0.85)',
+    backdropFilter: 'blur(12px)',
+    borderBottom: '1px solid var(--border)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 2rem',
+    width: '100%',
+    boxSizing: 'border-box'
+  }
+
+  const logoStyle: React.CSSProperties = {
+    fontFamily: "var(--ff-display)",
+    color: "var(--ink)",
+    fontSize: "24px",
+    fontWeight: 800,
+    textDecoration: "none",
+    letterSpacing: "-0.04em"
+  }
+
+  const navLinksStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: '2rem',
+    alignItems: 'center'
+  }
+
+  const navLinkStyle: React.CSSProperties = {
+    color: 'var(--ink-muted)',
+    textDecoration: 'none',
+    fontSize: '14px',
+    fontWeight: 500,
+    transition: 'color 0.2s'
+  }
+
+  const ctaStyle: React.CSSProperties = {
+    background: 'var(--accent)',
+    color: '#000',
+    padding: '8px 18px',
+    borderRadius: '100px',
+    fontWeight: 700,
+    fontSize: '14px',
+    textDecoration: 'none',
+    transition: 'transform 0.2s'
+  }
+
+  const footerStyle: React.CSSProperties = {
+    padding: '6rem 2rem',
+    background: '#0c0c12',
+    borderTop: '1px solid var(--border)',
+    textAlign: 'center',
+    width: '100%',
+    boxSizing: 'border-box'
+  }
+
+  const footerLinksStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: '2.5rem',
+    justifyContent: 'center',
+    marginBottom: '2.5rem',
+    flexWrap: 'wrap'
+  }
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column' }}>
-      {/* Nav */}
-      <nav style={{ 
-        position: 'fixed', 
-        top: 0, left: 0, right: 0, 
-        height: 64, 
-        backgroundColor: 'rgba(10, 10, 15, 0.82)', 
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 2rem',
-        zIndex: 100
-      }}>
-        <a href="/" style={{ 
-          fontFamily: 'var(--ff-display)', 
-          fontSize: '1.5rem', 
-          fontWeight: 800, 
-          color: 'var(--accent)', 
-          textDecoration: 'none',
-          letterSpacing: '-0.04em'
-        }}>
-          Seleste
-        </a>
-        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-          <a href="/features" style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)', textDecoration: 'none' }}>Analysis Features</a>
-          <a href="/pricing" style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)', textDecoration: 'none' }}>Plan & Cost</a>
-          <a href="/faq" style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)', textDecoration: 'none' }}>Common Questions</a>
-          <a href="/sign-in" style={{ 
-            fontSize: 13, 
-            fontWeight: 600, 
-            color: '#0a0a0f', 
-            backgroundColor: 'var(--accent)',
-            padding: '8px 16px',
-            borderRadius: 'var(--rs)',
-            textDecoration: 'none'
-          }}>
-            Explore Intelligence →
-          </a>
+    <div style={{ background: 'var(--bg)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <nav style={navStyle}>
+        <a href="/" style={logoStyle}>Seleste</a>
+        <div style={navLinksStyle}>
+          <a href="/features" style={navLinkStyle}>Features</a>
+          <a href="/pricing" style={navLinkStyle}>Pricing</a>
+          <a href="/blog" style={navLinkStyle}>Blog</a>
+          <a href="/dashboard" style={ctaStyle}>Dashboard</a>
         </div>
       </nav>
 
-      {/* Main */}
-      <main style={{ flex: 1, paddingTop: 64 }}>
+      <main style={{ flex: 1 }}>
         {children}
       </main>
 
-      {/* Footer */}
-      <footer style={{ 
-        borderTop: '1px solid var(--border)', 
-        padding: '4rem 2rem 2rem', 
-        backgroundColor: 'var(--bg2)',
-        marginTop: 'auto'
-      }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '4rem' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--ff-display)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent)', marginBottom: 12 }}>Seleste</div>
-            <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6, maxWidth: 280 }}>
-              Leading-edge growth intelligence for local businesses. Uncover the standards that drive market authority.
-            </p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Resources</div>
-              <a href="/features" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Features</a>
-              <a href="/blog" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Blog & Analysis</a>
-              <a href="/changelog" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Release Notes</a>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Legal</div>
-              <a href="/privacy" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Privacy Policy</a>
-              <a href="/terms" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Terms of Service</a>
-              <a href="/contact" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Contact Support</a>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Company</div>
-              <a href="/faq" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>General FAQ</a>
-              <a href="https://github.com/ywilli687-beep/seleste-app" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>GitHub Profile</a>
-            </div>
-          </div>
+      <footer style={footerStyle}>
+        <div style={footerLinksStyle}>
+          <a href="/privacy" style={navLinkStyle}>Privacy</a>
+          <a href="/terms" style={navLinkStyle}>Terms</a>
+          <a href="/contact" style={navLinkStyle}>Contact</a>
+          <a href="/faq" style={navLinkStyle}>FAQ</a>
+          <a href="/changelog" style={navLinkStyle}>Changelog</a>
         </div>
-        <div style={{ maxWidth: 1100, margin: '2rem auto 0', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.03)', textAlign: 'center', fontSize: 12, color: 'rgba(244,241,236,0.42)' }}>
-          © {new Date().getFullYear()} Seleste Antigravity Intelligence. Built for local authority.
+        <div style={{ color: '#444', fontSize: '12px', fontFamily: 'var(--ff-mono)' }}>
+          © 2026 Seleste AI. Built for the Main Street economy.
         </div>
       </footer>
     </div>
