@@ -37,7 +37,7 @@ router.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 return res.status(400).json({ success: false, error: 'Invalid context type' });
         }
         const message = yield anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20241022',
+            model: 'claude-sonnet-4-6',
             max_tokens: 300,
             temperature: 0.7,
             system: 'You are an expert digital marketing advisor inside Seleste, a website audit tool.\nAn owner clicked a "?" icon next to an audit element. Explan what that element means for their specific business in plain, direct English.\nRules:\n- Never use jargon without explaining it\n- Make it personal: reference their business name, vertical, and actual score\n- Never be generic\n- Be honest but constructive\n- Length: 2-4 sentences max. Tight and useful.\n- No filler intros (e.g. "Great question!")\n- Write in second person ("your site", "this means you")',
