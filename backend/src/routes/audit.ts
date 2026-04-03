@@ -178,6 +178,24 @@ router.post('/', async (req: Request, res: Response) => {
     updateMarketSegment(input.vertical, state, city).catch((err) =>
       console.error('[AUDIT] updateMarketSegment failed:', err)
     )
+
+    // Trigger n8n specialist agents
+    const webhookUrl = process.env.SEL_MASTER_AGENT_WEBHOOK
+    if (webhookUrl) {
+      fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audit_id: snapshot.id,
+          business_name: business.businessName,
+          website: input.url,
+          industry: input.vertical,
+          scores: pillarScores,
+          overall_score: overallScore,
+          raw_results: resultForDb,
+        }),
+      }).catch((err) => console.error('[AUDIT] n8n webhook failed:', err))
+    }
     if (input.userId) {
       awardXP({
         type: 'first_audit',
