@@ -25,6 +25,7 @@ import {
 } from '@/lib/data'
 import { awardXP } from '@/lib/gamification'
 import { AUDIT_VERSION } from '@/lib/constants'
+import { computeAndStoreBenchmarks } from '@/lib/benchmarks'
 import type { AuditResult, Vertical } from '@/types/audit'
 
 const router = Router()
@@ -162,6 +163,17 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     // 8f. Save immutable audit snapshot with full rule trace
+    // Derive benchmark enrichment fields
+    const snapshotVertical: string = input.vertical
+    const locationParts = input.location.split(',').map((s: string) => s.trim())
+    const snapshotMetroArea: string | null = locationParts.length >= 2
+      ? `${locationParts[0]}-${locationParts[1]}`
+      : null
+    const reviewCount = signals.estimatedReviewCount ?? 0
+    const snapshotBusinessSize: string = reviewCount > 500 ? 'MEDIUM' : 'SMALL'
+    const snapshotLeakageEstimate: number | null =
+      revenueLeak.estimatedMonthlyLoss != null ? revenueLeak.estimatedMonthlyLoss : null
+
     const snapshot = await saveAuditSnapshot({
       businessId: business.id,
       result: resultForDb,
@@ -169,6 +181,10 @@ router.post('/', async (req: Request, res: Response) => {
       benchmarkAvg,
       benchmarkTop,
       userId: input.userId ?? null,
+      vertical: snapshotVertical,
+      metroArea: snapshotMetroArea,
+      businessSize: snapshotBusinessSize,
+      leakageEstimate: snapshotLeakageEstimate,
     })
 
     // ── 9. Respond with complete result ───────────────────────────────────────
@@ -204,6 +220,11 @@ router.post('/', async (req: Request, res: Response) => {
         auditId: snapshot.id,
       }).catch((err) => console.error('[AUDIT] awardXP failed:', err))
     }
+
+    // Fire-and-forget benchmark recomputation after every successful audit
+    computeAndStoreBenchmarks().catch((err) =>
+      console.error('[AUDIT] computeAndStoreBenchmarks failed:', err)
+    )
 
   } catch (err: any) {
     console.error('[AUDIT] Critical error:', err)

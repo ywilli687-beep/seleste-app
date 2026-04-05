@@ -444,6 +444,13 @@ model AuditSnapshot {
   engineVersion      String?
   referrerSource     String?
 
+  // ── Benchmark enrichment fields ──
+  vertical        String?   // Industry enum value e.g. AUTO_REPAIR, DENTAL, RESTAURANT
+  metroArea       String?   // US metro e.g. Dallas-TX, Phoenix-AZ
+  businessSize    String?   // SOLO | SMALL | MEDIUM | LARGE
+  leakageEstimate Float?    // Monthly revenue leakage USD
+  country         String?   @default("US")
+
   events             AuditEvent[]
   qualityRecord      AuditQuality?
 
@@ -452,6 +459,7 @@ model AuditSnapshot {
   @@index([overallScore])
   @@index([inputVertical])
   @@index([triggeredBy])
+  @@index([vertical, metroArea, createdAt])
 }
 
 // Every rule that fired in an audit — full trace for explainability
@@ -994,6 +1002,33 @@ model BusinessWorkspace {
   business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   
   @@unique([workspaceId, businessId])
+}
+
+model VerticalBenchmark {
+  id              String   @id @default(cuid())
+  vertical        String
+  pillar          String   // e.g. conversion, seo, reputation
+  sampleSize      Int
+  mean            Float
+  median          Float
+  p25             Float
+  p75             Float
+  p90             Float
+  computedAt      DateTime @default(now())
+  @@unique([vertical, pillar])
+}
+
+model MarketBenchmark {
+  id              String   @id @default(cuid())
+  vertical        String
+  metroArea       String
+  pillar          String
+  sampleSize      Int
+  mean            Float
+  median          Float
+  p75             Float
+  computedAt      DateTime @default(now())
+  @@unique([vertical, metroArea, pillar])
 }
 
 model Waitlist {

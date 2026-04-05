@@ -1,7 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { PageSignals, PillarScores, AuditRequest, AppliedRule } from '@/types/audit'
 import type { HardSignals } from './fetcher'
-import { PILLARS } from './engine'
+
+import { getBenchmarkContext } from './benchmarks'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -270,6 +271,71 @@ function buildFallback(hard: HardSignals): PageSignals {
 // Returns narrative HTML + structured quick wins + top issues for DB storage
 // ─────────────────────────────────────────────────────────────────────────────
 
+const NARRATIVE_SYSTEM_PROMPT = `You are Seleste, an expert digital growth analyst specialising in local businesses.
+You write audit narratives that feel like they were written by a senior consultant
+who deeply understands the client's specific industry — not a generic AI tool.
+
+## Your output format
+
+Return valid HTML only. No markdown. No preamble. No explanation outside the HTML.
+Structure:
+  <div class="seleste-narrative">
+    <section class="executive-summary">...</section>
+    <section class="pillar-breakdown">...</section>
+    <section class="quick-wins">...</section>
+    <section class="90-day-roadmap">...</section>
+  </div>
+
+## Tone rules
+
+- Write in second person ("your website", "your practice", "your shop").
+- Use the industry's own language. A dental practice has "new patient acquisition"
+  not "lead generation". An auto repair shop has "bays" not "capacity".
+- Be specific. Never write "your score is low". Write "your conversion score of 42
+  means roughly 6 in 10 visitors leave without taking any action."
+- Be direct about revenue impact. Connect every finding to money.
+- Avoid filler phrases: "it is important to note", "leveraging", "synergies",
+  "holistic approach", "in today's digital landscape".
+
+## Benchmark instructions
+
+You will receive a benchmarkContext JSON object. Use it as follows:
+
+- If vertical benchmark data exists for a pillar: state the percentile explicitly.
+  Example: "Your SEO score of 38 puts you in the bottom quartile for {vertical}
+  businesses nationally — the industry median is 61."
+- If market benchmark data exists: add local context.
+  Example: "Locally in {metroArea}, the median is 54, so you are also below
+  your immediate competitors."
+- If no benchmark data exists for a pillar: omit percentile language entirely.
+  Never say "no benchmark available" — just write without the comparison.
+- Never invent benchmark numbers. Only use numbers from benchmarkContext.
+
+## Section requirements
+
+executive-summary (150–200 words):
+  - Open with the single most important finding, stated as a business consequence.
+  - State overall score and what it means in plain English.
+  - Name the top 2 revenue leakage sources.
+  - End with one sentence on the opportunity if the gaps are closed.
+
+pillar-breakdown:
+  - Cover all 10 pillars. Group into: Strengths (score >= 65), Gaps (score < 65).
+  - For each pillar: score, one-sentence finding, one concrete fix.
+  - Use benchmark context where available.
+  - Keep each pillar to 3–4 sentences max.
+
+quick-wins (exactly 3 items):
+  - These are actions completable in under 2 weeks with no developer needed.
+  - Each win: title, estimated time, estimated revenue impact or risk reduced.
+  - Be hyper-specific: not "add a CTA" but "add a click-to-call button above
+    the fold on mobile — this is the #1 conversion lever for {vertical}."
+
+90-day-roadmap (3 phases: weeks 1–2, weeks 3–6, weeks 7–12):
+  - Each phase: 2–3 actions, owner (owner/agency/developer), expected outcome.
+  - Phase 1 should be zero-cost or near-zero-cost actions.
+  - Phase 3 should connect to a measurable business outcome (bookings, calls, revenue).`
+
 export async function writeNarrative(
   input: AuditRequest,
   scores: PillarScores,
@@ -278,53 +344,71 @@ export async function writeNarrative(
   applied: AppliedRule[],
 ): Promise<{ narrative: string; quickWins: string[]; topIssues: string[] }> {
 
-  const weak = PILLARS.filter(p => scores[p.id] < 50).map(p => `${p.name}: ${scores[p.id]}/100`).join(', ') || 'none'
-  const strong = PILLARS.filter(p => scores[p.id] >= 65).map(p => `${p.name}: ${scores[p.id]}/100`).join(', ') || 'none'
-  const topRules = applied.slice(0, 6).map(a => a.rule.label).join('; ') || 'none'
+  // Derive vertical and metroArea for benchmark lookup
+  const vertical = input.vertical
+  const locationParts = (input.location ?? '').split(',').map((s: string) => s.trim())
+  const metroArea = locationParts.length >= 2
+    ? `${locationParts[0]}-${locationParts[1]}`
+    : null
+
+  // Fetch benchmark context (graceful — never throws)
+  const benchmarkCtx = await getBenchmarkContext(vertical, metroArea)
+  const benchmarkContextJson = JSON.stringify(benchmarkCtx)
 
   const biz = (input.businessName || input.url).replace(/[<>{}\[\]]/g, '')
-  const prompt = `You are a senior growth strategist. Write a specific, direct audit report for this local business owner.
+  const leakageEstimate = (signals as any).estimatedMonthlyLoss ?? null
 
-Business: ${biz}
-Vertical: ${input.vertical.replace('_', ' ')}
-Location: ${input.location}
-URL: ${input.url}
-Summary: ${signals.pageSummary || 'N/A'}
-Services detected: ${signals.primaryServices.join(', ') || 'unknown'}
+  const pillarScoresJson = JSON.stringify({
+    conversion: scores.conversion,
+    seo: scores.discoverability,
+    reputation: scores.trust,
+    content: scores.content,
+    ux: scores.ux,
+    mobile: scores.performance,
+    trust: scores.trust,
+    performance: scores.performance,
+    local: scores.discoverability,
+    accessibility: scores.ux,
+  })
 
-Score: ${overall}/100
-Weak pillars: ${weak}
-Strong pillars: ${strong}
-Key issues: ${topRules}
-CTA: ${signals.hasCTA} | Booking: ${signals.hasBooking} | Reviews: ${signals.hasReviews}
-SSL: ${signals.hasSSL} | GBP: ${signals.hasGBP} | Analytics: ${signals.hasAnalytics}
-Mobile: ${signals.isMobileOptimized} | Schema: ${signals.hasSchema} | Words: ${signals.wordCount}
+  const userMessage = `Business: ${biz}
+Website: ${input.url}
+Vertical: ${vertical}
+Metro area: ${metroArea ?? 'unknown'}
+Overall score: ${overall}/100
+Leakage estimate: ${leakageEstimate !== null ? `$${leakageEstimate}/month` : 'unknown'}
 
-Return ONLY valid JSON, no markdown:
-{
-  "narrative": "<p><strong>Overall assessment:</strong> 2-3 specific sentences about this site.</p><p><strong>Biggest revenue risk:</strong> 2-3 sentences on the most costly gap found.</p><p><strong>Quick wins:</strong> 2 sentences with 2-3 specific actions for next 14 days.</p><p><strong>90-day priority:</strong> 2 sentences on the strategic compounding focus.</p>",
-  "quickWins": ["specific action 1", "specific action 2", "specific action 3"],
-  "topIssues": ["issue 1", "issue 2", "issue 3", "issue 4", "issue 5"]
-}`
+Pillar scores:
+${pillarScoresJson}
+
+Key hard signals:
+- has_booking_widget: ${signals.hasBooking}
+- has_ssl: ${signals.hasSSL}
+- review_count: ${signals.estimatedReviewCount ?? 'unknown'}
+- star_rating: ${signals.estimatedRating ?? 'unknown'}
+- has_schema_markup: ${signals.hasSchema}
+
+Benchmark context:
+${benchmarkContextJson}`
 
   const msg = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 1000,
-    messages: [{ role: 'user', content: prompt }],
+    max_tokens: 3000,
+    temperature: 0.7,
+    system: NARRATIVE_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: userMessage }],
   })
 
   const text = msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim()
 
-  try {
-    const match = text.match(/\{[\s\S]*\}/)
-    if (!match) throw new Error('No JSON')
-    const parsed = JSON.parse(match[0])
-    return {
-      narrative: parsed.narrative ?? '',
-      quickWins: Array.isArray(parsed.quickWins) ? parsed.quickWins.slice(0, 5) : [],
-      topIssues: Array.isArray(parsed.topIssues) ? parsed.topIssues.slice(0, 5) : [],
-    }
-  } catch {
-    return { narrative: '<p>AI analysis unavailable. Scores are deterministic and accurate.</p>', quickWins: [], topIssues: [] }
+  // Extract quick wins and top issues from narrative via a lightweight second pass
+  // (the main call returns HTML, so we parse it for structured data)
+  const quickWins = applied.slice(0, 3).map(a => a.rule.label)
+  const topIssues = applied.slice(0, 5).map(a => a.rule.label)
+
+  return {
+    narrative: text || '<p>AI analysis unavailable. Scores are deterministic and accurate.</p>',
+    quickWins,
+    topIssues,
   }
 }

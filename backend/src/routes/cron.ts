@@ -2,6 +2,7 @@ import express from 'express'
 import { db } from '@/lib/db'
 import { createClerkClient } from '@clerk/clerk-sdk-node'
 import { sendMonthlyScoreEmail } from '@/lib/email'
+import { computeAndStoreBenchmarks } from '@/lib/benchmarks'
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY || 'sk_test_...' })
 
@@ -97,6 +98,18 @@ router.get('/monthly-scores', async (req, res) => {
   }
 
   res.json({ sent, failed })
+})
+
+// POST /api/cron/benchmarks
+// Triggers benchmark computation across all verticals and metro areas.
+router.post('/benchmarks', async (req, res) => {
+  const auth = req.headers.authorization
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  await computeAndStoreBenchmarks()
+  res.json({ ok: true, message: 'Benchmarks updated' })
 })
 
 export default router

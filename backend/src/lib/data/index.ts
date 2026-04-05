@@ -297,6 +297,11 @@ export async function saveAuditSnapshot(params: {
   benchmarkAvg: number[]
   benchmarkTop: number[]
   userId?: string | null
+  // Benchmark enrichment fields
+  vertical?: string | null
+  metroArea?: string | null
+  businessSize?: string | null
+  leakageEstimate?: number | null
 }) {
   const { result, delta } = params
   const { pillarScores: ps, revenueLeak: rl, appliedRules } = result
@@ -349,6 +354,12 @@ export async function saveAuditSnapshot(params: {
       scoreDelta: delta?.scoreDelta ?? null,
       improvedPillars: delta?.improvedPillars ?? [],
       regressedPillars: delta?.regressedPillars ?? [],
+
+      // Benchmark enrichment fields
+      vertical: params.vertical ?? null,
+      metroArea: params.metroArea ?? null,
+      businessSize: params.businessSize ?? null,
+      leakageEstimate: params.leakageEstimate ?? null,
 
       // Create all applied rule records
       appliedRules: {
