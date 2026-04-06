@@ -54,7 +54,7 @@ router.post('/', async (req: Request, res: Response) => {
         cycleId: cycle.id,
         businessId: snapshot.businessId,
         title,
-        description,
+        description: description || 'AI specialist analysis',
         draftContent,
         category: category || 'reputation',
         estimatedLift: estimatedLift || 5,
