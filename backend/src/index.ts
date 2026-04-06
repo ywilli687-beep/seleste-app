@@ -68,12 +68,22 @@ const auditLimiter = rateLimit({
   message: { error: 'Too many audits. You can run up to 5 per hour. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    const forwarded = req.headers['x-forwarded-for']
+    const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0] : Array.isArray(forwarded) ? forwarded[0] : null)?.trim()
+    return ip || req.socket.remoteAddress || 'unknown'
+  },
 })
 
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 100,
   message: { error: 'Too many requests. Please slow down.' },
+  keyGenerator: (req) => {
+    const forwarded = req.headers['x-forwarded-for']
+    const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0] : Array.isArray(forwarded) ? forwarded[0] : null)?.trim()
+    return ip || req.socket.remoteAddress || 'unknown'
+  },
 })
 app.use(globalLimiter)
 
