@@ -9,6 +9,7 @@ const router = Router()
  * Links the output to a WeeklyAction and marks it as 'pending' for Approval Inbox.
  */
 router.post('/', async (req: Request, res: Response) => {
+  console.log('[Callback] Received body:', JSON.stringify(req.body))
   const { auditId, agentId, title, description, draftContent, category, estimatedLift } = req.body
 
   if (!auditId || !title) {
@@ -17,12 +18,14 @@ router.post('/', async (req: Request, res: Response) => {
 
   try {
     // 1. Find the audit snapshot to get business context
+    console.log('[Callback] Looking up auditId:', auditId)
     const snapshot = await db.auditSnapshot.findUnique({
       where: { id: auditId },
       include: { business: true }
     })
 
     if (!snapshot) {
+      console.log('[Callback] Snapshot not found for id:', auditId)
       return res.status(404).json({ success: false, error: 'Audit snapshot not found' })
     }
 
