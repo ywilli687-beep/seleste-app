@@ -57,7 +57,7 @@ router.post('/', async (req: Request, res: Response) => {
         description: description || 'AI specialist analysis',
         draftContent,
         category: category || 'reputation',
-        estimatedLift: estimatedLift || 5,
+        estimatedLift: parseInt(estimatedLift) || 5,
         effort: 'Medium',
         rank: 1,
         status: 'pending',
