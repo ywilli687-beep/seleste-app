@@ -1,21 +1,232 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '@clerk/clerk-react'
-import type { AuditResult, Recommendation } from '@/types/audit'
-import { PILLARS, getGradeLabel, getGradeColor } from '@/lib/constants'
-import ErrorBoundary from '@/components/ErrorBoundary'
-import ExplainIcon from '@/components/ExplainIcon'
-import ExplainerPopover from '@/components/ExplainerPopover'
-import InsightTooltip from '@/components/ui/InsightTooltip'
+import type { AuditResult } from '@/types/audit'
+import { PILLARS } from '@/lib/constants'
 import { WaitlistModal } from '@/components/ui/WaitlistModal'
 
-const ghost: React.CSSProperties = {
-  background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--ink-muted)',
-  padding: '8px 16px', borderRadius: '100px', cursor: 'pointer',
-  fontFamily: 'var(--ff-sans)', fontSize: 13, fontWeight: 600,
-  transition: 'all 0.2s',
+// ── Colour palette ────────────────────────────────────────────────────────────
+const C = {
+  bg:       '#111111',
+  card:     '#1c1c1c',
+  cardBdr:  '#2a2a2a',
+  yellow:   '#F5C418',
+  yellowDim:'rgba(245,196,24,0.12)',
+  green:    '#22c55e',
+  greenDim: 'rgba(34,197,94,0.12)',
+  red:      '#ef4444',
+  muted:    '#888',
+  text:     '#ffffff',
+  textSoft: '#cccccc',
+  locked:   '#555',
 }
 
+// ── Quest ring ────────────────────────────────────────────────────────────────
+function QuestRing({ pct }: { pct: number }) {
+  const ref = useRef<SVGCircleElement>(null)
+  const r = 90, circ = 2 * Math.PI * r
+
+  useEffect(() => {
+    if (!ref.current) return
+    ref.current.style.strokeDashoffset = String(circ * (1 - pct / 100))
+  }, [pct, circ])
+
+  return (
+    <div style={{ position: 'relative', width: 220, height: 220, margin: '0 auto' }}>
+      <svg width="220" height="220" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="110" cy="110" r={r} fill="none" stroke="#2a2a2a" strokeWidth="14" />
+        <circle
+          ref={ref}
+          cx="110" cy="110" r={r}
+          fill="none"
+          stroke={C.yellow}
+          strokeWidth="14"
+          strokeLinecap="round"
+          strokeDasharray={String(circ)}
+          strokeDashoffset={String(circ)}
+          style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1)' }}
+        />
+      </svg>
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <div style={{ fontFamily: 'var(--ff-display)', fontSize: '3.2rem', fontWeight: 800, color: C.yellow, lineHeight: 1 }}>
+          {pct}%
+        </div>
+        <div style={{ fontSize: 11, color: C.muted, letterSpacing: '0.12em', marginTop: 4 }}>COMPLETE</div>
+      </div>
+    </div>
+  )
+}
+
+// ── Badge card ────────────────────────────────────────────────────────────────
+function AchievementBadge({ icon, label }: { icon: string; label: string }) {
+  return (
+    <div style={{
+      background: C.card, border: `1px solid ${C.cardBdr}`,
+      borderRadius: 14, padding: '16px 14px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+      minWidth: 90, flexShrink: 0,
+    }}>
+      <div style={{
+        width: 48, height: 48, borderRadius: 12,
+        background: C.greenDim, border: `1px solid ${C.green}33`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 22,
+      }}>{icon}</div>
+      <div style={{ fontSize: 11, color: C.textSoft, textAlign: 'center', fontWeight: 600, lineHeight: 1.3 }}>{label}</div>
+    </div>
+  )
+}
+
+// ── Mission card ──────────────────────────────────────────────────────────────
+type MissionStatus = 'achieved' | 'active' | 'locked'
+
+function MissionCard({
+  num, title, desc, status, unlockHint, onContinue, score,
+}: {
+  num: number; title: string; desc: string; status: MissionStatus
+  unlockHint?: string; onContinue?: () => void; score?: number
+}) {
+  const isAchieved = status === 'achieved'
+  const isActive   = status === 'active'
+  const isLocked   = status === 'locked'
+
+  return (
+    <div style={{
+      background: C.card,
+      border: `1px solid ${isActive ? C.yellow + '44' : C.cardBdr}`,
+      borderRadius: 16, padding: '18px 20px',
+      opacity: isLocked ? 0.6 : 1,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        {/* Icon */}
+        <div style={{
+          width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+          background: isAchieved ? C.greenDim : isActive ? C.yellowDim : '#2a2a2a',
+          border: `1px solid ${isAchieved ? C.green + '44' : isActive ? C.yellow + '44' : '#333'}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+        }}>
+          {isAchieved ? '✅' : isActive ? '🎯' : '🔒'}
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: isLocked ? C.muted : C.text }}>
+              Mission {num}: {title}
+            </div>
+            {isActive && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                background: C.yellow, color: '#111', borderRadius: 6,
+                padding: '2px 8px',
+              }}>IN PROGRESS</span>
+            )}
+            {isAchieved && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                background: C.greenDim, color: C.green, borderRadius: 6,
+                padding: '2px 8px', border: `1px solid ${C.green}44`,
+              }}>✓ ACHIEVED</span>
+            )}
+            {isLocked && (
+              <span style={{ fontSize: 11, color: C.locked, fontWeight: 600 }}>LOCKED</span>
+            )}
+          </div>
+
+          <div style={{ fontSize: 13, color: isLocked ? C.locked : C.muted, lineHeight: 1.5 }}>
+            {isLocked && unlockHint ? unlockHint : desc}
+          </div>
+
+          {/* Score bar for active */}
+          {isActive && score !== undefined && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ height: 5, background: '#2a2a2a', borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${score}%`, background: C.yellow, borderRadius: 99, transition: 'width 1.2s ease' }} />
+              </div>
+            </div>
+          )}
+
+          {isAchieved && (
+            <div style={{ marginTop: 10, fontSize: 12, color: C.green, fontWeight: 600 }}>
+              Claim Your Win
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isActive && (
+        <button
+          onClick={onContinue}
+          style={{
+            marginTop: 16, width: '100%',
+            background: C.yellow, color: '#111',
+            border: 'none', borderRadius: 12,
+            padding: '14px', fontSize: 15, fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          Continue Mission
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── Bottom nav ────────────────────────────────────────────────────────────────
+function BottomNav({ active, onNewAudit, shareUrl }: { active: string; onNewAudit: () => void; shareUrl: string | null }) {
+  const tabs = [
+    { id: 'missions', icon: '🎯', label: 'Missions' },
+    { id: 'share',    icon: '🔗', label: 'Share' },
+    { id: 'new',      icon: '＋', label: 'New Audit' },
+    { id: 'profile',  icon: '👤', label: 'Profile' },
+  ]
+
+  const handleTab = (id: string) => {
+    if (id === 'new') { onNewAudit(); return }
+    if (id === 'share' && shareUrl) {
+      navigator.clipboard.writeText(shareUrl)
+      return
+    }
+    if (id === 'profile') { window.location.href = '/dashboard' }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0,
+      background: '#1a1a1a', borderTop: '1px solid #2a2a2a',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-around',
+      padding: '10px 0 16px', zIndex: 1000,
+    }}>
+      {tabs.map(t => (
+        <button
+          key={t.id}
+          onClick={() => handleTab(t.id)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+            padding: '4px 16px',
+          }}
+        >
+          <div style={{
+            width: 42, height: 42, borderRadius: 12,
+            background: t.id === active ? C.yellowDim : 'transparent',
+            border: t.id === active ? `1px solid ${C.yellow}44` : '1px solid transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 18,
+          }}>{t.icon}</div>
+          <span style={{
+            fontSize: 11, fontWeight: 600,
+            color: t.id === active ? C.yellow : C.muted,
+          }}>{t.label}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 export default function ResultsView({
   result,
   onNewAudit,
@@ -23,626 +234,235 @@ export default function ResultsView({
   result: AuditResult
   onNewAudit: () => void
 }) {
-  const [copied, setCopied] = useState(false)
-  const [badgeCopied, setBadgeCopied] = useState(false)
   const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false)
-  
-  const handleCopyBadge = () => {
-    const code = `<a href="${window.location.origin}/results/${result.auditId}" target="_blank">\n  <img src="${window.location.origin}/api/badge/${result.businessId}" alt="Seleste Verified Grow" width="140" />\n</a>`
-    navigator.clipboard.writeText(code)
-    setBadgeCopied(true)
-    setTimeout(() => setBadgeCopied(false), 2000)
-  }
+  const [copied, setCopied] = useState(false)
+
   const {
-    pillarScores: areaScores, overallScore, grade, gradeLabel, revenueLeak, confidence,
-    recommendations, benchmark, aiNarrative, aiTopIssues,
-    appliedRules, roadmap, signals: growthMarkers, input, delta, verticalPercentile: industryPercentile,
+    pillarScores: areaScores, overallScore,
+    recommendations, signals: growthMarkers,
+    input, roadmap,
   } = result
 
   const biz = input.businessName || input.url.replace(/https?:\/\//, '').split('/')[0]
-  const [recTab, setRecTab] = useState<'revenue_leaks' | 'quick_wins' | 'high_impact'>('revenue_leaks')
-  
-  // Growth XP System (Senior Engineer Requirement)
-  const level = Math.floor(overallScore / 10) + 1
-  const xpProgress = (overallScore % 10) * 10
-  
-  const [explanations, setExplanations] = useState<Record<string, string>>({})
-  const [loadingKey, setLoadingKey] = useState<string | null>(null)
-  const [openKey, setOpenKey] = useState<{ key: string, label: string, rect: DOMRect } | null>(null)
-  
-  const { getToken } = useAuth()
-
   const shareUrl = result.auditId ? `${window.location.origin}/results/${result.auditId}` : null
 
-  const handleCopyLink = () => {
+  // Sort pillars: best first
+  const sorted = [...PILLARS].sort((a, b) => (areaScores[b.id] ?? 0) - (areaScores[a.id] ?? 0))
+
+  // Achievements: pillars scoring ≥ 65
+  const achieved = sorted.filter(p => (areaScores[p.id] ?? 0) >= 65)
+
+  // Missions: pillars below 65, worst last
+  const needsWork = sorted.filter(p => (areaScores[p.id] ?? 0) < 65).reverse()
+
+  // Active mission = worst pillar
+  const activeMission = needsWork[0] ?? null
+  const lockedMissions = needsWork.slice(1)
+
+  // Level system
+  const level = Math.floor(overallScore / 10) + 1
+  const missionsToMax = needsWork.length
+
+  // Get a useful description from recommendations
+  const getDesc = (pillarId: string) => {
+    const recs = [
+      ...recommendations.quick_wins,
+      ...recommendations.high_impact,
+      ...recommendations.revenue_leaks,
+    ].filter(r => r.pillar === pillarId)
+    return recs[0]?.desc || `Improve your ${pillarId} score to unlock growth.`
+  }
+
+  const handleCopyShare = () => {
     if (!shareUrl) return
     navigator.clipboard.writeText(shareUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  async function fetchExplanation(key: string, label: string, e: React.MouseEvent, context: Record<string, unknown>) {
-    const rect = (e.currentTarget as Element).getBoundingClientRect()
-    if (explanations[key]) {
-      setOpenKey(openKey?.key === key ? null : { key, label, rect })
-      return
-    }
-    setLoadingKey(key)
-    setOpenKey(null)
-    try {
-      const token = await getToken()
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (token) headers['Authorization'] = `Bearer ${token}`
-      const API_URL = import.meta.env.VITE_API_URL || ''
-      const res = await fetch(`${API_URL}/api/explain`, { method: 'POST', headers, body: JSON.stringify(context) })
-      const data = await res.json()
-      setExplanations(prev => ({ ...prev, [key]: data.explanation }))
-      setOpenKey({ key, label, rect })
-    } catch {
-      setExplanations(prev => ({ ...prev, [key]: 'Unable to load explanation right now.' }))
-      setOpenKey({ key, label, rect })
-    } finally {
-      setLoadingKey(null)
-    }
-  }
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (!(e.target as Element).closest('.explain-anchor') && !(e.target as Element).closest('.explainer-popover')) {
-        setOpenKey(null)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
-
-  const sorted = [...PILLARS].sort((a, b) => areaScores[b.id] - areaScores[a.id])
-
   return (
-    <div style={{ paddingBottom: '80px', position: 'relative' }}>
+    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: 'var(--ff-sans)', paddingBottom: 100 }}>
 
-      {/* Fixed nav */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', height: 60, background: 'rgba(253,252,249,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
-        <div onClick={onNewAudit} style={{ fontFamily: 'var(--ff-display)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--ink)', cursor: 'pointer', letterSpacing: '-0.04em' }}>
-          Seleste <span style={{ color: 'var(--ink-muted)', fontSize: '.65rem', fontFamily: 'var(--ff-mono)', marginLeft: 8, letterSpacing: '0.1em' }}>REPORT</span>
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '20px 20px 0',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontSize: 20 }}>📊</div>
+          <span style={{ fontSize: 17, fontWeight: 700, color: C.yellow }}>Quest Progress</span>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <a href="/dashboard" style={{ ...ghost, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Intelligence →</a>
-          <button onClick={onNewAudit} style={ghost}>← New Audit</button>
-          <button onClick={() => window.print()} className="no-print" style={ghost}>Print</button>
-        </div>
-      </nav>
+        <div style={{ fontSize: 20 }}>🏆</div>
+      </div>
 
-      {/* Page header */}
-      <div style={{ paddingTop: 60 }}>
-        <div style={{ background: 'var(--bg2)', borderBottom: '1px solid var(--border)', padding: '1.5rem 2rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--ff-display)', fontSize: '1.75rem' }}>{biz}</div>
-            <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>
-              {input.url} · {input.location} · {input.vertical.replace('_', ' ').toLowerCase()}
-            </div>
-            <div style={{ display: 'flex', gap: 7, marginTop: 10, flexWrap: 'wrap' }}>
-              <Bdg c="accent">SCAN COMPLETED</Bdg>
-              <Bdg c="blue">DATA QUALITY {confidence.pct}%</Bdg>
-               {industryPercentile !== null && industryPercentile !== undefined && (
-                <Bdg c="purple">TOP {Math.max(1, 100 - (industryPercentile ?? 0))}% IN YOUR INDUSTRY</Bdg>
-              )}
-              {delta && (
-                <Bdg c={delta.scoreDelta >= 0 ? 'green' : 'red'}>
-                  {delta.scoreDelta >= 0 ? '▲' : '▼'} {Math.abs(delta.scoreDelta)} vs LAST SCAN
-                </Bdg>
-              )}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 10 }} className="no-print">
-            <button onClick={onNewAudit} style={ghost}>← New Audit</button>
-            <button onClick={() => window.print()} style={ghost}>Print Report</button>
-          </div>
+      {/* Ring + Title */}
+      <div style={{ textAlign: 'center', padding: '28px 20px 16px' }}>
+        <QuestRing pct={overallScore} />
+
+        <h1 style={{ fontSize: 26, fontWeight: 800, margin: '20px 0 6px', color: C.text }}>
+          {biz}
+        </h1>
+        <p style={{ fontSize: 15, color: C.muted, margin: 0 }}>
+          {missionsToMax > 0
+            ? `${missionsToMax} More Mission${missionsToMax !== 1 ? 's' : ''} to 100.`
+            : 'All missions complete! 🎉'}
+        </p>
+        <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 8 }}>
+          <span style={{ background: C.yellowDim, border: `1px solid ${C.yellow}44`, color: C.yellow, fontSize: 11, fontWeight: 700, borderRadius: 99, padding: '3px 12px' }}>
+            Level {level}
+          </span>
+          <span style={{ background: '#1c1c1c', border: '1px solid #2a2a2a', color: C.muted, fontSize: 11, borderRadius: 99, padding: '3px 12px' }}>
+            {input.vertical.replace('_', ' ')}
+          </span>
         </div>
       </div>
 
-      {/* ── AUDIT RESULTS GRID ── */}
-      <div className="results-grid" style={{ maxWidth: 1180, margin: '0 auto', padding: '2rem', display: 'grid', gridTemplateColumns: '310px 1fr', gap: '2rem', alignItems: 'start' }}>
-        
-        {/* LEFT COLUMN: Sidebar Intelligence */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <Card title="Website Growth Status">
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '.5rem' }}>
-              
-              {/* XP Level Badge */}
-              <div style={{ marginBottom: '1rem', background: 'rgba(200,169,110,0.1)', border: '1px solid var(--accent)', borderRadius: '100px', padding: '4px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent)', letterSpacing: '0.05em' }}>Lvl {level}</span>
-                <div style={{ width: 60, height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
-                    <div style={{ width: `${xpProgress}%`, height: '100%', background: 'var(--accent)' }} />
-                </div>
-              </div>
+      {/* Recent Achievements */}
+      {achieved.length > 0 && (
+        <div style={{ padding: '0 20px 8px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', marginBottom: 12 }}>
+            RECENT ACHIEVEMENTS
+          </div>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
+            {achieved.map(p => (
+              <AchievementBadge key={p.id} icon={p.icon} label={p.name} />
+            ))}
+            {growthMarkers.isMobileOptimized && (
+              <AchievementBadge icon="📱" label="Mobile Master" />
+            )}
+            {growthMarkers.hasSSL && (
+              <AchievementBadge icon="🔒" label="SSL Secured" />
+            )}
+          </div>
+        </div>
+      )}
 
-              <ScoreDial score={overallScore} />
-              <div style={{ fontFamily: 'var(--ff-display)', fontSize: '1.4rem', marginTop: '1rem', color: gradeColor(overallScore), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                Grade {grade}
-                <ExplainIcon 
-                   onClick={(e) => fetchExplanation('overall_score', 'Score & Grade', e, { type: 'overall_score', score: overallScore, grade, gradeLabel, businessName: biz, industry: input.vertical, topArea: sorted[0].name, lowestArea: sorted[sorted.length-1].name, revenueLeak: revenueLeak.totalPct })}
-                  loading={loadingKey === 'overall_score'} loaded={!!explanations['overall_score']}
-                />
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3, textAlign: 'center' }}>{gradeLabel}</div>
-              
-              <div style={{ width: '100%', marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 10, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 8, textAlign: 'center' }}>Score Legend</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
-                  {[
-                    { r: '75–100', g: 'A' as const },
-                    { r: '60–74',  g: 'B' as const },
-                    { r: '45–59',  g: 'C' as const },
-                    { r: '0–44',   g: 'D' as const }
-                  ].map(item => {
-                    const label = getGradeLabel(item.g)
-                    const color = getGradeColor(item.g)
-                    return (
-                      <div key={item.r} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
-                        <div style={{ fontSize: 10, color: 'var(--text2)', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: 600, color: color }}>{item.r}</span> {label}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
+      {/* Missions */}
+      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', marginBottom: 4 }}>
+          ACTIVE MISSIONS
+        </div>
 
-              {industryPercentile != null && (
-                <div style={{ marginTop: '1.25rem', fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textAlign: 'center', background: 'var(--bg3)', padding: '6px 12px', borderRadius: 99, border: '1px solid var(--border)' }}>
-                  Higher score than {industryPercentile}% of similar local businesses
-                </div>
-              )}
+        {/* Active mission */}
+        {activeMission && (
+          <MissionCard
+            num={1}
+            title={`Boost ${activeMission.name}`}
+            desc={getDesc(activeMission.id)}
+            status="active"
+            score={areaScores[activeMission.id] ?? 0}
+            onContinue={() => {
+              const el = document.getElementById('mission-detail')
+              el?.scrollIntoView({ behavior: 'smooth' })
+            }}
+          />
+        )}
 
-              {shareUrl && (
-                <div style={{ width: '100%', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
-                  <button 
-                    onClick={handleCopyLink}
-                    style={{ 
-                      width: '100%', 
-                      background: copied ? 'var(--green)' : 'var(--bg3)', 
-                      border: '1px solid var(--border)', 
-                      color: copied ? '#0a0a0f' : 'var(--text)', 
-                      padding: '10px', 
-                      borderRadius: 'var(--rs)', 
-                      cursor: 'pointer', 
-                      fontSize: 13, 
-                      fontWeight: 600,
-                      transition: 'all 0.2s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8
-                    }}
-                  >
-                    {copied ? '✓ Link Copied!' : '🔗 Copy Shareable Link'}
-                  </button>
-                  <p style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'center', marginTop: 10, lineHeight: 1.4 }}>
-                    Anyone with this link can view the public version of your results.
-                  </p>
-                </div>
-              )}
-            </div>
-          </Card>
+        {/* Locked missions */}
+        {lockedMissions.slice(0, 2).map((p, i) => (
+          <MissionCard
+            key={p.id}
+            num={i + 2}
+            title={`Level Up ${p.name}`}
+            desc={getDesc(p.id)}
+            status="locked"
+            unlockHint={`Unlock by completing Mission ${i + 1}.`}
+          />
+        ))}
 
-          {delta && (
-            <Card title="Score Change vs. Last Audit">
-              <div style={{ textAlign: 'center', padding: '.5rem 0 1rem' }}>
-                <div style={{ fontFamily: 'var(--ff-display)', fontSize: '3rem', color: delta.scoreDelta >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                  {delta.scoreDelta >= 0 ? '+' : ''}{delta.scoreDelta}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
-                  {delta.previousScore} → {overallScore}
-                </div>
-                <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', marginTop: 4 }}>
-                  vs. audit on {new Date(delta.previousDate).toLocaleDateString()}
-                </div>
-              </div>
-              {delta.improvedPillars.length > 0 && (
-                <div style={{ marginTop: '.75rem' }}>
-                  <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--green)', marginBottom: 6 }}>▲ Improved</div>
-                  {delta.improvedPillars.map(p => (
-                    <div key={p} style={{ fontSize: 12, color: 'var(--text2)', padding: '3px 0' }}>
-                      {PILLARS.find(x => x.id === p)?.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {delta.regressedPillars.length > 0 && (
-                <div style={{ marginTop: '.75rem' }}>
-                  <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--red)', marginBottom: 6 }}>▼ Regressed</div>
-                  {delta.regressedPillars.map(p => (
-                    <div key={p} style={{ fontSize: 12, color: 'var(--text2)', padding: '3px 0' }}>
-                      {PILLARS.find(x => x.id === p)?.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          )}
+        {/* Achieved missions */}
+        {achieved.slice(0, 2).map((p, i) => (
+          <MissionCard
+            key={p.id}
+            num={lockedMissions.length + i + 2}
+            title={`${p.name} Excellence`}
+            desc={`Score: ${areaScores[p.id]}/100 — well above the benchmark.`}
+            status="achieved"
+          />
+        ))}
 
-          <Card title="Key Findings">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.75rem' }}>
-              <MStat label="Revenue Leak" val={`${revenueLeak.totalPct}%`} color="var(--red)" sub="opp. lost/mo" />
-              <MStat label="Top Area" val={`${areaScores[sorted[0].id]}/100`} color="var(--green)" sub={sorted[0].name} />
-              <MStat label="Lowest Area" val={`${areaScores[sorted[sorted.length - 1].id]}/100`} color="var(--red)" sub={sorted[sorted.length - 1].name} />
-              <MStat label="Rules Hit" val={`${appliedRules.length}`} color="var(--amber)" sub="checkpoints reached" />
-            </div>
-          </Card>
+        {/* Start next mission CTA */}
+        {needsWork.length > 0 && (
+          <button
+            onClick={() => window.location.href = '/dashboard'}
+            style={{
+              marginTop: 4,
+              width: '100%',
+              background: C.yellow, color: '#111',
+              border: 'none', borderRadius: 14,
+              padding: '16px', fontSize: 16, fontWeight: 800,
+              cursor: 'pointer', letterSpacing: '0.02em',
+            }}
+          >
+            START NEXT MISSION →
+          </button>
+        )}
 
-          <Card title="Report Quality">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <span style={{ fontSize: 13, color: 'var(--text2)' }}>Data completeness</span>
-              <div style={{ flex: 1, height: 7, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${confidence.pct}%`, background: `linear-gradient(90deg, var(--amber), var(--green))`, borderRadius: 99 }} />
-              </div>
-              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 13, color: 'var(--text2)' }}>{confidence.pct}%</span>
-            </div>
-            {confidence.missingSignals.map((m, i) => (
-              <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text2)', marginTop: 6 }}>
-                <span style={{ color: 'var(--amber)', flexShrink: 0 }}>!</span>{m}
+        {/* Share */}
+        {shareUrl && (
+          <button
+            onClick={handleCopyShare}
+            style={{
+              width: '100%',
+              background: 'transparent', color: copied ? C.green : C.muted,
+              border: `1px solid ${copied ? C.green : '#2a2a2a'}`, borderRadius: 14,
+              padding: '14px', fontSize: 14, fontWeight: 600,
+              cursor: 'pointer', transition: 'all 0.2s',
+            }}
+          >
+            {copied ? '✓ Link Copied!' : '🔗 Share Your Results'}
+          </button>
+        )}
+      </div>
+
+      {/* Mission detail — top issues */}
+      {activeMission && recommendations.quick_wins.length > 0 && (
+        <div id="mission-detail" style={{ padding: '0 20px 16px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', marginBottom: 12 }}>
+            QUICK WINS — START HERE
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {recommendations.quick_wins.slice(0, 3).map((rec, i) => (
+              <div key={i} style={{
+                background: C.card, border: `1px solid ${C.cardBdr}`,
+                borderRadius: 14, padding: '16px',
+                display: 'flex', gap: 14, alignItems: 'flex-start',
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                  background: C.yellowDim, display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', fontSize: 18,
+                }}>{rec.icon}</div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{rec.title}</div>
+                  <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.5 }}>{rec.desc}</div>
+                </div>
               </div>
             ))}
-          </Card>
-
-          <Card title="What We Found On Your Site">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {([
-                ['Main action button',          growthMarkers.hasCTA,             'A clear primary action like \'Book Now\' or \'Get a Quote\' guides users toward conversion. Without it, visitors hesitate or leave without taking action.'],
-                ['Online booking',              growthMarkers.hasBooking,         'Allowing customers to book immediately reduces friction and captures intent at its peak. Businesses with online booking typically see a 30% increase in conversion.'],
-                ['Contact form',                growthMarkers.hasContactForm,     'A simple way for leads to reach you 24/7. It captures contact info even when you\'re closed, ensuring no potential customer is ignored.'],
-                ['Prices or packages',          growthMarkers.hasPricing,         'Transparency builds trust and filters out unqualified leads. Most visitors won\'t call to ask for a price—they\'ll just choose a competitor who shows it.'],
-                ['Reviews or testimonials',     growthMarkers.hasReviews,         'Social proof is the #1 trust factor for local businesses. Without it, you lose customers at the final decision stage to more \'proven\' competitors.'],
-                ['Secure connection (HTTPS)',   growthMarkers.hasSSL,             'Security is non-negotiable. Modern browsers flag non-secure sites as \'Dangerous\', causing immediate trust loss and high bounce rates.'],
-                ['Mobile optimized',            growthMarkers.isMobileOptimized,  'Over 60% of local searches happen on mobile. If your site is hard to use on a phone, you are literally throwing away more than half of your potential business.'],
-                ['Google Business linked',      growthMarkers.hasGBP,             'Connecting your site to GMB powers your visibility in Google Maps. Without this link, you\'re invisible to customers searching for services near them.'],
-                ['Optimized for Google search', growthMarkers.hasSchema,          'Technical \'Schema\' code tells Google exactly what you do. This increases your chances of appearing in high-value \'rich results\' and maps.'],
-                ['Website analytics',           growthMarkers.hasAnalytics,       'You can\'t improve what you don\'t measure. Analytics show you where people leave, allowing you to fix leaks and increase marketing ROI.'],
-                ['Paid ad tracking',            growthMarkers.hasPixel,           'Pixels let you \'retarget\' past visitors with ads. This is the most cost-effective way to bring back people who were interested but didn\'t buy yet.'],
-                ['Business address',            growthMarkers.hasAddress,         'Physical location is a massive credibility signal for local businesses. It confirms you are real and within a convenient distance for the customer.'],
-                ['Services listed clearly',     growthMarkers.hasServiceList,     'Visitors decide within seconds if you can help them. If your services aren\'t front-and-center, they\'ll leave to find someone who lists them clearly.'],
-                ['FAQ section',                 growthMarkers.hasFAQ,             'Answers common objections before they become hurdles. Reducing hesitation directly leads to faster decisions and more inbound calls.'],
-                ['Blog or news section',        growthMarkers.hasBlog,            'Regular updates signal an active, authoritative business. It also provides \'hooks\' for Google to rank you for more keywords over time.'],
-                ['Logo visible',                growthMarkers.hasLogo,            'Fundamental brand recognition. A professional logo builds immediate trust and makes your business feel established and reliable.'],
-              ] as [string, boolean, string][]).map(([label, val, tip]) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, padding: '3px 0' }}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text)' }}>{label}</span>
-                    <InsightTooltip title={label} text={tip} />
-                  </div>
-                  <span style={{ color: val ? 'var(--green)' : 'var(--red)', fontFamily: 'var(--ff-mono)', fontSize: 12, fontWeight: 500 }}>
-                    {val ? '✓' : '✗'}
-                  </span>
-                </div>
-              ))}
-              <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                <span style={{ color: 'var(--text)' }}>Word count</span>
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: growthMarkers.wordCount >= 300 ? 'var(--green)' : 'var(--red)', fontWeight: 500 }}>
-                  {growthMarkers.wordCount}
-                </span>
-              </div>
-            </div>
-          </Card>
+          </div>
         </div>
+      )}
 
-        {/* RIGHT COLUMN: Actionable Analysis */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
-          <Card title="Revenue Leakage Analysis">
-            <div style={{ textAlign: 'center', padding: '1.25rem 0' }}>
-              <div style={{ fontFamily: 'var(--ff-display)', fontSize: '3.8rem', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {Math.max(revenueLeak.totalPct, 15)}%
-                <ExplainIcon 
-                   onClick={(e) => fetchExplanation('revenue_leakage', 'Revenue Leakage', e, { type: 'revenue_leakage', leakPercent: Math.max(revenueLeak.totalPct, 15), businessName: biz, industry: input.vertical, lowestAreas: sorted.slice(-2).map(p=>p.name) })}
-                  loading={loadingKey === 'revenue_leakage'} loaded={!!explanations['revenue_leakage']}
-                />
+      {/* Roadmap preview */}
+      {roadmap?.['30']?.length > 0 && (
+        <div style={{ padding: '0 20px 16px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', marginBottom: 12 }}>
+            30-DAY SPRINT
+          </div>
+          <div style={{ background: C.card, border: `1px solid ${C.cardBdr}`, borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {roadmap['30'].slice(0, 3).map((item, i) => (
+              <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <span style={{ color: C.yellow, flexShrink: 0, fontSize: 14 }}>→</span>
+                <span style={{ fontSize: 13, color: C.textSoft, lineHeight: 1.5 }}>{item}</span>
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 3 }}>
-                Estimated daily growth opportunity being lost
-              </div>
-              {(revenueLeak.estimatedMonthlyLoss != null && revenueLeak.estimatedMonthlyLoss > 0) ? (
-                <div style={{ marginTop: '1rem', fontFamily: 'var(--ff-display)', fontSize: '1.5rem', color: 'var(--red)' }}>
-                  ~${revenueLeak.estimatedMonthlyLoss.toLocaleString()}/mo potential gain
-                </div>
-              ) : (
-                 <div style={{ marginTop: '1rem', fontFamily: 'var(--ff-display)', fontSize: '1.25rem', color: 'var(--red)' }}>
-                  Critical growth opportunity detected
-                </div>
-              )}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-              {revenueLeak.breakdown.map(b => (
-                <div key={b.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg3)', borderRadius: 'var(--rs)', border: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>{b.icon} {b.label}</span>
-                  <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 13, color: 'var(--red)' }}>−{b.pct}%</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-          {result.slug && (
-            <div style={{
-              background: 'var(--bg2)',
-              border: '1px solid var(--border)',
-              borderRadius: '12px',
-              padding: '1.25rem 1.5rem',
-              marginTop: '2rem',
-              marginBottom: '1rem',
-            }}>
-              <p style={{ fontFamily: 'var(--ff-sans)', fontSize: '12px', color: 'var(--text3)', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Share your results
-              </p>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 14px' }}>
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: '13px', color: 'var(--text2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                  {typeof window !== 'undefined' ? `${window.location.origin}/report/${result.slug}` : `/report/${result.slug}`}
-                </span>
-                <button
-                  onClick={() => {
-                    const url = `${window.location.origin}/report/${result.slug}`
-                    navigator.clipboard.writeText(url).then(() => {
-                      setCopied(true)
-                      setTimeout(() => setCopied(false), 2000)
-                    })
-                  }}
-                  style={{ background: copied ? 'var(--green)' : 'var(--accent)', color: '#0a0a0f', border: 'none', borderRadius: '6px', padding: '7px 16px', fontFamily: 'var(--ff-sans)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, transition: 'background 0.2s', minHeight: '34px' }}
-                >
-                  {copied ? '✓ Copied' : 'Copy link'}
-                </button>
-              </div>
-              <p style={{ fontFamily: 'var(--ff-sans)', fontSize: '11px', color: 'var(--text3)', margin: '8px 0 0' }}>
-                Anyone with this link can view your report — no account needed.
-              </p>
-            </div>
-          )}
-
-          {result.auditId && (
-            <div style={{ background: 'rgba(74,222,128,.05)', border: '1px solid rgba(74,222,128,.15)', borderRadius: 'var(--r)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', flexShrink: 0 }} />
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>Audit saved to intelligence layer</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>
-                  ID: {result.auditId} · 80+ details persisted · comparison data updated
-                </div>
-              </div>
-              <a href="/dashboard" style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>View in dashboard →</a>
-            </div>
-          )}
-
-          {/* AI Narrative */}
-          {aiNarrative && (
-            <ErrorBoundary label="AI narrative" fallback={
-              <div style={{ padding: '1.25rem', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, color: 'var(--text2)' }}>
-                AI analysis unavailable — scores and recommendations are accurate and detailed.
-              </div>
-            }>
-              <div style={{ background: 'linear-gradient(135deg, rgba(200,169,110,.06), rgba(167,139,250,.04))', border: '1px solid rgba(200,169,110,.18)', borderRadius: 'var(--r)', padding: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '1.25rem', borderBottom: '1px solid rgba(200,169,110,.12)' }}>
-                  <div>
-                    <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Overall Performance</div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                      <span style={{ fontFamily: 'var(--ff-display)', fontSize: '2rem', color: gradeColor(overallScore) }}>{overallScore}</span>
-                      <span style={{ fontSize: 13, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>/ 100</span>
-                      <span style={{ fontSize: 16, fontWeight: 600, color: gradeColor(overallScore), marginLeft: 8 }}>Grade {grade}</span>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Report Status</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', animation: 'blink 2s infinite' }} />
-                      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>AI Analysis Active</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="ai-narrative" style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.8 }}
-                  dangerouslySetInnerHTML={{ __html: aiNarrative }} />
-                {aiTopIssues.length > 0 && (
-                  <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(200,169,110,.12)' }}>
-                    <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', marginBottom: 8 }}>TOP ISSUES DETECTED ON PAGE</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {aiTopIssues.map((issue, i) => (
-                        <span key={i} style={{ fontSize: 11, padding: '3px 10px', background: 'var(--rdim)', color: 'var(--red)', border: '1px solid rgba(248,113,113,.2)', borderRadius: 99, fontFamily: 'var(--ff-mono)' }}>
-                          {issue}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </ErrorBoundary>
-          )}
-
-          {/* Area scores */}
-          <Card title="Full Breakdown — Performance by Area">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {PILLARS.map(p => {
-                const sc = areaScores[p.id] ?? 0
-                const col = gradeColor(sc)
-                const bm = benchmark.avg[PILLARS.findIndex(x => x.id === p.id)] ?? 50
-                return (
-                  <div key={p.id}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                    <div style={{ fontSize: 13, display: 'flex', alignItems: 'center' }}>
-                      {p.icon} {p.name}
-                      <ExplainIcon 
-                        onClick={(e) => fetchExplanation(`pillar_${p.id}`, p.name, e, { type: 'pillar', pillarName: p.name, pillarScore: sc, pillarWeight: p.weight * 100, industryAvg: bm, businessName: biz, industry: input.vertical })}
-                        loading={loadingKey === `pillar_${p.id}`} loaded={!!explanations[`pillar_${p.id}`]}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)' }}>avg {bm}</span>
-                        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 13, color: col }}>{sc}/100</span>
-                      </div>
-                    </div>
-                    <div style={{ height: 6, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden', position: 'relative' }}>
-                      <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${bm}%`, width: 1, background: 'rgba(255,255,255,.15)', zIndex: 1 }} />
-                      <div style={{ height: '100%', width: `${sc}%`, background: col, borderRadius: 99, transition: 'width 1.2s ease' }} />
-                    </div>
-                    <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--ff-mono)', marginTop: 3 }}>
-                      priority weight: {Math.round(p.weight * 100)}%
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </Card>
-
-          {/* Recommendations */}
-          <Card title="Recommendations Engine">
-            <div style={{ display: 'flex', gap: 2, marginBottom: '1.5rem', background: 'var(--bg3)', borderRadius: 'var(--rs)', padding: 3 }}>
-              {(['revenue_leaks', 'quick_wins', 'high_impact'] as const).map(tab => (
-                <button key={tab} onClick={() => setRecTab(tab)} style={{
-                  flex: 1, padding: '8px 10px', borderRadius: 6,
-                  border: recTab === tab ? '1px solid var(--border)' : 'none',
-                  background: recTab === tab ? 'var(--bg2)' : 'none',
-                  color: recTab === tab ? 'var(--text)' : 'var(--text3)',
-                  fontSize: 11, fontFamily: 'var(--ff-mono)', cursor: 'pointer', textAlign: 'center',
-                }}>
-                  {tab === 'revenue_leaks' ? 'Revenue Leaks' : tab === 'quick_wins' ? 'Quick Wins' : 'High Impact'}
-                </button>
-              ))}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {recommendations[recTab].length === 0
-                ? <p style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', padding: '1.5rem' }}>Strong performance here — no critical issues in this category.</p>
-                : recommendations[recTab].map((rec, i) => <RecCard key={i} rec={rec} />)
-              }
-            </div>
-          </Card>
-
-          {/* Benchmark */}
-          <Card title={`How You Compare To Similar Businesses${benchmark.count ? ` (${benchmark.count} scanned)` : ''}`}>
-            {PILLARS.slice(0, 8).map((p, i) => {
-              const you = areaScores[p.id]
-              const avg = benchmark.avg[i] ?? 50
-              const top = benchmark.top[i] ?? 80
-              return (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: i < 7 ? '1px solid var(--border)' : 'none' }}>
-                  <div style={{ fontSize: 12, color: 'var(--text2)', width: 130, flexShrink: 0 }}>{p.name}</div>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    {[{ l: 'You', v: you, c: 'var(--accent)' }, { l: 'Avg', v: avg, c: 'var(--blue)' }, { l: 'Top', v: top, c: 'var(--green)' }].map(row => (
-                      <div key={row.l} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontFamily: 'var(--ff-mono)' }}>
-                        <span style={{ color: row.c, width: 22 }}>{row.l}</span>
-                        <div style={{ flex: 1, height: 4, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${row.v}%`, background: row.c, borderRadius: 99 }} />
-                        </div>
-                        <span style={{ width: 22, textAlign: 'right', color: row.c }}>{row.v}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
-            <div style={{ marginTop: '1rem', display: 'flex', gap: 16, fontSize: 11, fontFamily: 'var(--ff-mono)' }}>
-              {[['You', 'var(--accent)'], ['Industry average', 'var(--blue)'], ['Top 10%', 'var(--green)']].map(([l, c]) => (
-                <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ width: 10, height: 2, background: c, borderRadius: 2, display: 'inline-block' }} />{l}
-                </span>
-              ))}
-              {benchmark.count && benchmark.count > 5 && (
-                <span style={{ color: 'var(--green)', marginLeft: 'auto' }}>✓ Live data ({benchmark.count} businesses)</span>
-              )}
-            </div>
-          </Card>
-
-          {/* Roadmap */}
-          <Card title="30 / 60 / 90 Day Roadmap">
-            <div className="roadmap-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-              {(['30', '60', '90'] as const).map(ph => {
-                const cfg = { '30': { bg: 'var(--adm)', fg: 'var(--amber)', lbl: 'Foundation' }, '60': { bg: 'var(--bdim)', fg: 'var(--blue)', lbl: 'Acceleration' }, '90': { bg: 'var(--gdim)', fg: 'var(--green)', lbl: 'Scale' } }[ph]
-                return (
-                  <div key={ph} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '1.25rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1rem' }}>
-                      <div style={{ width: 30, height: 30, borderRadius: 'var(--rs)', background: cfg.bg, color: cfg.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'var(--ff-mono)', fontWeight: 600 }}>{ph}d</div>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 500 }}>{ph}-Day Sprint</div>
-                        <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>{cfg.lbl}</div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                      {roadmap[ph].slice(0, 5).map((item, i) => (
-                        <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text2)', lineHeight: 1.4 }}>
-                          <span style={{ color: 'var(--text3)', flexShrink: 0 }}>→</span>{item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </Card>
-
-          {/* Rules trace */}
-          <Card title="Detailed Growth Trace">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-              {appliedRules.length === 0
-                ? <p style={{ fontSize: 13, color: 'var(--text3)' }}>Scan complete — no critical issues detected.</p>
-                : appliedRules.map((ar, i) => {
-                  const pname = PILLARS.find(p => p.id === ar.pillarId)?.name ?? ar.pillarId
-                  return (
-                    <div key={i} style={{ padding: '9px 13px', background: 'var(--bg3)', borderRadius: 'var(--rs)', borderLeft: `3px solid ${ar.type === 'CAP' ? 'var(--red)' : 'var(--amber)'}` }}>
-                      <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 2 }}>[{pname}] Checkpoint reached</div>
-                      <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--ff-mono)' }}>
-                        {ar.type === 'CAP' ? `Limit → score max ${ar.rule.cap}` : `Adjustment → −${ar.rule.pen} pts`}
-                        {ar.baseScore !== undefined && (
-                          <span style={{ marginLeft: 12 }}>{ar.baseScore} → {ar.finalScore}</span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })
-              }
-            </div>
-          </Card>
-
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* ── Fixed CTA Bar ── */}
-      <div className="no-print fixed-cta-bar" style={{ 
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000, 
-        background: 'rgba(10,10,15,.75)', backdropFilter: 'blur(16px)', 
-        borderTop: '1px solid var(--border)', padding: '16px 2rem', 
-        display: 'flex', alignItems: 'center', justifyContent: 'center' 
-      }}>
-        <div className="fixed-cta-inner" style={{ maxWidth: 1100, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-           <div className="cta-score-pill" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: gradeColor(overallScore) }} />
-              <span style={{ fontSize: 13, fontWeight: 500 }}>{biz} Performance: <span style={{ color: gradeColor(overallScore) }}>{overallScore}/100</span></span>
-           </div>
-           <div className="cta-button-group" style={{ display: 'flex', gap: 12 }}>
-              <button onClick={handleCopyLink} style={ghost}>
-                 {copied ? '✓ URL Copied' : '🔗 Share Report'}
-              </button>
-              <button onClick={onNewAudit} style={ghost}>
-                 Audit Another Business
-              </button>
-              
-              {overallScore >= 75 ? (
-                <button onClick={handleCopyBadge} style={{ 
-                  background: badgeCopied ? 'var(--green)' : 'var(--accent)', 
-                  border: 'none', color: '#0a0a0f', padding: '8px 20px', 
-                  borderRadius: 'var(--rs)', cursor: 'pointer', fontFamily: 'var(--ff-sans)', 
-                  fontSize: 13, fontWeight: 700 
-                }}>
-                  {badgeCopied ? '✓ Code Copied!' : '🏆 Embed Verified Badge'}
-                </button>
-              ) : (
-                <button onClick={() => setIsWaitlistModalOpen(true)} style={{ 
-                  background: 'rgba(200,169,110,0.05)', border: '1px solid var(--accent)', 
-                  color: 'var(--accent)', padding: '8px 20px', borderRadius: 'var(--rs)', 
-                  cursor: 'pointer', fontFamily: 'var(--ff-sans)', fontSize: 13, fontWeight: 700 
-                }}>
-                  Join Growth Pro Waitlist
-                </button>
-              )}
-           </div>
-        </div>
-      </div>
-      {openKey && <ExplainerPopover label={openKey.label} text={explanations[openKey.key]} rect={openKey.rect} />}
-      
-      <WaitlistModal 
+      <BottomNav active="missions" onNewAudit={onNewAudit} shareUrl={shareUrl} />
+
+      <WaitlistModal
         isOpen={isWaitlistModalOpen}
         onClose={() => setIsWaitlistModalOpen(false)}
         source="results_cta_bar"
@@ -651,110 +471,4 @@ export default function ResultsView({
       />
     </div>
   )
-}
-
-const gradeColor = (s: number) => s >= 75 ? 'var(--green)' : s >= 60 ? 'var(--accent)' : s >= 45 ? 'var(--amber)' : 'var(--red)'
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="card" style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '1.5rem' }}>
-      <div style={{ fontSize: 11, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '1rem' }}>{title}</div>
-      {children}
-    </div>
-  )
-}
-
-function Bdg({ c, children }: { c: string; children: React.ReactNode }) {
-  const m: Record<string, { bg: string; fg: string; bd: string }> = {
-    accent:  { bg: 'var(--adim)', fg: 'var(--accent)', bd: 'rgba(200,169,110,.2)' },
-    green:   { bg: 'var(--gdim)', fg: 'var(--green)',  bd: 'rgba(74,222,128,.2)'  },
-    amber:   { bg: 'var(--adm)',  fg: 'var(--amber)',  bd: 'rgba(251,191,36,.2)'  },
-    red:     { bg: 'var(--rdim)', fg: 'var(--red)',    bd: 'rgba(248,113,113,.2)' },
-    blue:    { bg: 'var(--bdim)', fg: 'var(--blue)',   bd: 'rgba(96,165,250,.2)'  },
-    purple:  { bg: 'rgba(167,139,250,.1)', fg: '#a78bfa', bd: 'rgba(167,139,250,.2)' },
-  }
-  const s = m[c] ?? m.accent
-  return <span style={{ padding: '3px 10px', borderRadius: 99, fontSize: 11, fontFamily: 'var(--ff-mono)', background: s.bg, color: s.fg, border: `1px solid ${s.bd}` }}>{children}</span>
-}
-
-function MStat({ label, val, color, sub }: { label: string; val: string; color: string; sub: string }) {
-  return (
-    <div style={{ background: 'var(--bg3)', borderRadius: 'var(--rs)', border: '1px solid var(--border)', padding: '.9rem' }}>
-      <div style={{ fontSize: 10, fontFamily: 'var(--ff-mono)', color: 'var(--text3)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em' }}>{label}</div>
-      <div style={{ fontFamily: 'var(--ff-display)', fontSize: '1.35rem', color, marginBottom: 3 }}>{val}</div>
-      <div style={{ fontSize: 11, color: 'var(--text2)' }}>{sub}</div>
-    </div>
-  )
-}
-
-function ScoreDial({ score }: { score: number }) {
-  const ref = useRef<HTMLCanvasElement>(null)
-  const [hasCanvas, setHasCanvas] = useState(true)
-
-  useEffect(() => {
-    const c = ref.current; if (!c) return
-    const ctx = c.getContext('2d')
-    if (!ctx) {
-      setTimeout(() => setHasCanvas(false), 0)
-      return
-    }
-    
-    const cx = 95, cy = 95, r = 72
-    const thick = 14
-    const sa = -Math.PI / 2
-    ctx.clearRect(0, 0, 190, 190)
-    
-    // Background track
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2)
-    ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = thick; ctx.stroke()
-    
-    // Foreground arc (75=A, 60=B, 45=C)
-    const col = score >= 75 ? '#10B981' : score >= 60 ? '#C8A96E' : score >= 45 ? '#F59E0B' : '#EF4444'
-    ctx.beginPath(); ctx.arc(cx, cy, r, sa, sa + (Math.PI * 2) * (score / 100))
-    ctx.strokeStyle = col; ctx.lineWidth = thick; ctx.lineCap = 'round'; ctx.stroke()
-  }, [score])
-
-  return (
-    <div style={{ position: 'relative', width: 190, height: 190, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {hasCanvas ? (
-        <canvas ref={ref} width={190} height={190} />
-      ) : (
-        <div style={{ width: 150, height: 150, borderRadius: '50%', border: '8px solid rgba(255,255,255,.07)', borderTopColor: gradeColor(score), transform: `rotate(${45 + (score * 2.7)}deg)` }} />
-      )}
-      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', marginTop: 8 }}>
-        <div style={{ fontFamily: 'var(--ff-display)', fontSize: '3.5rem', lineHeight: 1 }}>{score}</div>
-        <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--ff-mono)', marginTop: 3 }}>/ 100</div>
-      </div>
-    </div>
-  )
-}
-
-function RecCard({ rec }: { rec: Recommendation }) {
-  const ib = rec.iconColor === 'red' ? 'var(--rdim)' : rec.iconColor === 'green' ? 'var(--gdim)' : 'var(--bdim)'
-  return (
-    <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-      <div style={{ width: 30, height: 30, borderRadius: 'var(--rs)', background: ib, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>{rec.icon}</div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 3 }}>{rec.title}</div>
-        <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 7, lineHeight: 1.5 }}>{rec.desc}</div>
-        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-          <Pill c="red">Impact: {rec.impact}</Pill>
-          <Pill c="blue">Effort: {rec.effort}</Pill>
-          <Pill c="amber">{rec.timeframe}</Pill>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function Pill({ c, children }: { c: string; children: React.ReactNode }) {
-  const m: Record<string, { bg: string; fg: string; bd: string }> = {
-    red:   { bg: 'var(--rdim)', fg: 'var(--red)',   bd: 'rgba(248,113,113,.2)' },
-    blue:  { bg: 'var(--bdim)', fg: 'var(--blue)',  bd: 'rgba(96,165,250,.2)'  },
-    amber: { bg: 'var(--adm)',  fg: 'var(--amber)', bd: 'rgba(251,191,36,.2)'  },
-  }
-  const s = m[c] ?? m.red
-  return <span style={{ fontSize: 10, fontFamily: 'var(--ff-mono)', padding: '2px 8px', borderRadius: 99, background: s.bg, color: s.fg, border: `1px solid ${s.bd}` }}>{children}</span>
 }
