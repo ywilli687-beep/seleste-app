@@ -7,140 +7,132 @@ import { WaitlistModal } from '@/components/ui/WaitlistModal'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg:        '#131314',
-  surface:   '#1C1B1C',
-  surfaceHi: '#2A2A2B',
-  surfaceTop:'#353436',
-  primary:   '#75FF9E',
-  primaryCt: '#00E676',
-  secondary: '#FFD799',
-  tertiary:  '#FFDDDA',
-  tertiaryC: '#FFB6B1',
-  onSurface: '#E5E2E3',
-  onMuted:   '#BACBB9',
-  outline:   '#3B4A3D',
-  error:     '#FFDDDA',
-  errorDim:  'rgba(255,180,171,0.12)',
-  warnDim:   'rgba(255,211,0,0.12)',
-  primaryDim:'rgba(117,255,158,0.10)',
-  ff:        "'Manrope', 'Inter', sans-serif",
-  ffBody:    "'Inter', sans-serif",
+  bg:         '#131314',
+  surface:    '#1C1B1C',
+  surfaceHi:  '#2A2A2B',
+  surfaceTop: '#353436',
+  primary:    '#75FF9E',
+  primaryCt:  '#00E676',
+  secondary:  '#FFD799',
+  tertiaryC:  '#FFB6B1',
+  onSurface:  '#E5E2E3',
+  onMuted:    '#BACBB9',
+  outline:    '#3B4A3D',
+  errorDim:   'rgba(255,180,171,0.12)',
+  warnDim:    'rgba(255,211,0,0.12)',
+  primaryDim: 'rgba(117,255,158,0.10)',
+  ff:         "'Manrope', 'Inter', sans-serif",
+  ffBody:     "'Inter', sans-serif",
 }
 
 const gradeColor = (s: number) =>
   s >= 75 ? T.primary : s >= 60 ? T.secondary : s >= 45 ? T.tertiaryC : '#FFDDDA'
 
-// ── Growth ring (SVG, no canvas) ──────────────────────────────────────────────
-function GrowthRing({ score }: { score: number }) {
-  const r = 76, circ = 2 * Math.PI * r
+// ── Responsive hook ───────────────────────────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  useEffect(() => {
+    const fn = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', fn)
+    return () => window.removeEventListener('resize', fn)
+  }, [])
+  return isMobile
+}
+
+// ── Growth ring ───────────────────────────────────────────────────────────────
+function GrowthRing({ score, size = 190 }: { score: number; size?: number }) {
+  const r = size * 0.4, circ = 2 * Math.PI * r
   const ref = useRef<SVGCircleElement>(null)
   useEffect(() => {
     if (!ref.current) return
     ref.current.style.strokeDashoffset = String(circ * (1 - score / 100))
   }, [score, circ])
   const col = gradeColor(score)
+  const sw = size * 0.065
   return (
-    <div style={{ position: 'relative', width: 190, height: 190 }}>
-      <svg width="190" height="190" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="95" cy="95" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="12" />
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={sw} />
         <circle
           ref={ref}
-          cx="95" cy="95" r={r}
-          fill="none"
-          stroke={col}
-          strokeWidth="12"
-          strokeLinecap="round"
-          strokeDasharray={String(circ)}
-          strokeDashoffset={String(circ)}
-          style={{
-            transition: 'stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1)',
-            filter: `drop-shadow(0 0 8px ${col}55)`,
-          }}
+          cx={size / 2} cy={size / 2} r={r}
+          fill="none" stroke={col} strokeWidth={sw} strokeLinecap="round"
+          strokeDasharray={String(circ)} strokeDashoffset={String(circ)}
+          style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1)', filter: `drop-shadow(0 0 8px ${col}55)` }}
         />
       </svg>
-      <div style={{
-        position: 'absolute', inset: 0,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <span style={{ fontFamily: T.ff, fontSize: '3.5rem', fontWeight: 800, color: col, lineHeight: 1 }}>
-          {score}
-        </span>
-        <span style={{ fontFamily: T.ff, fontSize: 10, color: T.onMuted, letterSpacing: '0.2em', marginTop: 4 }}>
-          / 100
-        </span>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontFamily: T.ff, fontSize: size * 0.185, fontWeight: 800, color: col, lineHeight: 1 }}>{score}</span>
+        <span style={{ fontFamily: T.ff, fontSize: size * 0.058, color: T.onMuted, letterSpacing: '0.18em', marginTop: 4 }}>/100</span>
       </div>
     </div>
   )
 }
 
-// ── Horizontal pillar card ────────────────────────────────────────────────────
-function PillarCard({ icon, name, score, weight, desc }: {
-  icon: string; name: string; score: number; weight: number; desc: string
-}) {
+// ── Pillar bar (used in both layouts) ─────────────────────────────────────────
+function PillarBar({ icon, name, score, weight }: { icon: string; name: string; score: number; weight: number }) {
   const col = gradeColor(score)
   return (
-    <div style={{
-      flexShrink: 0, width: 240,
-      background: T.surfaceHi, borderRadius: 24,
-      padding: '20px', scrollSnapAlign: 'center',
-      border: `1px solid rgba(59,74,61,0.15)`,
-    }}>
-      <div style={{
-        width: 40, height: 40, borderRadius: '50%',
-        background: `${col}18`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 20, marginBottom: 14,
-      }}>{icon}</div>
-      <div style={{ fontFamily: T.ff, fontWeight: 700, fontSize: 17, marginBottom: 4 }}>{name}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-        <div style={{ flex: 1, height: 5, background: T.surfaceTop, borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{
-            height: '100%', width: `${score}%`, background: col, borderRadius: 99,
-            boxShadow: `0 0 8px ${col}44`,
-            transition: 'width 1.2s ease',
-          }} />
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <span style={{ fontSize: 13, color: T.onSurface, display: 'flex', alignItems: 'center', gap: 6 }}>
+          {icon} {name}
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 10, color: T.onMuted, fontFamily: T.ffBody }}>wt {Math.round(weight * 100)}%</span>
+          <span style={{ fontFamily: T.ff, fontSize: 13, fontWeight: 700, color: col }}>{score}/100</span>
         </div>
-        <span style={{ fontFamily: T.ff, fontSize: 12, fontWeight: 700, color: col }}>{score}%</span>
       </div>
-      <p style={{ fontSize: 12, color: T.onMuted, lineHeight: 1.6, margin: 0 }}>{desc}</p>
-      <div style={{ marginTop: 8, fontSize: 10, color: T.onMuted, letterSpacing: '0.08em' }}>
-        WEIGHT {Math.round(weight * 100)}%
+      <div style={{ height: 5, background: T.surfaceTop, borderRadius: 99, overflow: 'hidden' }}>
+        <div style={{
+          height: '100%', width: `${score}%`, background: col, borderRadius: 99,
+          boxShadow: `0 0 6px ${col}44`, transition: 'width 1.2s ease',
+        }} />
       </div>
+    </div>
+  )
+}
+
+// ── Horizontal pillar card (mobile swipe) ─────────────────────────────────────
+function PillarCard({ icon, name, score, weight, desc }: { icon: string; name: string; score: number; weight: number; desc: string }) {
+  const col = gradeColor(score)
+  return (
+    <div style={{ flexShrink: 0, width: 220, background: T.surfaceHi, borderRadius: 24, padding: '18px', scrollSnapAlign: 'center' }}>
+      <div style={{ width: 38, height: 38, borderRadius: '50%', background: `${col}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, marginBottom: 12 }}>
+        {icon}
+      </div>
+      <div style={{ fontFamily: T.ff, fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{name}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{ flex: 1, height: 4, background: T.surfaceTop, borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${score}%`, background: col, borderRadius: 99, boxShadow: `0 0 6px ${col}44`, transition: 'width 1.2s ease' }} />
+        </div>
+        <span style={{ fontFamily: T.ff, fontSize: 11, fontWeight: 700, color: col }}>{score}%</span>
+      </div>
+      <p style={{ fontSize: 11, color: T.onMuted, lineHeight: 1.6, margin: 0 }}>{desc}</p>
     </div>
   )
 }
 
 // ── Insight nugget ────────────────────────────────────────────────────────────
 type NuggetType = 'leak' | 'opportunity' | 'win'
+const nuggetCfg = {
+  leak:        { bg: 'rgba(255,180,171,0.12)', fg: '#FFDDDA', label: 'Critical Leak',  icon: '🔴' },
+  opportunity: { bg: 'rgba(255,211,0,0.12)',   fg: '#FFD799', label: 'Opportunity',    icon: '🟡' },
+  win:         { bg: 'rgba(117,255,158,0.10)', fg: '#75FF9E', label: 'Win',            icon: '🟢' },
+}
 
-function InsightNugget({ type, title, body }: {
-  type: NuggetType; title: string; body: string
-}) {
-  const cfg = {
-    leak:        { bg: T.errorDim,   fg: '#FFDDDA', label: 'Critical Leak',  icon: '🔴' },
-    opportunity: { bg: T.warnDim,    fg: T.secondary, label: 'Opportunity',  icon: '🟡' },
-    win:         { bg: T.primaryDim, fg: T.primary,   label: 'Win',          icon: '🟢' },
-  }[type]
-
+function InsightNugget({ type, title, body }: { type: NuggetType; title: string; body: string }) {
+  const cfg = nuggetCfg[type]
   return (
-    <div style={{
-      background: T.surface, borderRadius: 24,
-      padding: '16px', display: 'flex', gap: 14, alignItems: 'flex-start',
-    }}>
-      <div style={{
-        width: 48, height: 48, borderRadius: 16, flexShrink: 0,
-        background: cfg.bg, display: 'flex', alignItems: 'center',
-        justifyContent: 'center', fontSize: 22,
-      }}>{cfg.icon}</div>
+    <div style={{ background: T.surface, borderRadius: 20, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      <div style={{ width: 42, height: 42, borderRadius: 14, flexShrink: 0, background: cfg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+        {cfg.icon}
+      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{
-            background: cfg.bg, color: cfg.fg,
-            fontSize: 9, fontFamily: T.ffBody, fontWeight: 700,
-            letterSpacing: '0.12em', padding: '2px 8px', borderRadius: 99, textTransform: 'uppercase',
-          }}>{cfg.label}</span>
-        </div>
-        <div style={{ fontSize: 14, fontWeight: 600, fontFamily: T.ff, marginBottom: 4 }}>{title}</div>
+        <span style={{ background: cfg.bg, color: cfg.fg, fontSize: 9, fontFamily: T.ffBody, fontWeight: 700, letterSpacing: '0.12em', padding: '2px 8px', borderRadius: 99, textTransform: 'uppercase' as const }}>
+          {cfg.label}
+        </span>
+        <div style={{ fontSize: 13, fontWeight: 600, fontFamily: T.ff, margin: '5px 0 3px' }}>{title}</div>
         <div style={{ fontSize: 12, color: T.onMuted, lineHeight: 1.5 }}>{body}</div>
       </div>
       <span style={{ color: T.onMuted, fontSize: 18, alignSelf: 'center', flexShrink: 0 }}>›</span>
@@ -148,43 +140,351 @@ function InsightNugget({ type, title, body }: {
   )
 }
 
-// ── Site signal row ───────────────────────────────────────────────────────────
-function SignalRow({ label, value }: { label: string; value: boolean | string | number }) {
+// ── Signal row ────────────────────────────────────────────────────────────────
+function SignalRow({ label, value, last }: { label: string; value: boolean | number; last?: boolean }) {
   const isPass = value === true || (typeof value === 'number' && value >= 300)
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      paddingBottom: 14, marginBottom: 14,
-    }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: last ? 0 : 12, marginBottom: last ? 0 : 12 }}>
       <span style={{ fontSize: 13, color: T.onSurface }}>{label}</span>
       {typeof value === 'number'
         ? <span style={{ fontFamily: T.ffBody, fontSize: 13, fontWeight: 600, color: isPass ? T.primary : T.tertiaryC }}>{value}</span>
-        : <span style={{ fontSize: 16 }}>{isPass ? '✓' : '✗'}</span>
-      }
+        : <span style={{ fontSize: 15, color: isPass ? T.primary : T.tertiaryC }}>{isPass ? '✓' : '✗'}</span>}
     </div>
   )
 }
 
-// ── Main ──────────────────────────────────────────────────────────────────────
+// ── Section label ─────────────────────────────────────────────────────────────
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h4 style={{ fontFamily: T.ff, fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: T.onMuted, margin: '0 0 14px' }}>
+      {children}
+    </h4>
+  )
+}
+
+// ── Top bar ───────────────────────────────────────────────────────────────────
+function TopBar({ biz, onNewAudit, onShare, copied }: { biz: string; onNewAudit: () => void; onShare: () => void; copied: boolean }) {
+  return (
+    <header style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '0 24px', height: 60,
+      background: 'rgba(19,19,20,0.92)', backdropFilter: 'blur(20px)',
+      borderBottom: '1px solid rgba(59,74,61,0.15)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <button onClick={onNewAudit} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.primary, fontSize: 18, padding: 0 }}>←</button>
+        <span style={{ fontFamily: T.ff, fontSize: 10, fontWeight: 700, color: T.primary, letterSpacing: '0.18em', textTransform: 'uppercase' as const }}>
+          Audit Results
+        </span>
+        <span style={{ fontSize: 12, color: T.onMuted, display: 'none' }} className="desktop-biz">{biz}</span>
+      </div>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button onClick={() => window.location.href = '/dashboard'} style={{ fontFamily: T.ff, fontSize: 11, fontWeight: 700, color: T.onMuted, background: T.surfaceHi, padding: '7px 16px', borderRadius: 10, border: 'none', cursor: 'pointer' }}>
+          Dashboard →
+        </button>
+        <button onClick={onShare} style={{ fontFamily: T.ff, fontSize: 11, fontWeight: 700, color: T.primary, background: T.primaryDim, padding: '7px 16px', borderRadius: 10, border: `1px solid ${T.primary}33`, cursor: 'pointer' }}>
+          {copied ? '✓ Copied' : 'Share'}
+        </button>
+      </div>
+    </header>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MOBILE LAYOUT
+// ═══════════════════════════════════════════════════════════════════════════════
+function MobileLayout({
+  result, onNewAudit, onShare, copied, nuggets, getPillarDesc,
+}: {
+  result: AuditResult; onNewAudit: () => void; onShare: () => void
+  copied: boolean; nuggets: { type: NuggetType; title: string; body: string }[]
+  getPillarDesc: (id: string) => string
+}) {
+  const { pillarScores, overallScore, signals, roadmap, revenueLeak, input } = result
+  const biz = input.businessName || input.url.replace(/https?:\/\//, '').split('/')[0]
+  const col = gradeColor(overallScore)
+
+  return (
+    <div style={{ paddingBottom: 100 }}>
+      <main style={{ paddingTop: 72, maxWidth: 480, margin: '0 auto' }}>
+
+        {/* Hero */}
+        <section style={{ padding: '16px 16px 8px' }}>
+          <div style={{ background: T.surface, borderRadius: 28, padding: '24px 20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: -48, right: -48, width: 130, height: 130, background: `${col}18`, borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
+              <div>
+                <p style={{ fontFamily: T.ff, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: T.onMuted, marginBottom: 4 }}>Growth Score</p>
+                <div style={{ fontFamily: T.ff, fontSize: '3.5rem', fontWeight: 800, color: col, lineHeight: 1, display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                  {overallScore}<span style={{ fontSize: '1.2rem', color: `${T.onMuted}66` }}>%</span>
+                </div>
+                <p style={{ fontSize: 13, color: T.onMuted, marginTop: 6 }}>{biz}</p>
+                <p style={{ fontSize: 11, color: `${T.onMuted}88`, marginTop: 2 }}>{input.vertical.replace('_', ' ').toLowerCase()}</p>
+              </div>
+              <GrowthRing score={overallScore} size={160} />
+            </div>
+            {revenueLeak.totalPct > 0 && (
+              <div style={{ marginTop: 16, padding: '10px 14px', background: T.errorDim, borderRadius: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 16 }}>⚠️</span>
+                <div>
+                  <span style={{ fontFamily: T.ff, fontSize: 13, fontWeight: 700, color: T.tertiaryC }}>{Math.max(revenueLeak.totalPct, 15)}% revenue leak detected</span>
+                  <p style={{ fontSize: 11, color: T.onMuted, margin: '2px 0 0' }}>Daily growth opportunities being lost</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Pillar cards — horizontal scroll */}
+        <section style={{ marginBottom: 4 }}>
+          <div style={{ padding: '18px 16px 10px' }}><SectionLabel>Performance by Area</SectionLabel></div>
+          <div style={{ display: 'flex', overflowX: 'auto', gap: 10, padding: '0 16px 8px', scrollSnapType: 'x mandatory', msOverflowStyle: 'none', scrollbarWidth: 'none' } as React.CSSProperties}>
+            {PILLARS.map(p => (
+              <PillarCard key={p.id} icon={p.icon} name={p.name} score={pillarScores[p.id] ?? 0} weight={p.weight} desc={getPillarDesc(p.id)} />
+            ))}
+          </div>
+        </section>
+
+        {/* Insights */}
+        {nuggets.length > 0 && (
+          <section style={{ padding: '8px 16px' }}>
+            <SectionLabel>Top Insights</SectionLabel>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {nuggets.map((n, i) => <InsightNugget key={i} type={n.type} title={n.title} body={n.body} />)}
+            </div>
+          </section>
+        )}
+
+        {/* Site signals */}
+        <section style={{ padding: '12px 16px' }}>
+          <SectionLabel>What We Found On Your Site</SectionLabel>
+          <div style={{ background: T.surface, borderRadius: 22, padding: '18px' }}>
+            <SignalRow label="Main action button (CTA)"  value={signals.hasCTA} />
+            <SignalRow label="Online booking"             value={signals.hasBooking} />
+            <SignalRow label="Secure connection (HTTPS)"  value={signals.hasSSL} />
+            <SignalRow label="Mobile optimised"           value={signals.isMobileOptimized} />
+            <SignalRow label="Google Business linked"     value={signals.hasGBP} />
+            <SignalRow label="Reviews or testimonials"    value={signals.hasReviews} />
+            <SignalRow label="Prices or packages"         value={signals.hasPricing} />
+            <SignalRow label="Contact form"               value={signals.hasContactForm} />
+            <SignalRow label="Website analytics"          value={signals.hasAnalytics} />
+            <SignalRow label="Word count"                 value={signals.wordCount} last />
+          </div>
+        </section>
+
+        {/* 30-day sprint */}
+        {roadmap?.['30']?.length > 0 && (
+          <section style={{ padding: '12px 16px' }}>
+            <SectionLabel>30-Day Sprint</SectionLabel>
+            <div style={{ background: T.surface, borderRadius: 22, padding: '18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {roadmap['30'].slice(0, 4).map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <div style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0, background: T.primaryDim, color: T.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: T.ff, fontSize: 11, fontWeight: 700 }}>{i + 1}</div>
+                  <span style={{ fontSize: 13, color: T.onMuted, lineHeight: 1.6 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* CTAs */}
+        <section style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button onClick={() => window.location.href = '/dashboard'} style={{ width: '100%', background: `linear-gradient(135deg, ${T.primary}, ${T.primaryCt})`, color: '#003918', fontFamily: T.ff, fontWeight: 800, fontSize: 15, padding: '16px', borderRadius: 16, border: 'none', cursor: 'pointer', boxShadow: `0 8px 32px ${T.primary}30` }}>
+            View Detailed Roadmap →
+          </button>
+          <button onClick={onShare} style={{ width: '100%', background: T.surfaceHi, color: T.onSurface, fontFamily: T.ff, fontWeight: 700, fontSize: 14, padding: '14px', borderRadius: 16, border: '1px solid rgba(59,74,61,0.15)', cursor: 'pointer' }}>
+            {copied ? '✓ Link Copied!' : '↑ Share Report'}
+          </button>
+          <button onClick={onNewAudit} style={{ width: '100%', background: 'transparent', color: T.onMuted, fontFamily: T.ff, fontWeight: 600, fontSize: 13, padding: '10px', borderRadius: 16, border: 'none', cursor: 'pointer' }}>
+            ← Run Another Audit
+          </button>
+        </section>
+      </main>
+
+      {/* Bottom nav */}
+      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '10px 16px 18px', background: 'rgba(19,19,20,0.88)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(59,74,61,0.15)', borderRadius: '22px 22px 0 0', boxShadow: '0 -24px 48px rgba(0,0,0,0.4)' }}>
+        {[
+          { icon: '⊞', label: 'Dashboard', action: () => { window.location.href = '/dashboard' } },
+          { icon: '◎', label: 'Audit',     action: () => {},                                         active: true },
+          { icon: '↗', label: 'Roadmap',   action: () => { window.location.href = '/dashboard' } },
+          { icon: '↑', label: 'Share',     action: onShare },
+        ].map(tab => (
+          <button key={tab.label} onClick={tab.action} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '4px 10px', color: tab.active ? T.primary : T.onMuted }}>
+            <div style={{ width: 38, height: 38, borderRadius: 11, background: tab.active ? T.primaryDim : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17 }}>{tab.icon}</div>
+            <span style={{ fontFamily: T.ffBody, fontSize: 10, fontWeight: 600 }}>{tab.label}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESKTOP LAYOUT
+// ═══════════════════════════════════════════════════════════════════════════════
+function DesktopLayout({
+  result, onNewAudit, onShare, copied, nuggets, getPillarDesc,
+}: {
+  result: AuditResult; onNewAudit: () => void; onShare: () => void
+  copied: boolean; nuggets: { type: NuggetType; title: string; body: string }[]
+  getPillarDesc: (id: string) => string
+}) {
+  const { pillarScores, overallScore, signals, roadmap, revenueLeak, input, recommendations } = result
+  const biz = input.businessName || input.url.replace(/https?:\/\//, '').split('/')[0]
+  const col = gradeColor(overallScore)
+  const sorted = [...PILLARS].sort((a, b) => (pillarScores[b.id] ?? 0) - (pillarScores[a.id] ?? 0))
+
+  return (
+    <div style={{ paddingBottom: 60 }}>
+      <main style={{ paddingTop: 76, maxWidth: 1200, margin: '0 auto', padding: '76px 40px 60px' }}>
+
+        {/* Two-column grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 28, alignItems: 'start' }}>
+
+          {/* ── LEFT SIDEBAR ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+            {/* Score card */}
+            <div style={{ background: T.surface, borderRadius: 28, padding: '32px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: -60, right: -60, width: 160, height: 160, background: `${col}15`, borderRadius: '50%', filter: 'blur(50px)', pointerEvents: 'none' }} />
+              <p style={{ fontFamily: T.ff, fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: T.onMuted, marginBottom: 16 }}>Growth Score</p>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <GrowthRing score={overallScore} size={200} />
+              </div>
+              <div style={{ fontFamily: T.ff, fontSize: 22, fontWeight: 800, color: T.onSurface }}>{biz}</div>
+              <div style={{ fontSize: 12, color: T.onMuted, marginTop: 4 }}>{input.vertical.replace('_', ' ').toLowerCase()} · {input.location}</div>
+              {revenueLeak.totalPct > 0 && (
+                <div style={{ marginTop: 18, padding: '10px 14px', background: T.errorDim, borderRadius: 14, textAlign: 'left' }}>
+                  <span style={{ fontFamily: T.ff, fontSize: 13, fontWeight: 700, color: T.tertiaryC }}>⚠️ {Math.max(revenueLeak.totalPct, 15)}% revenue leak</span>
+                  <p style={{ fontSize: 11, color: T.onMuted, margin: '3px 0 0' }}>Daily growth opportunities lost</p>
+                </div>
+              )}
+              <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button onClick={() => window.location.href = '/dashboard'} style={{ width: '100%', background: `linear-gradient(135deg, ${T.primary}, ${T.primaryCt})`, color: '#003918', fontFamily: T.ff, fontWeight: 800, fontSize: 14, padding: '14px', borderRadius: 14, border: 'none', cursor: 'pointer', boxShadow: `0 6px 24px ${T.primary}28` }}>
+                  View Roadmap →
+                </button>
+                <button onClick={onShare} style={{ width: '100%', background: T.surfaceHi, color: T.onSurface, fontFamily: T.ff, fontWeight: 700, fontSize: 13, padding: '12px', borderRadius: 14, border: '1px solid rgba(59,74,61,0.15)', cursor: 'pointer' }}>
+                  {copied ? '✓ Copied!' : '↑ Share Report'}
+                </button>
+                <button onClick={onNewAudit} style={{ width: '100%', background: 'transparent', color: T.onMuted, fontFamily: T.ff, fontWeight: 600, fontSize: 12, padding: '10px', borderRadius: 14, border: 'none', cursor: 'pointer' }}>
+                  ← New Audit
+                </button>
+              </div>
+            </div>
+
+            {/* Site signals */}
+            <div style={{ background: T.surface, borderRadius: 24, padding: '22px' }}>
+              <SectionLabel>What We Found</SectionLabel>
+              <SignalRow label="CTA / action button"       value={signals.hasCTA} />
+              <SignalRow label="Online booking"            value={signals.hasBooking} />
+              <SignalRow label="HTTPS secure"              value={signals.hasSSL} />
+              <SignalRow label="Mobile optimised"          value={signals.isMobileOptimized} />
+              <SignalRow label="Google Business"           value={signals.hasGBP} />
+              <SignalRow label="Reviews"                   value={signals.hasReviews} />
+              <SignalRow label="Pricing visible"           value={signals.hasPricing} />
+              <SignalRow label="Contact form"              value={signals.hasContactForm} />
+              <SignalRow label="Analytics"                 value={signals.hasAnalytics} />
+              <SignalRow label="Word count"                value={signals.wordCount} last />
+            </div>
+          </div>
+
+          {/* ── RIGHT MAIN ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+            {/* Pillar breakdown — vertical bars on desktop */}
+            <div style={{ background: T.surface, borderRadius: 28, padding: '28px' }}>
+              <SectionLabel>Performance by Area</SectionLabel>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                {sorted.map(p => (
+                  <PillarBar key={p.id} icon={p.icon} name={p.name} score={pillarScores[p.id] ?? 0} weight={p.weight} />
+                ))}
+              </div>
+            </div>
+
+            {/* Insights — 2-col grid on desktop */}
+            {nuggets.length > 0 && (
+              <div style={{ background: T.surface, borderRadius: 28, padding: '28px' }}>
+                <SectionLabel>Top Insights</SectionLabel>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  {nuggets.map((n, i) => <InsightNugget key={i} type={n.type} title={n.title} body={n.body} />)}
+                </div>
+              </div>
+            )}
+
+            {/* 30/60/90 roadmap — 3 columns on desktop */}
+            {roadmap?.['30']?.length > 0 && (
+              <div style={{ background: T.surface, borderRadius: 28, padding: '28px' }}>
+                <SectionLabel>Growth Roadmap</SectionLabel>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                  {(['30', '60', '90'] as const).map((ph, idx) => {
+                    const phCol = idx === 0 ? T.primary : idx === 1 ? T.secondary : T.tertiaryC
+                    return (
+                      <div key={ph} style={{ background: T.surfaceHi, borderRadius: 18, padding: '18px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                          <div style={{ width: 28, height: 28, borderRadius: 8, background: `${phCol}18`, color: phCol, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: T.ff, fontSize: 10, fontWeight: 800 }}>{ph}d</div>
+                          <span style={{ fontFamily: T.ff, fontSize: 13, fontWeight: 700, color: phCol }}>{ph}-Day Sprint</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {roadmap[ph].slice(0, 4).map((item, i) => (
+                            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                              <span style={{ color: phCol, flexShrink: 0, fontSize: 12, marginTop: 2 }}>→</span>
+                              <span style={{ fontSize: 12, color: T.onMuted, lineHeight: 1.5 }}>{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Quick wins */}
+            {recommendations.quick_wins.length > 0 && (
+              <div style={{ background: T.surface, borderRadius: 28, padding: '28px' }}>
+                <SectionLabel>Quick Wins</SectionLabel>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {recommendations.quick_wins.slice(0, 4).map((rec, i) => (
+                    <div key={i} style={{ background: T.surfaceHi, borderRadius: 16, padding: '14px 16px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: T.primaryDim, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{rec.icon}</div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, fontFamily: T.ff, marginBottom: 3 }}>{rec.title}</div>
+                        <div style={{ fontSize: 12, color: T.onMuted, lineHeight: 1.5 }}>{rec.desc}</div>
+                        <div style={{ marginTop: 6, display: 'flex', gap: 6 }}>
+                          <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 99, background: T.errorDim, color: T.tertiaryC, fontFamily: T.ffBody, fontWeight: 700 }}>Impact: {rec.impact}</span>
+                          <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 99, background: T.primaryDim, color: T.primary, fontFamily: T.ffBody, fontWeight: 700 }}>Effort: {rec.effort}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ROOT COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
 export default function ResultsView({
   result, onNewAudit,
 }: {
   result: AuditResult
   onNewAudit: () => void
 }) {
+  const isMobile = useIsMobile()
   const [copied, setCopied] = useState(false)
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false)
-  const { getToken } = useAuth()
 
-  const {
-    pillarScores, overallScore, recommendations,
-    aiTopIssues, signals, roadmap, revenueLeak, input,
-  } = result
-
+  const { pillarScores, overallScore, recommendations, input } = result
   const biz = input.businessName || input.url.replace(/https?:\/\//, '').split('/')[0]
   const shareUrl = result.auditId ? `${window.location.origin}/results/${result.auditId}` : null
-
-  const sorted = [...PILLARS].sort((a, b) => (pillarScores[b.id] ?? 0) - (pillarScores[a.id] ?? 0))
 
   const handleShare = () => {
     if (!shareUrl) return
@@ -193,291 +493,28 @@ export default function ResultsView({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Build insight nuggets from top issues + recommendations
-  const leaks = recommendations.revenue_leaks.slice(0, 2).map(r => ({
-    type: 'leak' as NuggetType, title: r.title, body: r.desc,
-  }))
-  const wins = recommendations.quick_wins.slice(0, 2).map(r => ({
-    type: 'opportunity' as NuggetType, title: r.title, body: r.desc,
-  }))
-  const winPillars = sorted.slice(0, 1).map(p => ({
-    type: 'win' as NuggetType,
-    title: `${p.name} is a strength`,
-    body: `Score ${pillarScores[p.id] ?? 0}/100 — outperforming most similar businesses in this area.`,
-  }))
-  const nuggets = [...leaks, ...wins, ...winPillars].slice(0, 5)
-
-  // Pillar descriptions from quick wins / impact
   const getPillarDesc = (id: string) => {
     const all = [...recommendations.quick_wins, ...recommendations.high_impact, ...recommendations.revenue_leaks]
     return all.find(r => r.pillar === id)?.desc || 'See recommendations below.'
   }
 
-  const col = gradeColor(overallScore)
+  const sorted = [...PILLARS].sort((a, b) => (pillarScores[b.id] ?? 0) - (pillarScores[a.id] ?? 0))
+
+  const nuggets = [
+    ...recommendations.revenue_leaks.slice(0, 2).map(r => ({ type: 'leak' as NuggetType, title: r.title, body: r.desc })),
+    ...recommendations.quick_wins.slice(0, 2).map(r => ({ type: 'opportunity' as NuggetType, title: r.title, body: r.desc })),
+    ...sorted.slice(0, 1).map(p => ({ type: 'win' as NuggetType, title: `${p.name} is a strength`, body: `Score ${pillarScores[p.id] ?? 0}/100 — outperforming most similar businesses in this area.` })),
+  ].slice(0, 6)
+
+  const sharedProps = { result, onNewAudit, onShare: handleShare, copied, nuggets, getPillarDesc }
 
   return (
-    <div style={{
-      background: T.bg, minHeight: '100vh',
-      color: T.onSurface, fontFamily: T.ffBody,
-      paddingBottom: 100,
-    }}>
-
-      {/* ── Top bar ── */}
-      <header style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 24px', height: 60,
-        background: 'rgba(19,19,20,0.92)', backdropFilter: 'blur(20px)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={onNewAudit} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: T.primary, fontSize: 20, padding: 0, lineHeight: 1,
-          }}>←</button>
-          <span style={{ fontFamily: T.ff, fontSize: 10, fontWeight: 700, color: T.primary, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-            Audit Results
-          </span>
-        </div>
-        <button
-          onClick={handleShare}
-          style={{
-            fontFamily: T.ff, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
-            textTransform: 'uppercase', color: T.primary,
-            background: T.surface, padding: '8px 16px', borderRadius: 12,
-            border: 'none', cursor: 'pointer',
-          }}
-        >
-          {copied ? '✓ Copied' : 'Share'}
-        </button>
-      </header>
-
-      <main style={{ paddingTop: 78, maxWidth: 480, margin: '0 auto' }}>
-
-        {/* ── Hero score ── */}
-        <section style={{ padding: '24px 24px 8px' }}>
-          <div style={{
-            background: T.surface, borderRadius: 32, padding: '28px 24px',
-            position: 'relative', overflow: 'hidden',
-          }}>
-            {/* Ambient glow */}
-            <div style={{
-              position: 'absolute', top: -48, right: -48,
-              width: 140, height: 140,
-              background: `${col}18`, borderRadius: '50%', filter: 'blur(40px)',
-              pointerEvents: 'none',
-            }} />
-
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', position: 'relative' }}>
-              <div>
-                <p style={{ fontFamily: T.ff, fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.onMuted, marginBottom: 4 }}>
-                  Growth Score
-                </p>
-                <div style={{ fontFamily: T.ff, fontSize: '4rem', fontWeight: 800, color: col, lineHeight: 1, display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                  {overallScore}
-                  <span style={{ fontSize: '1.5rem', color: `${T.onMuted}66` }}>%</span>
-                </div>
-                <p style={{ fontSize: 13, color: T.onMuted, marginTop: 6 }}>{biz}</p>
-                <p style={{ fontSize: 11, color: `${T.onMuted}88`, marginTop: 2 }}>{input.vertical.replace('_', ' ').toLowerCase()} · {input.location}</p>
-              </div>
-
-              {/* Mini ring */}
-              <GrowthRing score={overallScore} />
-            </div>
-
-            {/* Revenue leak callout */}
-            {revenueLeak.totalPct > 0 && (
-              <div style={{
-                marginTop: 20, padding: '12px 16px',
-                background: T.errorDim, borderRadius: 16,
-                display: 'flex', alignItems: 'center', gap: 12,
-              }}>
-                <span style={{ fontSize: 18 }}>⚠️</span>
-                <div>
-                  <span style={{ fontFamily: T.ff, fontSize: 13, fontWeight: 700, color: T.tertiaryC }}>
-                    {Math.max(revenueLeak.totalPct, 15)}% revenue leak detected
-                  </span>
-                  <p style={{ fontSize: 11, color: T.onMuted, margin: '2px 0 0' }}>
-                    Daily growth opportunities being lost
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* ── Pillar score cards (horizontal scroll) ── */}
-        <section style={{ marginBottom: 8 }}>
-          <div style={{ padding: '20px 24px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h4 style={{ fontFamily: T.ff, fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.onMuted, margin: 0 }}>
-              Performance by Area
-            </h4>
-          </div>
-          <div style={{
-            display: 'flex', overflowX: 'auto', gap: 12,
-            padding: '0 24px 8px', scrollSnapType: 'x mandatory',
-            msOverflowStyle: 'none', scrollbarWidth: 'none',
-          } as React.CSSProperties}>
-            {PILLARS.map(p => (
-              <PillarCard
-                key={p.id}
-                icon={p.icon}
-                name={p.name}
-                score={pillarScores[p.id] ?? 0}
-                weight={p.weight}
-                desc={getPillarDesc(p.id)}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* ── Insight nuggets ── */}
-        {nuggets.length > 0 && (
-          <section style={{ padding: '12px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <h4 style={{ fontFamily: T.ff, fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.onMuted, margin: 0 }}>
-                Top Insights
-              </h4>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {nuggets.map((n, i) => (
-                <InsightNugget key={i} type={n.type} title={n.title} body={n.body} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── What we found on your site ── */}
-        <section style={{ padding: '12px 24px' }}>
-          <h4 style={{ fontFamily: T.ff, fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.onMuted, marginBottom: 16 }}>
-            What We Found On Your Site
-          </h4>
-          <div style={{ background: T.surface, borderRadius: 24, padding: '20px' }}>
-            <SignalRow label="Main action button (CTA)"    value={signals.hasCTA} />
-            <SignalRow label="Online booking"              value={signals.hasBooking} />
-            <SignalRow label="Secure connection (HTTPS)"   value={signals.hasSSL} />
-            <SignalRow label="Mobile optimised"            value={signals.isMobileOptimized} />
-            <SignalRow label="Google Business linked"      value={signals.hasGBP} />
-            <SignalRow label="Reviews or testimonials"     value={signals.hasReviews} />
-            <SignalRow label="Prices or packages"          value={signals.hasPricing} />
-            <SignalRow label="Contact form"                value={signals.hasContactForm} />
-            <SignalRow label="Website analytics"           value={signals.hasAnalytics} />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, color: T.onSurface }}>Word count</span>
-              <span style={{
-                fontFamily: T.ffBody, fontSize: 13, fontWeight: 600,
-                color: signals.wordCount >= 300 ? T.primary : T.tertiaryC,
-              }}>{signals.wordCount}</span>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 30-day sprint ── */}
-        {roadmap?.['30']?.length > 0 && (
-          <section style={{ padding: '12px 24px' }}>
-            <h4 style={{ fontFamily: T.ff, fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.onMuted, marginBottom: 14 }}>
-              30-Day Sprint
-            </h4>
-            <div style={{ background: T.surface, borderRadius: 24, padding: '20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {roadmap['30'].slice(0, 4).map((item, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <div style={{
-                    width: 24, height: 24, borderRadius: 8, flexShrink: 0,
-                    background: T.primaryDim, color: T.primary,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: T.ff, fontSize: 11, fontWeight: 700,
-                  }}>{i + 1}</div>
-                  <span style={{ fontSize: 13, color: T.onMuted, lineHeight: 1.6 }}>{item}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── CTAs ── */}
-        <section style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <button
-            onClick={() => window.location.href = '/dashboard'}
-            style={{
-              width: '100%',
-              background: `linear-gradient(135deg, ${T.primary}, ${T.primaryCt})`,
-              color: '#003918', fontFamily: T.ff, fontWeight: 800,
-              fontSize: 15, padding: '18px', borderRadius: 16,
-              border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: `0 8px 32px ${T.primary}30`,
-            }}
-          >
-            View Detailed Roadmap →
-          </button>
-          <button
-            onClick={handleShare}
-            style={{
-              width: '100%',
-              background: T.surfaceHi, color: T.onSurface,
-              fontFamily: T.ff, fontWeight: 700, fontSize: 15,
-              padding: '16px', borderRadius: 16,
-              border: `1px solid rgba(59,74,61,0.15)`, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}
-          >
-            {copied ? '✓ Link Copied!' : '↑ Share Report'}
-          </button>
-          <button
-            onClick={onNewAudit}
-            style={{
-              width: '100%',
-              background: 'transparent', color: T.onMuted,
-              fontFamily: T.ff, fontWeight: 600, fontSize: 13,
-              padding: '12px', borderRadius: 16,
-              border: 'none', cursor: 'pointer',
-            }}
-          >
-            ← Run Another Audit
-          </button>
-        </section>
-
-      </main>
-
-      {/* ── Bottom nav ── */}
-      <nav style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-        display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-        padding: '12px 16px 20px',
-        background: 'rgba(19,19,20,0.85)', backdropFilter: 'blur(20px)',
-        borderTop: `1px solid rgba(59,74,61,0.15)`,
-        boxShadow: '0px -24px 48px rgba(0,0,0,0.4)',
-        borderRadius: '24px 24px 0 0',
-      }}>
-        {[
-          { icon: '⊞', label: 'Dashboard', href: '/dashboard' },
-          { icon: '◎', label: 'Audit',     href: null, active: true },
-          { icon: '↗', label: 'Roadmap',   href: '/dashboard' },
-          { icon: '↑', label: 'Export',    href: null, action: handleShare },
-        ].map(tab => (
-          <button
-            key={tab.label}
-            onClick={() => {
-              if (tab.href) window.location.href = tab.href
-              else if (tab.action) tab.action()
-            }}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-              padding: '4px 12px',
-              color: tab.active ? T.primary : T.onMuted,
-            }}
-          >
-            <div style={{
-              width: 40, height: 40, borderRadius: 12,
-              background: tab.active ? T.primaryDim : 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, transition: 'background 0.2s',
-            }}>{tab.icon}</div>
-            <span style={{ fontFamily: T.ffBody, fontSize: 10, fontWeight: 600 }}>{tab.label}</span>
-          </button>
-        ))}
-      </nav>
-
+    <div style={{ background: T.bg, minHeight: '100vh', color: T.onSurface, fontFamily: T.ffBody }}>
+      <TopBar biz={biz} onNewAudit={onNewAudit} onShare={handleShare} copied={copied} />
+      {isMobile
+        ? <MobileLayout {...sharedProps} />
+        : <DesktopLayout {...sharedProps} />
+      }
       <WaitlistModal
         isOpen={isWaitlistOpen}
         onClose={() => setIsWaitlistOpen(false)}
