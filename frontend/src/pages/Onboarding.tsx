@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useUser } from '@clerk/clerk-react'
+import { useUser, useAuth } from '@clerk/clerk-react'
 
 // ── Audit stages shown during the progress step ───────────────────────────────
 const STAGES = [
@@ -78,6 +78,7 @@ const T = {
 
 export default function Onboarding() {
   const { user } = useUser()
+  const { getToken } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>('url')
   const [url, setUrl] = useState('')
@@ -118,7 +119,7 @@ export default function Onboarding() {
     }, 3500)
 
     try {
-      const token = await user?.getToken()
+      const token = await getToken()
       const res = await fetch(`${apiBase}/api/audit`, {
         method: 'POST',
         headers: {
