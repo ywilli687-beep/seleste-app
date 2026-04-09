@@ -22,6 +22,7 @@ import stripeRoutes from './routes/stripe'
 import outboundRoutes from './routes/outbound'
 import waitlistRoutes from './routes/waitlist'
 import outreachRoutes from './routes/outreach'
+import verticalPagesRoutes from './routes/vertical-pages'
 
 const app = express()
 
@@ -109,6 +110,7 @@ app.get('/api/health', (req, res) => {
 })
 app.use('/api/waitlist', waitlistRoutes)
 app.use('/api/outreach', outreachRoutes)
+app.use('/api/vertical-pages', verticalPagesRoutes)
 
 // Global error handler — must be last. Converts all unhandled errors to JSON.
 app.use((err: any, req: any, res: any, _next: any) => {

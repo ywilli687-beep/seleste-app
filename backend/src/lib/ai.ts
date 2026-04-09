@@ -267,6 +267,209 @@ function buildFallback(hard: HardSignals): PageSignals {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// BENCHMARK NARRATIVE (Growth Prompt #2)
+// 2-3 sentence benchmark summary appended to the main narrative.
+// Tells the business owner exactly where they stand vs. peers and what to do.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function writeBenchmarkNarrative(opts: {
+  businessName: string
+  industry: string
+  overallScore: number
+  verticalAvg: number | null
+  topQuartile: number | null
+  pillarScores: Record<string, number>
+  pillarAvgs: Record<string, number | null>
+}): Promise<string> {
+  const { businessName, industry, overallScore, verticalAvg, topQuartile, pillarScores, pillarAvgs } = opts
+
+  // Find biggest gap pillar
+  let biggestGapPillar = ''
+  let biggestGap = 0
+  for (const [pillar, score] of Object.entries(pillarScores)) {
+    const avg = pillarAvgs[pillar]
+    if (avg !== null && avg !== undefined) {
+      const gap = avg - score
+      if (gap > biggestGap) { biggestGap = gap; biggestGapPillar = pillar }
+    }
+  }
+
+  const pillarTableLines = Object.entries(pillarScores)
+    .map(([p, score]) => {
+      const avg = pillarAvgs[p]
+      return `${p}: yours=${Math.round(score)}, avg=${avg !== null && avg !== undefined ? Math.round(avg) : 'n/a'}`
+    })
+    .join('\n')
+
+  const prompt = `Business: ${businessName}
+Industry: ${industry}
+Overall score: ${overallScore} / 100
+Industry average: ${verticalAvg !== null ? verticalAvg : 'n/a'} / 100
+Top quartile threshold: ${topQuartile !== null ? topQuartile : 'n/a'} / 100
+
+Pillar scores vs. industry averages:
+${pillarTableLines}
+
+Biggest gap pillar: ${biggestGapPillar || 'n/a'} (yours: ${biggestGapPillar ? Math.round(pillarScores[biggestGapPillar]) : 'n/a'}, avg: ${biggestGapPillar && pillarAvgs[biggestGapPillar] !== null && pillarAvgs[biggestGapPillar] !== undefined ? Math.round(pillarAvgs[biggestGapPillar]!) : 'n/a'})
+
+Write a 2-3 sentence benchmark summary. Include:
+- Whether they are above or below average and by how much
+- Their single biggest gap vs. the industry average (name the pillar specifically)
+- One concrete action to address that gap
+
+Keep it under 80 words. Write in second person ("Your conversion score..."). Plain English. No bullet points.
+If industry average is n/a, skip the comparison sentence and focus on the pillar gap and action.`
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 200,
+      temperature: 0.4,
+      system: 'You are a data analyst writing benchmark summaries for local business owners. Be specific, use numbers, end with one clear priority action.',
+      messages: [{ role: 'user', content: prompt }],
+    })
+    return msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim()
+  } catch {
+    return ''
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FREE TIER AUDIT TEASER (Growth Prompt #3)
+// Short prose summary for unauthenticated users on the public report page.
+// Shows score + 3 issues, ends with urgency sentence to drive sign-up.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function writeAuditTeaser(opts: {
+  website: string
+  industry: string
+  overallScore: number
+  estimatedRevenueLeakage: number | null
+  topPillars: Array<{ name: string; score: number; avg: number | null }>
+}): Promise<string> {
+  const { website, industry, overallScore, estimatedRevenueLeakage, topPillars } = opts
+
+  const pillarLines = topPillars.slice(0, 3).map((p, i) =>
+    `${i + 1}. ${p.name}: score ${Math.round(p.score)}${p.avg !== null && p.avg !== undefined ? ` (avg: ${Math.round(p.avg)})` : ''}`,
+  ).join('\n')
+
+  const prompt = `Business website: ${website}
+Industry: ${industry}
+Overall score: ${overallScore}
+Estimated revenue leakage: ${estimatedRevenueLeakage !== null && estimatedRevenueLeakage !== undefined ? `$${Math.round(estimatedRevenueLeakage)}/year` : 'unknown'}
+
+Top 3 failing pillars:
+${pillarLines}
+
+Write a teaser audit summary for an unauthenticated user.
+Include the score, the leakage estimate if available, and name 3 specific issues.
+End with one sentence that makes signing up feel urgent.
+Do NOT use bullet points — write as prose.
+Under 120 words total.`
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 200,
+      temperature: 0.5,
+      system: 'You write teaser audit summaries for local business owners who have not yet signed up. Lead with revenue implication. Name 3 specific issues. End with urgency. Under 120 words.',
+      messages: [{ role: 'user', content: prompt }],
+    })
+    return msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim()
+  } catch {
+    return ''
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SEO VERTICAL LANDING PAGE COPY (Growth Prompt #1)
+// Generates keyword-rich copy for a vertical-specific landing page.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const VERTICAL_RELATED: Record<string, string[]> = {
+  AUTO_REPAIR: ['PLUMBING', 'HVAC', 'HOME_SERVICES'],
+  DENTAL: ['FITNESS', 'PET_SERVICES', 'BEAUTY_SALON'],
+  RESTAURANT: ['CLEANING', 'LOCAL_SERVICE', 'PET_SERVICES'],
+  PLUMBING: ['HVAC', 'AUTO_REPAIR', 'HOME_SERVICES'],
+  HVAC: ['PLUMBING', 'AUTO_REPAIR', 'HOME_SERVICES'],
+  LEGAL: ['REAL_ESTATE', 'DENTAL', 'FITNESS'],
+  REAL_ESTATE: ['LEGAL', 'HOME_SERVICES', 'LANDSCAPING'],
+  BEAUTY_SALON: ['FITNESS', 'PET_SERVICES', 'DENTAL'],
+  FITNESS: ['BEAUTY_SALON', 'PET_SERVICES', 'DENTAL'],
+  CLEANING: ['HOME_SERVICES', 'LANDSCAPING', 'PLUMBING'],
+  LANDSCAPING: ['CLEANING', 'HOME_SERVICES', 'HVAC'],
+  PET_SERVICES: ['DENTAL', 'FITNESS', 'BEAUTY_SALON'],
+  HOME_SERVICES: ['CLEANING', 'LANDSCAPING', 'HVAC'],
+  LOCAL_SERVICE: ['HOME_SERVICES', 'CLEANING', 'AUTO_REPAIR'],
+  CAR_WASH: ['AUTO_REPAIR', 'PLUMBING', 'CLEANING'],
+}
+
+const VERTICAL_LABELS: Record<string, string> = {
+  AUTO_REPAIR: 'auto repair shops', DENTAL: 'dental practices', RESTAURANT: 'restaurants',
+  PLUMBING: 'plumbers', HVAC: 'HVAC companies', LEGAL: 'law firms',
+  REAL_ESTATE: 'real estate agents', BEAUTY_SALON: 'salons and med spas',
+  FITNESS: 'gyms and fitness studios', CLEANING: 'cleaning services',
+  LANDSCAPING: 'landscaping companies', PET_SERVICES: 'pet service businesses',
+  HOME_SERVICES: 'home service companies', LOCAL_SERVICE: 'local service businesses',
+  CAR_WASH: 'car wash businesses',
+}
+
+export async function generateVerticalLandingPage(vertical: string): Promise<{
+  h1: string
+  subheadline: string
+  whatWeCheck: string[]
+  testimonial: { quote: string; name: string; city: string; result: string }
+  faq: Array<{ q: string; a: string }>
+  metaTitle: string
+  metaDescription: string
+  relatedVerticals: string[]
+} | null> {
+  const label = VERTICAL_LABELS[vertical] ?? vertical.toLowerCase().replace(/_/g, ' ')
+  const related = (VERTICAL_RELATED[vertical] ?? []).map(v => VERTICAL_LABELS[v] ?? v).slice(0, 3)
+
+  const prompt = `Write landing page copy for Seleste targeting ${label}.
+
+Include:
+1. H1 headline — lead with pain or missed revenue, NOT the product name. Max 10 words.
+2. Subheadline — one sentence on what the audit reveals. Max 20 words.
+3. Three "What we check" bullets specific to ${label} (e.g., online booking presence, review volume, local keyword coverage).
+4. A short social proof quote (fabricate a plausible testimonial: first name, city, vertical-specific result with a number).
+5. FAQ section with 3 questions a ${label} owner would realistically ask.
+6. Meta title (60 chars max) targeting "${label.split(' ')[0]} website audit".
+7. Meta description (155 chars max) targeting "${label.split(' ')[0]} website score" and "${label.split(' ')[0]} website review".
+
+Tone: direct, practical, no hype. Write as if explaining to a busy business owner.
+Return ONLY valid JSON — no markdown, no preamble:
+{
+  "h1": "string",
+  "subheadline": "string",
+  "whatWeCheck": ["string", "string", "string"],
+  "testimonial": { "quote": "string", "name": "string", "city": "string", "result": "string" },
+  "faq": [{ "q": "string", "a": "string" }, { "q": "string", "a": "string" }, { "q": "string", "a": "string" }],
+  "metaTitle": "string",
+  "metaDescription": "string"
+}`
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1200,
+      temperature: 0.6,
+      system: 'You are a conversion copywriter and local SEO expert writing landing pages for Seleste, an AI-powered website audit platform for local businesses. Lead with loss-aversion. Short sentences. No jargon.',
+      messages: [{ role: 'user', content: prompt }],
+    })
+
+    const text = msg.content.filter(b => b.type === 'text').map(b => b.text).join('')
+    const match = text.match(/\{[\s\S]*\}/)
+    if (!match) return null
+    const parsed = JSON.parse(match[0])
+    return { ...parsed, relatedVerticals: related }
+  } catch {
+    return null
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // NARRATIVE + STRUCTURED OUTPUTS
 // Returns narrative HTML + structured quick wins + top issues for DB storage
 // ─────────────────────────────────────────────────────────────────────────────
@@ -401,13 +604,50 @@ ${benchmarkContextJson}`
 
   const text = msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim()
 
-  // Extract quick wins and top issues from narrative via a lightweight second pass
-  // (the main call returns HTML, so we parse it for structured data)
+  // Extract quick wins and top issues from applied rules
   const quickWins = applied.slice(0, 3).map(a => a.rule.label)
   const topIssues = applied.slice(0, 5).map(a => a.rule.label)
 
+  // Append benchmark narrative if benchmark data exists
+  let benchmarkParagraph = ''
+  if (benchmarkCtx.vertical) {
+    const pillarAvgs: Record<string, number | null> = {}
+    const pillarScoresForBenchmark: Record<string, number> = {
+      conversion: scores.conversion, trust: scores.trust, performance: scores.performance,
+      ux: scores.ux, discoverability: scores.discoverability, content: scores.content,
+      data: scores.data, technical: scores.technical, brand: scores.brand, scalability: scores.scalability,
+    }
+    for (const [p, stats] of Object.entries(benchmarkCtx.vertical)) {
+      pillarAvgs[p] = stats?.mean ?? null
+    }
+
+    const verticalAvgEntry = Object.values(benchmarkCtx.vertical).find(s => s !== null)
+    const verticalAvg = verticalAvgEntry ? Math.round(
+      Object.values(benchmarkCtx.vertical).reduce((acc, s) => acc + (s?.mean ?? 0), 0) /
+      Object.values(benchmarkCtx.vertical).filter(s => s !== null).length
+    ) : null
+    const topQuartile = verticalAvgEntry ? Math.round(
+      Object.values(benchmarkCtx.vertical).reduce((acc, s) => acc + (s?.p75 ?? 0), 0) /
+      Object.values(benchmarkCtx.vertical).filter(s => s !== null).length
+    ) : null
+
+    benchmarkParagraph = await writeBenchmarkNarrative({
+      businessName: biz,
+      industry: input.vertical,
+      overallScore: overall,
+      verticalAvg,
+      topQuartile,
+      pillarScores: pillarScoresForBenchmark,
+      pillarAvgs,
+    })
+  }
+
+  const fullNarrative = benchmarkParagraph
+    ? `${text}\n<section class="benchmark-context"><p>${benchmarkParagraph}</p></section>`
+    : text
+
   return {
-    narrative: text || '<p>AI analysis unavailable. Scores are deterministic and accurate.</p>',
+    narrative: fullNarrative || '<p>AI analysis unavailable. Scores are deterministic and accurate.</p>',
     quickWins,
     topIssues,
   }

@@ -1,6 +1,8 @@
 import { db } from '../../db'
 import { runAgent } from './run-agent'
 import { AgentContext } from '../types'
+import { SPECIALIST_AGENT_PROMPTS } from '../prompts/specialist-agents'
+import { REPORTING_AGENT_SYSTEM_PROMPT, buildReportingPrompt } from '../prompts/reporting'
 
 export async function runFullCycle(businessId: string, trigger: string = 'weekly_cycle') {
   // 1. Fetch Business Profile to build base Agent Context
@@ -54,33 +56,83 @@ export async function runFullCycle(businessId: string, trigger: string = 'weekly
   let totalCostUsd = 0
   const startTime = Date.now()
 
-  // 3. Define the sequential sequence 
-  // Intake -> Market Intel -> Growth Architect -> Reporting
-  const sequence = [
-    { id: 'intake_agent', prompt: 'Extract business context...', msg: 'Please extract context from the provided data.' },
-    { id: 'growth_architect', prompt: 'You are the Growth Architect.', msg: 'Create a 90 day roadmap.' },
-    { id: 'reporting_agent', prompt: 'You are the Reporting Agent.', msg: 'Write a summary report for this business.' }
-  ]
+  const auditContextMsg = `
+Business: ${context.businessName ?? 'Unknown'}
+Vertical: ${context.vertical}
+City: ${context.locationCity ?? 'Unknown'}
+Overall score: ${context.overallScore ?? 'n/a'}/100
+Grade: ${context.grade ?? 'n/a'}
+Revenue leakage: ${context.revenueLeak != null ? `$${context.revenueLeak}/month` : 'unknown'}
+Top issues: ${(context.issues ?? []).join(', ') || 'none detected'}
 
-  // Loop through sequence
-  for (const step of sequence) {
-    try {
-      const output = await runAgent(
-        step.id,
-        cycle.id,
-        context,
-        step.prompt,
-        step.msg
-      )
-      
-      context.previousOutputs[step.id] = output
-      agentsRun.push(step.id)
-    } catch (err) {
-      agentsFailed.push(step.id)
-      console.error(`Agent ${step.id} failed:`, err)
-      // Some agents can fail without breaking the chain
-      // Others are critical. For simplicity, we continue.
+Analyze this business and return your WeeklyAction proposal.`
+
+  // 3. Specialist agents run in parallel (reputation, SEO, content, CRO, paid media)
+  const specialistIds = ['reputation_agent', 'local_seo_agent', 'creative_strategist', 'cro_agent', 'paid_media_strategist']
+
+  const specialistResults = await Promise.allSettled(
+    specialistIds.map(id =>
+      runAgent(id, cycle.id, context, SPECIALIST_AGENT_PROMPTS[id] ?? '', auditContextMsg)
+    )
+  )
+
+  for (let i = 0; i < specialistIds.length; i++) {
+    const id = specialistIds[i]
+    const result = specialistResults[i]
+    if (result.status === 'fulfilled') {
+      context.previousOutputs[id] = result.value
+      agentsRun.push(id)
+
+      // Persist WeeklyAction proposal from each specialist
+      try {
+        const proposal = result.value
+        if (proposal?.title) {
+          await db.weeklyAction.create({
+            data: {
+              cycleId: cycle.id,
+              businessId,
+              title: proposal.title ?? 'Untitled',
+              description: proposal.description ?? '',
+              draftContent: proposal.draftContent ?? null,
+              category: proposal.category ?? 'reputation',
+              estimatedLift: parseInt(proposal.estimatedLift) || 5,
+              effort: proposal.effort ?? 'Medium',
+              rank: i + 1,
+              status: 'pending',
+              agentVersion: '2.2.0',
+            },
+          })
+        }
+      } catch (saveErr: any) {
+        console.error(`[run-cycle] Failed to save WeeklyAction for ${id}:`, saveErr.message)
+      }
+    } else {
+      agentsFailed.push(id)
+      console.error(`Agent ${id} failed:`, result.reason)
     }
+  }
+
+  // 4. Reporting agent runs last — summarises specialist outputs
+  const scopedCtxForReport = {
+    business: { name: context.businessName, vertical: context.vertical, city: context.locationCity },
+    audit: { overallScore: context.overallScore, grade: context.grade, revenueLeak: context.revenueLeak },
+    benchmarks: { medianScore: context.medianScore, topGaps: context.topGaps },
+    previousOutputs: context.previousOutputs,
+  }
+
+  try {
+    const reportOutput = await runAgent(
+      'reporting_agent',
+      cycle.id,
+      context,
+      REPORTING_AGENT_SYSTEM_PROMPT,
+      buildReportingPrompt(scopedCtxForReport),
+    )
+    context.previousOutputs['reporting_agent'] = reportOutput
+    agentsRun.push('reporting_agent')
+  } catch (err) {
+    agentsFailed.push('reporting_agent')
+    console.error('Agent reporting_agent failed:', err)
   }
 
   // 4. Summarize cost and complete

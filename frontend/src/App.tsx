@@ -17,6 +17,7 @@ import Blog from './pages/Blog'
 import Contact from './pages/Contact'
 import PublicReport from './pages/PublicReport'
 import Onboarding from './pages/Onboarding'
+import VerticalLanding from './pages/VerticalLanding'
 import CookieBanner from './components/CookieBanner'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/for/:slug" element={<VerticalLanding />} />
           <Route path="/sign-in/*" element={<SignInPage />} />
           <Route path="/sign-up/*" element={<SignUpPage />} />
           <Route path="/report/:slug" element={<PublicReport />} />
