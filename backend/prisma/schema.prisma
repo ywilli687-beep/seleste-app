@@ -1040,3 +1040,55 @@ model Waitlist {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
+
+// ── Proprietary Data Engine ────────────────────────────────────────────────────
+
+model CrawledBusiness {
+  id            String    @id @default(cuid())
+  url           String    @unique
+  businessName  String?
+  vertical      String
+  metroArea     String
+  country       String    @default("US")
+  status        String    @default("PENDING")  // PENDING | CRAWLED | FAILED | SKIPPED
+  lastCrawledAt DateTime?
+  crawlCount    Int       @default(0)
+  isClaimed     Boolean   @default(false)
+  claimedAt     DateTime?
+  outreachStatus String   @default("NOT_CONTACTED")
+  createdAt     DateTime  @default(now())
+  snapshots     CrawlerSnapshot[]
+
+  @@index([vertical, metroArea, status])
+  @@index([isClaimed, status])
+}
+
+model CrawlerSnapshot {
+  id                  String          @id @default(cuid())
+  businessId          String
+  business            CrawledBusiness @relation(fields: [businessId], references: [id])
+  url                 String
+  vertical            String
+  metroArea           String
+  overallScore        Float
+  conversionScore     Float
+  seoScore            Float           // = discoverability pillar
+  reputationScore     Float           // = trust pillar
+  contentScore        Float
+  uxScore             Float
+  mobileScore         Float           // = performance pillar
+  trustScore          Float
+  performanceScore    Float
+  localScore          Float           // = discoverability (local signals)
+  accessibilityScore  Float           // = ux pillar
+  leakageEstimate     Float?
+  hasBookingWidget    Boolean         @default(false)
+  hasSsl              Boolean         @default(false)
+  reviewCount         Int?
+  starRating          Float?
+  hasSchemaMarkup     Boolean         @default(false)
+  crawledAt           DateTime        @default(now())
+
+  @@index([vertical, metroArea, crawledAt])
+  @@index([businessId, crawledAt])
+}

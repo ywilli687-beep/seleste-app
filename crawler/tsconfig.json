@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": "..",
+    "outDir": "./dist",
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["./backend/src/*"]
+    },
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "ignoreDeprecations": "6.0"
+  },
+  "include": [
+    "src/**/*",
+    "../backend/src/lib/engine/**/*",
+    "../backend/src/lib/fetcher.ts",
+    "../backend/src/types/**/*"
+  ]
+}

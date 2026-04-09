@@ -19,6 +19,20 @@ const PILLAR_COLUMN_MAP: Record<string, string> = {
   accessibility: 'uxScore',
 }
 
+// Maps pillar names to CrawlerSnapshot score columns (different naming convention)
+const CRAWLER_PILLAR_COLUMN_MAP: Record<string, string> = {
+  conversion:    'conversionScore',
+  seo:           'seoScore',
+  reputation:    'reputationScore',
+  content:       'contentScore',
+  ux:            'uxScore',
+  mobile:        'mobileScore',
+  trust:         'trustScore',
+  performance:   'performanceScore',
+  local:         'localScore',
+  accessibility: 'accessibilityScore',
+}
+
 export interface PillarStats {
   mean: number
   median: number
@@ -48,12 +62,15 @@ export async function computeAndStoreBenchmarks(): Promise<void> {
     for (const pillar of PILLARS) {
       const col = PILLAR_COLUMN_MAP[pillar]
 
-      // Get all distinct verticals that have enough data
+      const crawlerCol = CRAWLER_PILLAR_COLUMN_MAP[pillar]
+
+      // Get all distinct verticals that have enough data (across both tables)
       const verticals = await db.$queryRawUnsafe<{ vertical: string }[]>(`
-        SELECT DISTINCT vertical
-        FROM "AuditSnapshot"
-        WHERE vertical IS NOT NULL
-          AND "${col}" IS NOT NULL
+        SELECT DISTINCT vertical FROM "AuditSnapshot"
+        WHERE vertical IS NOT NULL AND "${col}" IS NOT NULL
+        UNION
+        SELECT DISTINCT vertical FROM "CrawlerSnapshot"
+        WHERE vertical IS NOT NULL AND "${crawlerCol}" IS NOT NULL
       `)
 
       for (const { vertical } of verticals) {
@@ -67,14 +84,18 @@ export async function computeAndStoreBenchmarks(): Promise<void> {
         }[]>(`
           SELECT
             COUNT(*) AS sample_size,
-            AVG("${col}") AS mean,
-            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "${col}") AS median,
-            PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY "${col}") AS p25,
-            PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY "${col}") AS p75,
-            PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY "${col}") AS p90
-          FROM "AuditSnapshot"
-          WHERE vertical = $1
-            AND "${col}" IS NOT NULL
+            AVG(score) AS mean,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY score) AS median,
+            PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY score) AS p25,
+            PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY score) AS p75,
+            PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY score) AS p90
+          FROM (
+            SELECT "${col}" AS score FROM "AuditSnapshot"
+            WHERE vertical = $1 AND "${col}" IS NOT NULL
+            UNION ALL
+            SELECT "${crawlerCol}" AS score FROM "CrawlerSnapshot"
+            WHERE vertical = $1 AND "${crawlerCol}" IS NOT NULL
+          ) combined
         `, vertical)
 
         const row = rows[0]
@@ -112,13 +133,16 @@ export async function computeAndStoreBenchmarks(): Promise<void> {
     // ── Market benchmarks (grouped by vertical + metroArea + pillar) ──
     for (const pillar of PILLARS) {
       const col = PILLAR_COLUMN_MAP[pillar]
+      const crawlerCol = CRAWLER_PILLAR_COLUMN_MAP[pillar]
 
       const markets = await db.$queryRawUnsafe<{ vertical: string; metro_area: string }[]>(`
         SELECT DISTINCT vertical, "metroArea" AS metro_area
         FROM "AuditSnapshot"
-        WHERE vertical IS NOT NULL
-          AND "metroArea" IS NOT NULL
-          AND "${col}" IS NOT NULL
+        WHERE vertical IS NOT NULL AND "metroArea" IS NOT NULL AND "${col}" IS NOT NULL
+        UNION
+        SELECT DISTINCT vertical, "metroArea" AS metro_area
+        FROM "CrawlerSnapshot"
+        WHERE vertical IS NOT NULL AND "metroArea" IS NOT NULL AND "${crawlerCol}" IS NOT NULL
       `)
 
       for (const { vertical, metro_area } of markets) {
@@ -130,13 +154,16 @@ export async function computeAndStoreBenchmarks(): Promise<void> {
         }[]>(`
           SELECT
             COUNT(*) AS sample_size,
-            AVG("${col}") AS mean,
-            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "${col}") AS median,
-            PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY "${col}") AS p75
-          FROM "AuditSnapshot"
-          WHERE vertical = $1
-            AND "metroArea" = $2
-            AND "${col}" IS NOT NULL
+            AVG(score) AS mean,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY score) AS median,
+            PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY score) AS p75
+          FROM (
+            SELECT "${col}" AS score FROM "AuditSnapshot"
+            WHERE vertical = $1 AND "metroArea" = $2 AND "${col}" IS NOT NULL
+            UNION ALL
+            SELECT "${crawlerCol}" AS score FROM "CrawlerSnapshot"
+            WHERE vertical = $1 AND "metroArea" = $2 AND "${crawlerCol}" IS NOT NULL
+          ) combined
         `, vertical, metro_area)
 
         const row = rows[0]

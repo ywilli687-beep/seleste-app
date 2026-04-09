@@ -21,6 +21,7 @@ import statsRoutes from './routes/stats'
 import stripeRoutes from './routes/stripe'
 import outboundRoutes from './routes/outbound'
 import waitlistRoutes from './routes/waitlist'
+import outreachRoutes from './routes/outreach'
 
 const app = express()
 
@@ -107,6 +108,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'UP', port: PORT, env: process.env.NODE_ENV })
 })
 app.use('/api/waitlist', waitlistRoutes)
+app.use('/api/outreach', outreachRoutes)
 
 // Global error handler — must be last. Converts all unhandled errors to JSON.
 app.use((err: any, req: any, res: any, _next: any) => {

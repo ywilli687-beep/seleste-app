@@ -1,0 +1,35 @@
+{
+  "name": "seleste-crawler",
+  "version": "1.0.0",
+  "description": "Seleste Proprietary Data Engine — crawls local businesses at scale",
+  "main": "dist/crawler/src/index.js",
+  "scripts": {
+    "dev": "ts-node -r tsconfig-paths/register src/index.ts",
+    "start": "node dist/crawler/src/index.js",
+    "build": "rm -rf dist && prisma generate --schema ../backend/prisma/schema.prisma && tsc",
+    "db:generate": "prisma generate --schema ../backend/prisma/schema.prisma"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
+    "@types/pg": "^8.20.0",
+    "axios": "^1.7.2",
+    "cheerio": "^1.0.0",
+    "csv-stringify": "^6.5.1",
+    "dotenv": "^17.3.1",
+    "node-cron": "^3.0.3",
+    "pg": "^8.20.0",
+    "playwright": "^1.45.0",
+    "prisma": "^7.5.0",
+    "tsc-alias": "^1.8.16",
+    "typescript": "^6.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/node-cron": "^3.0.11",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0"
+  }
+}

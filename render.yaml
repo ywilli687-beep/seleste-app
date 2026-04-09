@@ -24,3 +24,17 @@ services:
         sync: false
       - key: SEL_MASTER_AGENT_WEBHOOK
         sync: false
+
+  - type: worker
+    name: seleste-crawler
+    env: node
+    rootDir: crawler
+    buildCommand: npm install && npx playwright install --with-deps chromium && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: OUTSCRAPER_API_KEY
+        sync: false
