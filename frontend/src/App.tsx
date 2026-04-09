@@ -16,6 +16,7 @@ import Features from './pages/Features'
 import Blog from './pages/Blog'
 import Contact from './pages/Contact'
 import PublicReport from './pages/PublicReport'
+import Onboarding from './pages/Onboarding'
 import CookieBanner from './components/CookieBanner'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -58,6 +59,12 @@ export default function App() {
           <Route path="/report/:slug" element={<PublicReport />} />
 
           {/* Protected */}
+          <Route path="/onboarding" element={
+            <>
+              <SignedIn><Onboarding /></SignedIn>
+              <SignedOut><RedirectToSignIn /></SignedOut>
+            </>
+          } />
           <Route path="/dashboard" element={
             <>
               <SignedIn><Dashboard /></SignedIn>
