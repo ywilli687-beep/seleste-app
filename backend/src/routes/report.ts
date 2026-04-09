@@ -133,4 +133,54 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 })
 
+/**
+ * POST /api/report/:id/share
+ * Makes the business report public (if not already) and returns the shareable URL.
+ * :id is the AuditSnapshot.id.
+ */
+router.post('/:id/share', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).auth?.userId
+    const snapshotId = req.params.id as string
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' })
+    }
+
+    const snapshot = await db.auditSnapshot.findUnique({
+      where: { id: snapshotId },
+      include: { business: true },
+    })
+
+    if (!snapshot) {
+      return res.status(404).json({ success: false, error: 'Report not found' })
+    }
+
+    if (snapshot.triggeredByUser !== userId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+
+    // Ensure reportPublic is true and a slug exists
+    const business = snapshot.business
+    if (!business.slug) {
+      return res.status(400).json({ success: false, error: 'Business has no shareable slug' })
+    }
+
+    if (!business.reportPublic) {
+      await db.business.update({
+        where: { id: business.id },
+        data: { reportPublic: true },
+      })
+    }
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://app.seleste.io'
+    const shareUrl = `${frontendUrl}/report/${business.slug}`
+
+    return res.json({ success: true, share_url: shareUrl })
+  } catch (err) {
+    console.error('[POST Share Error]', err)
+    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Internal server error' })
+  }
+})
+
 export default router

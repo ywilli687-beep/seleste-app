@@ -479,18 +479,42 @@ export default function ResultsView({
   onNewAudit: () => void
 }) {
   const isMobile = useIsMobile()
+  const { getToken } = useAuth()
   const [copied, setCopied] = useState(false)
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false)
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
 
   const { pillarScores, overallScore, recommendations, input } = result
   const biz = input.businessName || input.url.replace(/https?:\/\//, '').split('/')[0]
-  const shareUrl = result.auditId ? `${window.location.origin}/results/${result.auditId}` : null
 
-  const handleShare = () => {
-    if (!shareUrl) return
-    navigator.clipboard.writeText(shareUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const handleShare = async () => {
+    // If we already have the link, just copy it again
+    if (shareUrl) {
+      navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+      return
+    }
+
+    if (!result.auditId) return
+
+    try {
+      const token = await getToken()
+      const apiBase = import.meta.env.VITE_API_URL || ''
+      const res = await fetch(`${apiBase}/api/report/${result.auditId}/share`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Share failed')
+      const data = await res.json()
+      const url: string = data.share_url
+      setShareUrl(url)
+      navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    } catch {
+      // Silent fail — don't break the UI
+    }
   }
 
   const getPillarDesc = (id: string) => {
