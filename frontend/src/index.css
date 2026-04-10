@@ -695,3 +695,129 @@ body {
 .os-ast-indicator.idle    { background: var(--os-border-sec); }
 .os-ast-name   { font-size: 11px; color: var(--os-text-sec); flex: 1; font-family: var(--ff-sans); }
 .os-ast-status { font-size: 10px; color: var(--os-text-tert); font-family: var(--ff-sans); }
+
+/* ── Revenue breakdown bars (Phase 3) ── */
+.os-rev-section {
+  margin-top: 14px;
+}
+.os-rev-section-title {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--os-text-tert);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+  font-family: var(--ff-sans);
+}
+.os-rev-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.os-rev-label {
+  font-size: 11px;
+  color: var(--os-text-sec);
+  width: 80px;
+  flex-shrink: 0;
+  font-family: var(--ff-sans);
+}
+.os-rev-bar-bg {
+  flex: 1;
+  height: 5px;
+  background: var(--os-bg-prim);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.os-rev-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s ease-out;
+}
+.os-rev-amount {
+  font-size: 10px;
+  color: var(--os-text-tert);
+  width: 32px;
+  text-align: right;
+  font-family: var(--ff-sans);
+}
+
+/* ── Batch approval strip (Phase 3) ── */
+.os-batch-strip {
+  margin: 8px 8px 0;
+  background: var(--os-amber-dim);
+  border: 0.5px solid var(--os-amber);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.os-batch-strip-text {
+  font-size: 11px;
+  color: var(--os-amber);
+  font-family: var(--ff-sans);
+  line-height: 1.4;
+}
+.os-batch-approve-btn {
+  flex-shrink: 0;
+  background: var(--os-amber);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-family: var(--ff-sans);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.os-batch-approve-btn:hover { opacity: 0.9; }
+
+/* ── Autopilot tier selector (Phase 3) ── */
+.os-autopilot-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--os-border-prim);
+}
+.os-autopilot-title {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--os-text-tert);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 7px;
+  font-family: var(--ff-sans);
+}
+.os-autopilot-tiers {
+  display: flex;
+  gap: 4px;
+}
+.os-autopilot-tier {
+  flex: 1;
+  padding: 5px 0;
+  font-size: 10px;
+  font-family: var(--ff-sans);
+  font-weight: 500;
+  text-align: center;
+  border: 0.5px solid var(--os-border-sec);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--os-text-tert);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.os-autopilot-tier:hover { color: var(--os-text-sec); border-color: var(--os-border-prim); }
+.os-autopilot-tier.active {
+  background: var(--os-bg-sec);
+  color: var(--os-text-prim);
+  border-color: var(--os-border-sec);
+}
+.os-autopilot-desc {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--os-text-tert);
+  font-family: var(--ff-sans);
+  line-height: 1.5;
+}

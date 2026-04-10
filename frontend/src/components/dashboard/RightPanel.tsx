@@ -1,4 +1,4 @@
-import React from 'react'
+import { useState } from 'react'
 import type { DashboardData } from '../../types/dashboard'
 
 interface Props {
@@ -23,7 +23,24 @@ function pillarColor(score: number): string {
   return 'var(--os-red)'
 }
 
+type AutopilotTier = 'hands-on' | 'co-pilot' | 'autopilot'
+
+const TIER_DESC: Record<AutopilotTier, string> = {
+  'hands-on': 'You review and approve every action before anything runs.',
+  'co-pilot':  'Agents draft actions; you approve before they go live.',
+  'autopilot': 'Agents execute low-risk actions automatically.',
+}
+
 export function RightPanel({ data }: Props) {
+  const [tier, setTier] = useState<AutopilotTier>(() => {
+    return (localStorage.getItem('seleste_autopilot_tier') as AutopilotTier) ?? 'co-pilot'
+  })
+
+  const handleTier = (t: AutopilotTier) => {
+    setTier(t)
+    localStorage.setItem('seleste_autopilot_tier', t)
+  }
+
   const keyPillars = KEY_PILLARS
     .map(id => data.pillars?.find(p => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p)
@@ -123,6 +140,23 @@ export function RightPanel({ data }: Props) {
           >
             + Run Agent
           </button>
+        </div>
+
+        {/* Autopilot tier selector */}
+        <div className="os-autopilot-section">
+          <div className="os-autopilot-title">Autopilot Mode</div>
+          <div className="os-autopilot-tiers">
+            {(['hands-on', 'co-pilot', 'autopilot'] as AutopilotTier[]).map(t => (
+              <button
+                key={t}
+                className={`os-autopilot-tier${tier === t ? ' active' : ''}`}
+                onClick={() => handleTier(t)}
+              >
+                {t === 'hands-on' ? 'Hands-On' : t === 'co-pilot' ? 'Co-Pilot' : 'Autopilot'}
+              </button>
+            ))}
+          </div>
+          <div className="os-autopilot-desc">{TIER_DESC[tier]}</div>
         </div>
       </div>
     </div>

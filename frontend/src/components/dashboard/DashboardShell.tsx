@@ -278,6 +278,13 @@ export function DashboardShell({ data, userName, weeklyActions = [], children, o
     ? `${data.leakagePct}% conversion opportunity`
     : null
 
+  const handleBatchApprove = (ids: string[]) => {
+    ids.forEach(id => {
+      setApprovedIds(prev => new Set(prev).add(id))
+      onApprove?.(id)
+    })
+  }
+
   const handleNewAudit = () => {
     const latest = data.recentAudits?.[0]
     if (latest && onReaudit) {
@@ -370,6 +377,7 @@ export function DashboardShell({ data, userName, weeklyActions = [], children, o
                 items={allFeedItems}
                 selectedId={selectedId}
                 onSelect={id => setSelectedId(selectedId === id ? null : id)}
+                onBatchApprove={onApprove ? handleBatchApprove : undefined}
               />
               <DetailColumn
                 selected={selectedCard}
@@ -401,6 +409,7 @@ export function DashboardShell({ data, userName, weeklyActions = [], children, o
                 header={agentFeedItems.length > 0
                   ? `${agentFeedItems.length} pending approval`
                   : 'No pending proposals'}
+                onBatchApprove={onApprove ? handleBatchApprove : undefined}
               />
               <DetailColumn
                 selected={selectedCard}
@@ -471,12 +480,19 @@ function FeedColumn({
   selectedId,
   onSelect,
   header,
+  onBatchApprove,
 }: {
   items: FeedItem[]
   selectedId: string | null
   onSelect: (id: string) => void
   header?: string
+  onBatchApprove?: (ids: string[]) => void
 }) {
+  const batchIds = items
+    .filter(i => i.type === 'action' && i.detail?.weeklyActionId)
+    .map(i => i.detail!.weeklyActionId!)
+  const showBatch = batchIds.length >= 3
+
   return (
     <div className="os-feed-col">
       <div className="os-col-header">
@@ -485,6 +501,21 @@ function FeedColumn({
           {header ?? `${items.length} items · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
         </span>
       </div>
+
+      {showBatch && onBatchApprove && (
+        <div className="os-batch-strip">
+          <div className="os-batch-strip-text">
+            {batchIds.length} low-risk actions ready — approve all at once?
+          </div>
+          <button
+            className="os-batch-approve-btn"
+            onClick={() => onBatchApprove(batchIds)}
+          >
+            Approve all ({batchIds.length})
+          </button>
+        </div>
+      )}
+
       <div className="os-feed-scroll">
         {items.length === 0 ? (
           <div style={{ padding: '40px 12px', textAlign: 'center', color: 'var(--os-text-tert)', fontSize: 12, lineHeight: 1.7, fontFamily: 'var(--ff-sans)' }}>
@@ -534,6 +565,7 @@ function DetailColumn({
         <div className="os-detail-scroll">
           <ActionDetailCard
             card={selected}
+            data={data}
             onClose={onClose}
             onApprove={onApprove}
             onReject={onReject}
@@ -602,13 +634,21 @@ function DetailColumn({
 
 // ── Action detail card ─────────────────────────────────────────────────────
 
+function revenueBarColor(pct: number): string {
+  if (pct >= 70) return 'var(--os-green)'
+  if (pct >= 40) return 'var(--os-amber)'
+  return 'var(--os-red)'
+}
+
 function ActionDetailCard({
   card,
+  data,
   onClose,
   onApprove,
   onReject,
 }: {
   card: FeedItem
+  data?: DashboardData
   onClose: () => void
   onApprove?: (id: string) => void
   onReject?: (id: string) => void
@@ -670,6 +710,33 @@ function ActionDetailCard({
             ))}
           </div>
         </div>
+
+        {/* Revenue breakdown bars */}
+        {data?.pillars && data.pillars.length > 0 && (
+          <div className="os-rev-section">
+            <div className="os-rev-section-title">Revenue exposure by area</div>
+            {(['conversion', 'trust', 'discoverability', 'performance', 'content'] as const)
+              .map(id => data.pillars!.find(p => p.id === id))
+              .filter((p): p is NonNullable<typeof p> => !!p)
+              .map(p => {
+                const gap = Math.max(0, 100 - p.score)
+                return (
+                  <div key={p.id} className="os-rev-bar-row">
+                    <div className="os-rev-label">
+                      {({ conversion: 'Conversion', trust: 'Trust', discoverability: 'SEO', performance: 'Speed', content: 'Content' } as Record<string, string>)[p.id] ?? p.id}
+                    </div>
+                    <div className="os-rev-bar-bg">
+                      <div
+                        className="os-rev-bar-fill"
+                        style={{ width: `${gap}%`, background: revenueBarColor(p.score) }}
+                      />
+                    </div>
+                    <div className="os-rev-amount">{gap}%</div>
+                  </div>
+                )
+              })}
+          </div>
+        )}
 
         {card.impact && (
           <div style={{ background: 'var(--os-green-dim)', borderRadius: 6, padding: '10px 12px' }}>
