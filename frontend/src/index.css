@@ -1027,3 +1027,240 @@ body {
   background: var(--os-border-prim);
   flex-shrink: 0;
 }
+
+/* ── Agent Command Surface (Phase 6) ── */
+.os-cmd-surface {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 24px;
+}
+.os-cmd-header {
+  padding: 20px 20px 16px;
+  border-bottom: 0.5px solid var(--os-border-prim);
+  margin-bottom: 16px;
+}
+.os-cmd-header-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--os-text-prim);
+  font-family: var(--ff-sans);
+  margin-bottom: 4px;
+}
+.os-cmd-header-sub {
+  font-size: 12px;
+  color: var(--os-text-tert);
+  font-family: var(--ff-sans);
+  line-height: 1.5;
+}
+.os-cmd-section-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--os-text-tert);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-family: var(--ff-sans);
+  margin-bottom: 8px;
+}
+.os-cmd-input-wrap {
+  padding: 0 20px 16px;
+}
+.os-cmd-input-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--os-text-sec);
+  font-family: var(--ff-sans);
+  margin-bottom: 6px;
+}
+.os-cmd-textarea {
+  width: 100%;
+  background: var(--os-bg-sec);
+  border: 0.5px solid var(--os-border-sec);
+  border-radius: 8px;
+  color: var(--os-text-prim);
+  font-family: var(--ff-sans);
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 10px 12px;
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  overflow: hidden;
+}
+.os-cmd-textarea:focus { border-color: var(--os-border-prim); }
+.os-cmd-textarea::placeholder { color: var(--os-text-tert); }
+.os-cmd-textarea:disabled { opacity: 0.5; cursor: not-allowed; }
+.os-cmd-input-hint {
+  font-size: 10px;
+  color: var(--os-text-tert);
+  font-family: var(--ff-sans);
+  margin-top: 4px;
+  text-align: right;
+}
+.os-cmd-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.os-cmd-suggestion-chip {
+  background: var(--os-bg-sec);
+  border: 0.5px solid var(--os-border-sec);
+  border-radius: 20px;
+  color: var(--os-text-sec);
+  font-size: 11px;
+  font-family: var(--ff-sans);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.os-cmd-suggestion-chip:hover {
+  color: var(--os-text-prim);
+  border-color: var(--os-border-prim);
+}
+.os-cmd-suggestion-chip:disabled { opacity: 0.4; cursor: not-allowed; }
+.os-cmd-agent-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.os-cmd-agent-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--os-bg-sec);
+  border: 0.5px solid var(--os-border-prim);
+  border-radius: 7px;
+  padding: 10px 12px;
+}
+.os-cmd-agent-chip-icon { font-size: 16px; line-height: 1; margin-top: 1px; flex-shrink: 0; }
+.os-cmd-agent-chip-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--os-text-prim);
+  font-family: var(--ff-sans);
+  margin-bottom: 2px;
+}
+.os-cmd-agent-chip-desc {
+  font-size: 10px;
+  color: var(--os-text-tert);
+  font-family: var(--ff-sans);
+  line-height: 1.4;
+}
+.os-cmd-run-btn {
+  background: var(--os-text-prim);
+  color: var(--os-bg-tert);
+  border: none;
+  border-radius: 7px;
+  padding: 9px 22px;
+  font-size: 13px;
+  font-family: var(--ff-sans);
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: opacity 0.15s;
+}
+.os-cmd-run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.os-cmd-run-btn.running  { opacity: 0.7; cursor: not-allowed; }
+.os-cmd-run-btn:hover:not(:disabled):not(.running) { opacity: 0.88; }
+@keyframes os-spin { to { transform: rotate(360deg); } }
+.os-cmd-spinner {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid transparent;
+  border-top-color: var(--os-bg-tert);
+  border-radius: 50%;
+  animation: os-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+.os-cmd-live-block {
+  margin: 0 20px 16px;
+  background: var(--os-bg-sec);
+  border: 0.5px solid var(--os-border-prim);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.os-cmd-live-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.os-cmd-live-row:last-child { margin-bottom: 0; }
+.os-cmd-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--os-border-sec);
+}
+.os-cmd-live-dot.running { background: var(--os-amber); }
+.os-cmd-live-dot.done    { background: var(--os-green); }
+.os-cmd-live-dot.failed  { background: var(--os-red); }
+.os-cmd-live-dot.skipped { background: var(--os-text-tert); }
+.os-cmd-live-name {
+  font-size: 11px;
+  color: var(--os-text-sec);
+  font-family: var(--ff-sans);
+  flex: 1;
+}
+.os-cmd-live-status {
+  font-size: 10px;
+  color: var(--os-text-tert);
+  font-family: var(--ff-sans);
+}
+.os-cmd-live-status.running { color: var(--os-amber); }
+.os-cmd-live-status.done    { color: var(--os-green); }
+.os-cmd-live-status.failed  { color: var(--os-red); }
+.os-cmd-history-block {
+  margin: 0 20px;
+  padding-top: 16px;
+  border-top: 0.5px solid var(--os-border-prim);
+}
+.os-cmd-history-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--os-border-prim);
+}
+.os-cmd-history-row:last-child { border-bottom: none; }
+.os-cmd-history-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.os-cmd-history-dot.success { background: var(--os-green); }
+.os-cmd-history-dot.error   { background: var(--os-red); }
+.os-cmd-history-intent {
+  font-size: 11px;
+  color: var(--os-text-prim);
+  font-family: var(--ff-sans);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.os-cmd-history-meta {
+  font-size: 10px;
+  color: var(--os-text-tert);
+  font-family: var(--ff-sans);
+  margin-top: 1px;
+}
+.os-cmd-rerun-btn {
+  flex-shrink: 0;
+  background: transparent;
+  border: 0.5px solid var(--os-border-sec);
+  border-radius: 4px;
+  color: var(--os-text-tert);
+  font-size: 12px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.os-cmd-rerun-btn:hover { color: var(--os-text-sec); border-color: var(--os-border-prim); }
+.os-cmd-rerun-btn:disabled { opacity: 0.3; cursor: not-allowed; }

@@ -9,6 +9,7 @@ import { RoadmapCard } from './RoadmapCard'
 import { ScoreBreakdown } from './ScoreBreakdown'
 import { GrowthTimeline } from './GrowthTimeline'
 import { AssetManager } from './AssetManager'
+import { AgentCommandSurface } from './AgentCommandSurface'
 
 // ── Props ──────────────────────────────────────────────────────────────────
 
@@ -24,9 +25,10 @@ interface Props {
   onReaudit?: (payload: { url: string; businessName: string; location: string; vertical: string }) => void
   onApprove?: (id: string) => void
   onReject?: (id: string) => void
+  onRunCycle?: (businessId: string, intent: string) => Promise<void>
 }
 
-type TabId = 'today' | 'inbox' | 'growth' | 'assets'
+type TabId = 'today' | 'inbox' | 'growth' | 'assets' | 'command'
 
 // ── Pillar descriptions (for detail fallback) ──────────────────────────────
 
@@ -238,7 +240,7 @@ const I = {
 
 // ── Main component ─────────────────────────────────────────────────────────
 
-export function DashboardShell({ data, userName, weeklyActions = [], allWeeklyActions = [], agentOutputs = [], cycleState = 'no_cycle', lastCycleAt, children, onReaudit, onApprove, onReject }: Props) {
+export function DashboardShell({ data, userName, weeklyActions = [], allWeeklyActions = [], agentOutputs = [], cycleState = 'no_cycle', lastCycleAt, children, onReaudit, onApprove, onReject, onRunCycle }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('today')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set())
@@ -301,10 +303,11 @@ export function DashboardShell({ data, userName, weeklyActions = [], allWeeklyAc
   }
 
   const tabs: { id: TabId; label: string }[] = [
-    { id: 'today',  label: 'Today' },
-    { id: 'inbox',  label: `Inbox${inboxCount > 0 ? ` (${inboxCount})` : ''}` },
-    { id: 'growth', label: 'Growth' },
-    { id: 'assets', label: 'Assets' },
+    { id: 'today',   label: 'Today' },
+    { id: 'inbox',   label: `Inbox${inboxCount > 0 ? ` (${inboxCount})` : ''}` },
+    { id: 'growth',  label: 'Growth' },
+    { id: 'assets',  label: 'Assets' },
+    { id: 'command', label: '⚡ Command' },
   ]
 
   return (
@@ -320,8 +323,8 @@ export function DashboardShell({ data, userName, weeklyActions = [], allWeeklyAc
           { id: 'inbox',  Icon: I.Inbox,   label: 'Inbox',        tab: true,  badge: pendingCount > 0 },
           { id: 'growth', Icon: I.Growth,  label: 'Growth',       tab: true,  badge: false },
           { id: 'assets', Icon: I.Assets,  label: 'Assets',       tab: true,  badge: false },
-          { id: 'intel',  Icon: I.Intel,   label: 'Intelligence', tab: false, badge: false },
-          { id: 'command',Icon: I.Command, label: 'Command',      tab: false, badge: false },
+          { id: 'intel',  Icon: I.Intel,   label: 'Intelligence', tab: false,  badge: false },
+          { id: 'command',Icon: I.Command, label: 'Command',      tab: true,   badge: false },
         ] as const).map(({ id, Icon, label, badge, tab }) => (
           <div
             key={id}
@@ -354,7 +357,7 @@ export function DashboardShell({ data, userName, weeklyActions = [], allWeeklyAc
           )}
           <div className="os-topbar-actions">
             <button className="os-tb-btn" onClick={handleNewAudit}>New Audit</button>
-            <button className="os-tb-btn primary" onClick={() => window.location.href = '/agents'}>
+            <button className="os-tb-btn primary" onClick={() => setActiveTab('command')}>
               + Run Agent
             </button>
           </div>
@@ -471,6 +474,24 @@ export function DashboardShell({ data, userName, weeklyActions = [], allWeeklyAc
               </div>
               <div className="os-detail-scroll">
                 <AssetManager data={data} />
+              </div>
+            </div>
+          )}
+
+          {/* ── COMMAND tab ── */}
+          {activeTab === 'command' && (
+            <div className="os-detail-col" style={{ flex: 1 }}>
+              <div className="os-col-header">
+                <span className="os-col-title">Agent Command</span>
+                <span className="os-col-meta">Dispatch agents to work on your growth</span>
+              </div>
+              <div className="os-detail-scroll">
+                <AgentCommandSurface
+                  data={data}
+                  agentOutputs={agentOutputs}
+                  cycleState={cycleState}
+                  onRunCycle={onRunCycle ?? (async () => { window.location.href = '/agents' })}
+                />
               </div>
             </div>
           )}

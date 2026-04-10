@@ -84,7 +84,29 @@ export default function Dashboard() {
     enabled: !!isUserLoaded && !!user,
   })
 
-  // 4. Approve action mutation
+  // 4. Run cycle mutation
+  const runCycleMutation = useMutation({
+    mutationFn: async ({ businessId }: { businessId: string }) => {
+      const token = await getToken()
+      const res = await fetch('/api/agents/weekly', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessId }),
+      })
+      const resData = await res.json()
+      if (!resData.success) throw new Error(resData.error || 'Failed to run agents')
+      return resData
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agents', user?.id] })
+    },
+  })
+
+  const handleRunCycle = useCallback(async (businessId: string, _intent: string) => {
+    await runCycleMutation.mutateAsync({ businessId })
+  }, [runCycleMutation])
+
+  // 5. Approve action mutation
   const approveMutation = useMutation({
     mutationFn: async (actionId: string) => {
       const token = await getToken()
@@ -186,6 +208,7 @@ export default function Dashboard() {
         onReaudit={triggerReaudit}
         onApprove={handleApprove}
         onReject={handleReject}
+        onRunCycle={handleRunCycle}
       >
         <div style={{ padding: '48px 24px', textAlign: 'center' }}>
           <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🚀</div>
