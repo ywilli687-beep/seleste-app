@@ -113,25 +113,29 @@ export default function Dashboard() {
     )
   }
 
+  const userName = user?.firstName ?? undefined
+
   if (data?.totalAudits === 0) {
     return (
-      <DashboardShell data={data} onReaudit={triggerReaudit}>
-        <div style={{ padding: '64px 32px', textAlign: 'center', background: 'var(--bg2)', borderRadius: 'var(--r)', border: '1px solid var(--border)', marginTop: '2rem' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '24px' }}>🚀</div>
-          <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: '2rem', marginBottom: '16px' }}>Initialize intelligence data</h2>
-          <p style={{ color: 'var(--text2)', maxWidth: 500, margin: '0 auto 32px', lineHeight: 1.6 }}>
-            Your dashboard is ready. Run your first deep-scan to unlock historical tracking, industry standards, and your 90-day growth roadmap.
+      <DashboardShell data={data} userName={userName} onReaudit={triggerReaudit}>
+        <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🚀</div>
+          <div style={{ fontFamily: 'var(--ff-sans)', fontSize: 16, fontWeight: 500, color: 'var(--os-text-prim)', marginBottom: 10 }}>
+            Run your first audit
+          </div>
+          <p style={{ color: 'var(--os-text-sec)', maxWidth: 400, margin: '0 auto 28px', lineHeight: 1.6, fontSize: 13, fontFamily: 'var(--ff-sans)' }}>
+            Unlock your score, growth roadmap, and revenue intelligence by scanning your website.
           </p>
-          <button 
+          <button
             onClick={() => window.location.href = '/'}
-            style={{ background: 'var(--accent)', color: '#0a0a0f', padding: '14px 36px', borderRadius: 'var(--rs)', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}
+            style={{ background: 'var(--os-text-prim)', color: 'var(--os-bg-tert)', padding: '10px 28px', borderRadius: 7, border: 'none', fontWeight: 500, cursor: 'pointer', fontSize: 13, fontFamily: 'var(--ff-sans)' }}
           >
-            Run First Analysis →
+            Start First Scan →
           </button>
         </div>
       </DashboardShell>
     )
   }
 
-  return <DashboardShell data={data!} onReaudit={triggerReaudit} />
+  return <DashboardShell data={data!} userName={userName} onReaudit={triggerReaudit} />
 }
