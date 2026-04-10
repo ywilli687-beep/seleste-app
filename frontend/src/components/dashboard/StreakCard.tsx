@@ -1,4 +1,5 @@
 import React from 'react'
+import { Tooltip } from './Tooltip'
 
 interface Props {
   streakHistory: (0 | 1 | 2)[]
@@ -10,27 +11,35 @@ interface Props {
 export function StreakCard({ streakHistory, streakDays, streakPtsThisMonth, totalAudits }: Props) {
   return (
     <div className="card-v2" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <h3 className="text-h2" style={{ marginBottom: 16 }}>Activity Streak</h3>
-      
+      <Tooltip text="Tracks how consistently you're checking and improving your website. Each coloured square is a day you were active. Brighter green means more activity that day.">
+        <h3 className="text-h2" style={{ marginBottom: 16 }}>Your Activity</h3>
+      </Tooltip>
+
       <div style={{ display: 'flex', gap: 24, marginBottom: 24 }}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span className="text-h1" style={{ color: streakDays > 0 ? 'var(--green2)' : 'var(--ink)' }}>{streakDays}</span>
-          <span className="text-small text-body">Day Streak</span>
+          <Tooltip text="How many days in a row you've logged in or run an audit. Keeping a streak helps you improve your score faster.">
+            <span className="text-small text-body">Day Streak</span>
+          </Tooltip>
         </div>
         <div style={{ width: 1, background: 'var(--border)' }} />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span className="text-h1">{streakPtsThisMonth > 0 ? `+${streakPtsThisMonth}` : '–'}</span>
-          <span className="text-small text-body">Pts This Month</span>
+          <Tooltip text="Points you've earned this month by running audits and making improvements. Points help you level up and unlock more detailed insights.">
+            <span className="text-small text-body">Points This Month</span>
+          </Tooltip>
         </div>
         <div style={{ width: 1, background: 'var(--border)' }} />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span className="text-h1">{totalAudits}</span>
-          <span className="text-small text-body">Total Audits</span>
+          <Tooltip text="The total number of times you've run a website audit. Each audit gives you an up-to-date score and fresh recommendations.">
+            <span className="text-small text-body">Audits Run</span>
+          </Tooltip>
         </div>
       </div>
 
-      <div style={{ 
-        display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8, 
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8,
         flex: 1, alignContent: 'end'
       }}>
         {streakHistory.map((val, i) => {
@@ -48,7 +57,7 @@ export function StreakCard({ streakHistory, streakDays, streakPtsThisMonth, tota
           }
 
           return (
-            <div key={i} title={i === 27 ? 'Today' : `Day -${27 - i}`} style={{ 
+            <div key={i} title={i === 27 ? 'Today' : `${27 - i} days ago`} style={{
               aspectRatio: '1/1', borderRadius: 4, background: bg, border, boxShadow,
               transition: 'transform 0.2s',
               transform: (i === 27 && val > 0) ? 'scale(1.05)' : 'none'

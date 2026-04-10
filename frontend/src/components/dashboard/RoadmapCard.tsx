@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { triggerNotification } from '@/lib/notifications'
+import { Tooltip } from './Tooltip'
 
 interface Action {
   phase: number
@@ -8,7 +9,7 @@ interface Action {
   difficulty: string
 }
 
-export function RoadmapCard({ roadmap }: { 
+export function RoadmapCard({ roadmap }: {
   roadmap: Action[]
   roadmapDurationWeeks: string
   grade: string
@@ -28,32 +29,34 @@ export function RoadmapCard({ roadmap }: {
   return (
     <div className="card-v2" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ paddingBottom: 24 }}>
-        <h3 className="text-h2">Your Action Plan</h3>
+        <Tooltip text="A prioritised list of fixes for your website, ordered by what will make the biggest difference. Start at step 1 and work your way down.">
+          <h3 className="text-h2">Your Fix List</h3>
+        </Tooltip>
       </div>
-      
+
       {roadmap.length === 0 ? (
         <div style={{ color: 'var(--ink-muted)', fontSize: 13 }}>
-          Analyzing your results to build a custom roadmap...
+          Building your personalised fix list...
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {roadmap.map((a) => {
             const isClicked = clicked.has(a.phase)
             return (
-              <a 
+              <a
                 key={a.phase}
                 href={`#action-${a.phase}`}
                 onClick={() => handleClick(a.phase, a.feature)}
-                style={{ 
-                  display: 'flex', alignItems: 'center', padding: '16px 0', 
+                style={{
+                  display: 'flex', alignItems: 'center', padding: '16px 0',
                   borderTop: '1px solid var(--border)', textDecoration: 'none', color: 'var(--ink)',
                   transition: 'background 0.2s',
                   background: isClicked ? 'var(--panel-hover)' : 'transparent',
                 }}
               >
-                <div style={{ 
-                  width: 32, height: 32, borderRadius: '50%', background: 'var(--page-bg)', 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                <div style={{
+                  width: 32, height: 32, borderRadius: '50%', background: 'var(--page-bg)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 12, fontWeight: 700, marginRight: 16, color: 'var(--ink)'
                 }}>
                   {a.phase}
