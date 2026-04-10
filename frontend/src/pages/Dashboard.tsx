@@ -170,7 +170,8 @@ export default function Dashboard() {
   }
 
   const userName = user?.firstName ?? undefined
-  const pendingActions = (agentsData?.weeklyActions ?? []).filter(a => a.status === 'pending')
+  const allWeeklyActions = agentsData?.weeklyActions ?? []
+  const pendingActions = allWeeklyActions.filter(a => a.status === 'pending')
 
   if (data?.totalAudits === 0) {
     return (
@@ -178,6 +179,7 @@ export default function Dashboard() {
         data={data}
         userName={userName}
         weeklyActions={[]}
+        allWeeklyActions={allWeeklyActions}
         agentOutputs={agentsData?.agentOutputs ?? []}
         cycleState={agentsData?.cycleState ?? 'no_cycle'}
         lastCycleAt={agentsData?.lastCycleAt ?? null}
@@ -209,6 +211,7 @@ export default function Dashboard() {
       data={data!}
       userName={userName}
       weeklyActions={pendingActions}
+      allWeeklyActions={allWeeklyActions}
       agentOutputs={agentsData?.agentOutputs ?? []}
       cycleState={agentsData?.cycleState ?? 'no_cycle'}
       lastCycleAt={agentsData?.lastCycleAt ?? null}

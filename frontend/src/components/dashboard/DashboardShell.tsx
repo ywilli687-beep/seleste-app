@@ -7,13 +7,16 @@ import { NotificationStack } from './NotificationStack'
 import { RightPanel } from './RightPanel'
 import { RoadmapCard } from './RoadmapCard'
 import { ScoreBreakdown } from './ScoreBreakdown'
+import { GrowthTimeline } from './GrowthTimeline'
+import { AssetManager } from './AssetManager'
 
 // ── Props ──────────────────────────────────────────────────────────────────
 
 interface Props {
   data: DashboardData
   userName?: string
-  weeklyActions?: WeeklyActionRaw[]
+  weeklyActions?: WeeklyActionRaw[]   // pending only — used for feed
+  allWeeklyActions?: WeeklyActionRaw[] // all statuses — used for timeline
   agentOutputs?: AgentOutput[]
   cycleState?: CycleState
   lastCycleAt?: string | null
@@ -235,7 +238,7 @@ const I = {
 
 // ── Main component ─────────────────────────────────────────────────────────
 
-export function DashboardShell({ data, userName, weeklyActions = [], agentOutputs = [], cycleState = 'no_cycle', lastCycleAt, children, onReaudit, onApprove, onReject }: Props) {
+export function DashboardShell({ data, userName, weeklyActions = [], allWeeklyActions = [], agentOutputs = [], cycleState = 'no_cycle', lastCycleAt, children, onReaudit, onApprove, onReject }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('today')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set())
@@ -441,29 +444,33 @@ export function DashboardShell({ data, userName, weeklyActions = [], agentOutput
             </>
           )}
 
-          {/* ── GROWTH / ASSETS stubs ── */}
-          {(activeTab === 'growth' || activeTab === 'assets') && (
+          {/* ── GROWTH tab ── */}
+          {activeTab === 'growth' && (
             <div className="os-detail-col" style={{ flex: 1 }}>
               <div className="os-col-header">
-                <span className="os-col-title">
-                  {activeTab === 'growth' ? 'Growth Timeline' : 'Asset Manager'}
-                </span>
-                <span className="os-col-meta">Coming in Phase 5</span>
+                <span className="os-col-title">Growth Timeline</span>
+                <span className="os-col-meta">{data.businessName}</span>
               </div>
               <div className="os-detail-scroll">
-                <div style={{ padding: '60px 24px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 36, marginBottom: 16 }}>
-                    {activeTab === 'growth' ? '📈' : '🖥️'}
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--os-text-sec)', marginBottom: 8, fontFamily: 'var(--ff-sans)' }}>
-                    {activeTab === 'growth' ? 'Growth Timeline' : 'Asset Manager'}
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--os-text-tert)', lineHeight: 1.6, fontFamily: 'var(--ff-sans)', maxWidth: 320, margin: '0 auto' }}>
-                    {activeTab === 'growth'
-                      ? 'Shows audit history, agent actions, and metric changes over time — with cause-and-effect linking.'
-                      : 'Manage your website, Google Business Profile, ads, SEO, and local listings from one place.'}
-                  </div>
-                </div>
+                <GrowthTimeline
+                  data={data}
+                  agentOutputs={agentOutputs}
+                  allWeeklyActions={allWeeklyActions}
+                  lastCycleAt={lastCycleAt}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ── ASSETS tab ── */}
+          {activeTab === 'assets' && (
+            <div className="os-detail-col" style={{ flex: 1 }}>
+              <div className="os-col-header">
+                <span className="os-col-title">Asset Manager</span>
+                <span className="os-col-meta">{data.businessName}</span>
+              </div>
+              <div className="os-detail-scroll">
+                <AssetManager data={data} />
               </div>
             </div>
           )}
