@@ -189,10 +189,11 @@ export function DashboardShell({ data, children, onReaudit }: Props) {
               )}
 
               {/* Middle: Stats */}
-              <StatCards 
+              <StatCards
                 score={data?.overallScore ?? 0}
                 delta={data?.scoreDelta}
                 revenueLeak={data?.revenueLeakMonthly}
+                leakagePct={data?.leakagePct ?? null}
                 levelName={data?.levelName ?? 'Visibility Builder'}
                 xpTotal={data?.xpTotal ?? 0}
                 xpRequired={data?.xpRequired ?? 0}

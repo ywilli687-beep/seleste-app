@@ -12,6 +12,7 @@ export type DashboardData = {
   previousGrade: 'A' | 'B' | 'C' | 'D' | 'F' | null
   pillars: { id: string; score: number; industryAvg: number }[]
   revenueLeakMonthly: number | null
+  leakagePct: number | null
   
   // Gamification
   xpTotal: number

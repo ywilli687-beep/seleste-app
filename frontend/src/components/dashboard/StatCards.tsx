@@ -5,13 +5,14 @@ interface Props {
   score: number
   delta: number | null
   revenueLeak: number | null
+  leakagePct: number | null
   levelName: string
   xpTotal: number
   xpRequired: number
   xpToNext: number
 }
 
-export function StatCards({ score, revenueLeak, levelName, xpTotal, xpRequired, xpToNext }: Props) {
+export function StatCards({ score, revenueLeak, leakagePct, levelName, xpTotal, xpRequired, xpToNext }: Props) {
   const nextTarget = xpTotal + xpToNext
   const progress = Math.max(5, Math.min(100, ((xpTotal - xpRequired) / (nextTarget - xpRequired)) * 100))
 
@@ -31,10 +32,22 @@ export function StatCards({ score, revenueLeak, levelName, xpTotal, xpRequired, 
 
       <div className="card-v2" style={{ padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <span className="text-small" style={{ marginBottom: 16 }}>Estimated Leakage</span>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <span className="text-h1" style={{ fontSize: 32 }}>${(revenueLeak === null || revenueLeak === 0) ? '0' : revenueLeak.toLocaleString()}</span>
-          <span className="text-body">/ month</span>
-        </div>
+        {revenueLeak != null && revenueLeak > 0 ? (
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span className="text-h1" style={{ fontSize: 32 }}>${revenueLeak.toLocaleString()}</span>
+            <span className="text-body">/ month</span>
+          </div>
+        ) : leakagePct != null && leakagePct > 0 ? (
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span className="text-h1" style={{ fontSize: 32 }}>{leakagePct}%</span>
+            <span className="text-body">revenue leaked</span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span className="text-h1" style={{ fontSize: 32 }}>$0</span>
+            <span className="text-body">/ month</span>
+          </div>
+        )}
       </div>
 
       <div className="card-v2" style={{ padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>

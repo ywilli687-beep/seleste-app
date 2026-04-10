@@ -832,6 +832,7 @@ export async function getDashboardData(userId: string, isPro: boolean = false) {
       { id: 'scalability', score: latestAudit.scalabilityScore, industryAvg: segment?.avgScalabilityScore||50 },
     ],
     revenueLeakMonthly: latestAudit.estimatedMonthlyLoss,
+    leakagePct: latestAudit.leakagePct,
     xpRequired: getLevelInfo(xpTotal).xpRequired,
     
     xpTotal,
