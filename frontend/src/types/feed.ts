@@ -97,6 +97,22 @@ export function buildPipeline(category: string): PipelineStep[] {
 // WeeklyAction → FeedItem converter
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Agent run output — returned by /api/agents/page/:userId
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type AgentRunStatus = 'done' | 'running' | 'failed' | 'skipped' | 'pending'
+
+export interface AgentOutput {
+  agentId: string
+  agentName: string
+  status: AgentRunStatus
+  completedAt: string | null
+  durationMs: number | null
+}
+
+export type CycleState = 'no_cycle' | 'cycle_running' | 'cycle_failed' | 'cycle_complete'
+
 export interface WeeklyActionRaw {
   id: string
   title: string

@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import type { DashboardData } from '../../types/dashboard'
+import type { AgentOutput, CycleState } from '../../types/feed'
 
 interface Props {
   data: DashboardData
+  agentOutputs?: AgentOutput[]
+  cycleState?: CycleState
+  lastCycleAt?: string | null
   onReaudit?: (payload: { url: string; businessName: string; location: string; vertical: string }) => void
 }
 
@@ -23,6 +27,46 @@ function pillarColor(score: number): string {
   return 'var(--os-red)'
 }
 
+// Maps the 5 displayed agent slots to the agentId fragments returned by the backend
+const AGENT_SLOTS = [
+  { name: 'SEO',        match: ['seo'] },
+  { name: 'CRO',        match: ['cro', 'conversion'] },
+  { name: 'Content',    match: ['content'] },
+  { name: 'Reputation', match: ['reputation'] },
+  { name: 'Media',      match: ['media'] },
+] as const
+
+function deriveAgents(outputs: AgentOutput[]) {
+  return AGENT_SLOTS.map(slot => {
+    const run = outputs.find(o =>
+      slot.match.some(m => o.agentId.toLowerCase().includes(m))
+    )
+    const status = run?.status ?? 'idle'
+    const indicator =
+      status === 'running' ? 'running' :
+      status === 'done'    ? 'done'    :
+      status === 'failed'  ? 'error'   :
+      'idle'
+    const label =
+      status === 'running' ? 'Running…' :
+      status === 'done'    ? 'Done'     :
+      status === 'failed'  ? 'Failed'   :
+      status === 'skipped' ? 'Skipped'  :
+      'Idle'
+    return { name: slot.name, status: label, indicator }
+  })
+}
+
+function formatLastCycle(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 60)  return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24)   return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
 type AutopilotTier = 'hands-on' | 'co-pilot' | 'autopilot'
 
 const TIER_DESC: Record<AutopilotTier, string> = {
@@ -31,7 +75,7 @@ const TIER_DESC: Record<AutopilotTier, string> = {
   'autopilot': 'Agents execute low-risk actions automatically.',
 }
 
-export function RightPanel({ data }: Props) {
+export function RightPanel({ data, agentOutputs = [], cycleState = 'no_cycle', lastCycleAt }: Props) {
   const [tier, setTier] = useState<AutopilotTier>(() => {
     return (localStorage.getItem('seleste_autopilot_tier') as AutopilotTier) ?? 'co-pilot'
   })
@@ -57,14 +101,9 @@ export function RightPanel({ data }: Props) {
     ? `${data.leakagePct}% gap`
     : '—'
 
-  // Agent statuses are stubs in Phase 1 — Phase 4 will wire real agent state
-  const agents = [
-    { name: 'SEO',        status: 'Idle',   indicator: 'idle' },
-    { name: 'CRO',        status: 'Idle',   indicator: 'idle' },
-    { name: 'Content',    status: 'Idle',   indicator: 'idle' },
-    { name: 'Reputation', status: 'Idle',   indicator: 'idle' },
-    { name: 'Media',      status: 'Idle',   indicator: 'idle' },
-  ]
+  const agents = deriveAgents(agentOutputs)
+  const lastCycleLabel = formatLastCycle(lastCycleAt)
+  const cycleRunning = cycleState === 'cycle_running'
 
   return (
     <div className="os-right-panel">
@@ -120,12 +159,22 @@ export function RightPanel({ data }: Props) {
 
       {/* Agents */}
       <div className="os-rp-section" style={{ flex: 1, overflowY: 'auto', borderBottom: 'none' }}>
-        <div className="os-rp-title">Agents</div>
+        <div className="os-rp-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          Agents
+          {cycleRunning && (
+            <span className="os-ast-cycle-badge running">Running</span>
+          )}
+          {!cycleRunning && lastCycleLabel && (
+            <span className="os-ast-cycle-badge">{lastCycleLabel}</span>
+          )}
+        </div>
         {agents.map(a => (
           <div key={a.name} className="os-agent-row">
             <div className={`os-ast-indicator ${a.indicator}`} />
             <div className="os-ast-name">{a.name}</div>
-            <div className="os-ast-status">{a.status}</div>
+            <div className={`os-ast-status${a.indicator === 'done' ? ' done' : a.indicator === 'error' ? ' error' : ''}`}>
+              {a.status}
+            </div>
           </div>
         ))}
         <div style={{ marginTop: 12, paddingTop: 10, borderTop: '0.5px solid var(--os-border-prim)' }}>

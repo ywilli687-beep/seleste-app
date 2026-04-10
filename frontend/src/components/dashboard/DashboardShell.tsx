@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import type { DashboardData } from '../../types/dashboard'
-import type { FeedItem, WeeklyActionRaw } from '../../types/feed'
+import type { FeedItem, WeeklyActionRaw, AgentOutput, CycleState } from '../../types/feed'
 import { weeklyActionToFeedItem, getAgentDot, buildPipeline } from '../../types/feed'
 import { FeedCard } from './FeedCard'
 import { NotificationStack } from './NotificationStack'
@@ -14,6 +14,9 @@ interface Props {
   data: DashboardData
   userName?: string
   weeklyActions?: WeeklyActionRaw[]
+  agentOutputs?: AgentOutput[]
+  cycleState?: CycleState
+  lastCycleAt?: string | null
   children?: React.ReactNode
   onReaudit?: (payload: { url: string; businessName: string; location: string; vertical: string }) => void
   onApprove?: (id: string) => void
@@ -232,7 +235,7 @@ const I = {
 
 // ── Main component ─────────────────────────────────────────────────────────
 
-export function DashboardShell({ data, userName, weeklyActions = [], children, onReaudit, onApprove, onReject }: Props) {
+export function DashboardShell({ data, userName, weeklyActions = [], agentOutputs = [], cycleState = 'no_cycle', lastCycleAt, children, onReaudit, onApprove, onReject }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('today')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set())
@@ -466,7 +469,13 @@ export function DashboardShell({ data, userName, weeklyActions = [], children, o
           )}
 
           {/* Right panel — always visible */}
-          <RightPanel data={data} onReaudit={onReaudit} />
+          <RightPanel
+            data={data}
+            onReaudit={onReaudit}
+            agentOutputs={agentOutputs}
+            cycleState={cycleState}
+            lastCycleAt={lastCycleAt}
+          />
         </div>
       </div>
     </div>

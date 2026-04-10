@@ -6,7 +6,7 @@ import LoadingScreen from '@/components/LoadingScreen'
 import ResultsView from '@/components/ResultsView'
 import { DashboardShell } from '@/components/dashboard/DashboardShell'
 import type { DashboardData } from '@/types/dashboard'
-import type { WeeklyActionRaw } from '@/types/feed'
+import type { WeeklyActionRaw, AgentOutput, CycleState } from '@/types/feed'
 
 export default function Dashboard() {
   const { user, isLoaded: isUserLoaded } = useUser()
@@ -59,8 +59,13 @@ export default function Dashboard() {
     enabled: !!isUserLoaded && !!user
   })
 
-  // 3. Agent weekly actions (runs in parallel — non-blocking if it fails)
-  const { data: agentsData } = useQuery<{ weeklyActions: WeeklyActionRaw[] }>({
+  // 3. Agent data (runs in parallel — non-blocking if it fails)
+  const { data: agentsData } = useQuery<{
+    weeklyActions: WeeklyActionRaw[]
+    agentOutputs: AgentOutput[]
+    cycleState: CycleState
+    lastCycleAt: string | null
+  }>({
     queryKey: ['agents', user?.id],
     queryFn: async () => {
       const token = await getToken()
@@ -68,8 +73,13 @@ export default function Dashboard() {
         headers: { Authorization: `Bearer ${token}` }
       })
       const resData = await res.json()
-      if (!resData.success) return { weeklyActions: [] }
-      return { weeklyActions: resData.data?.weeklyActions ?? [] }
+      if (!resData.success) return { weeklyActions: [], agentOutputs: [], cycleState: 'no_cycle' as CycleState, lastCycleAt: null }
+      return {
+        weeklyActions: resData.data?.weeklyActions ?? [],
+        agentOutputs: resData.data?.agentOutputs ?? [],
+        cycleState: (resData.data?.state ?? 'no_cycle') as CycleState,
+        lastCycleAt: resData.data?.latestCycle?.completedAt ?? null,
+      }
     },
     enabled: !!isUserLoaded && !!user,
   })
@@ -168,6 +178,9 @@ export default function Dashboard() {
         data={data}
         userName={userName}
         weeklyActions={[]}
+        agentOutputs={agentsData?.agentOutputs ?? []}
+        cycleState={agentsData?.cycleState ?? 'no_cycle'}
+        lastCycleAt={agentsData?.lastCycleAt ?? null}
         onReaudit={triggerReaudit}
         onApprove={handleApprove}
         onReject={handleReject}
@@ -196,6 +209,9 @@ export default function Dashboard() {
       data={data!}
       userName={userName}
       weeklyActions={pendingActions}
+      agentOutputs={agentsData?.agentOutputs ?? []}
+      cycleState={agentsData?.cycleState ?? 'no_cycle'}
+      lastCycleAt={agentsData?.lastCycleAt ?? null}
       onReaudit={triggerReaudit}
       onApprove={handleApprove}
       onReject={handleReject}

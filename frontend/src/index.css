@@ -695,6 +695,25 @@ body {
 .os-ast-indicator.idle    { background: var(--os-border-sec); }
 .os-ast-name   { font-size: 11px; color: var(--os-text-sec); flex: 1; font-family: var(--ff-sans); }
 .os-ast-status { font-size: 10px; color: var(--os-text-tert); font-family: var(--ff-sans); }
+.os-ast-status.done  { color: var(--os-green); }
+.os-ast-status.error { color: var(--os-red); }
+.os-ast-indicator.done  { background: var(--os-green); }
+.os-ast-indicator.error { background: var(--os-red); }
+.os-ast-cycle-badge {
+  font-size: 9px;
+  font-family: var(--ff-sans);
+  color: var(--os-text-tert);
+  background: var(--os-bg-prim);
+  border: 0.5px solid var(--os-border-sec);
+  border-radius: 4px;
+  padding: 1px 5px;
+  line-height: 1.6;
+}
+.os-ast-cycle-badge.running {
+  color: var(--os-amber);
+  border-color: var(--os-amber);
+  background: var(--os-amber-dim);
+}
 
 /* ── Revenue breakdown bars (Phase 3) ── */
 .os-rev-section {
