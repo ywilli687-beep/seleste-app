@@ -70,7 +70,7 @@ function GrowthRing({ score, size = 190 }: { score: number; size?: number }) {
 }
 
 // ── Pillar bar (used in both layouts) ─────────────────────────────────────────
-function PillarBar({ icon, name, score, weight }: { icon: string; name: string; score: number; weight: number }) {
+function PillarBar({ icon, name, score }: { icon: string; name: string; score: number }) {
   const col = gradeColor(score)
   return (
     <div>
@@ -78,10 +78,7 @@ function PillarBar({ icon, name, score, weight }: { icon: string; name: string; 
         <span style={{ fontSize: 13, color: T.onSurface, display: 'flex', alignItems: 'center', gap: 6 }}>
           {icon} {name}
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 10, color: T.onMuted, fontFamily: T.ffBody }}>wt {Math.round(weight * 100)}%</span>
-          <span style={{ fontFamily: T.ff, fontSize: 13, fontWeight: 700, color: col }}>{score}/100</span>
-        </div>
+        <span style={{ fontFamily: T.ff, fontSize: 13, fontWeight: 700, color: col }}>{score}/100</span>
       </div>
       <div style={{ height: 5, background: T.surfaceTop, borderRadius: 99, overflow: 'hidden' }}>
         <div style={{
@@ -397,7 +394,7 @@ function DesktopLayout({
               <SectionLabel>Performance by Area</SectionLabel>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                 {sorted.map(p => (
-                  <PillarBar key={p.id} icon={p.icon} name={p.name} score={pillarScores[p.id] ?? 0} weight={p.weight} />
+                  <PillarBar key={p.id} icon={p.icon} name={p.name} score={pillarScores[p.id] ?? 0} />
                 ))}
               </div>
             </div>
