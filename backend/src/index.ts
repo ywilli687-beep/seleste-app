@@ -3,6 +3,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import { requireAuth } from '@/lib/auth'
 import rateLimit from 'express-rate-limit'
+import { LayerViolationError } from '@/lib/guards'
 
 dotenv.config()
 
@@ -111,6 +112,19 @@ app.get('/api/health', (req, res) => {
 app.use('/api/waitlist', waitlistRoutes)
 app.use('/api/outreach', outreachRoutes)
 app.use('/api/vertical-pages', verticalPagesRoutes)
+
+// LayerViolationError handler — registered before the generic handler.
+// Catches guard violations from any layer and returns a structured 400.
+app.use((err: any, _req: any, res: any, next: any) => {
+  if (err instanceof LayerViolationError) {
+    return res.status(400).json({
+      error:     'LAYER_VIOLATION',
+      layer:     err.layer,
+      violation: err.violation,
+    })
+  }
+  next(err)
+})
 
 // Global error handler — must be last. Converts all unhandled errors to JSON.
 app.use((err: any, req: any, res: any, _next: any) => {

@@ -26,6 +26,8 @@ import {
 import { awardXP } from '@/lib/gamification'
 import { AUDIT_VERSION } from '@/lib/constants'
 import { computeAndStoreBenchmarks } from '@/lib/benchmarks'
+import { db } from '@/lib/db'
+import { safeFireWebhook } from '@/lib/failure-paths'
 import type { AuditResult, Vertical } from '@/types/audit'
 
 const router = Router()
@@ -198,20 +200,39 @@ router.post('/', async (req: Request, res: Response) => {
     // Trigger n8n specialist agents
     const webhookUrl = process.env.SEL_MASTER_AGENT_WEBHOOK
     if (webhookUrl) {
-      fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          audit_id: snapshot.id,
-          business_name: business.businessName,
-          website: input.url,
-          industry: input.vertical,
-          scores: pillarScores,
-          overall_score: overallScore,
-          raw_results: resultForDb,
-        }),
-      }).catch((err) => console.error('[AUDIT] n8n webhook failed:', err))
+      safeFireWebhook(webhookUrl, {
+        audit_id: snapshot.id,
+        business_name: business.businessName,
+        website: input.url,
+        industry: input.vertical,
+        scores: pillarScores,
+        overall_score: overallScore,
+        raw_results: resultForDb,
+      }).then(ok => {
+        if (!ok) console.error('[AUDIT] n8n webhook delivery failed')
+      })
     }
+
+    // State machine evaluation (Phase 3 wiring — safe no-op until stateMachine exists)
+    ;(async () => {
+      try {
+        // Require via a runtime path so TS never tries to resolve the Phase 3 module
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const smPath = require('path').join(__dirname, '../lib/stateMachine')
+        const { evaluateState } = require(smPath)
+        const biz: any = await db.business.findUnique({ where: { id: business.id }, select: { state: true } as any })
+        const currentState: string = biz?.state ?? 'new'
+        const evaluation = evaluateState(currentState, pillarScores)
+        if (evaluation.transitioned) {
+          await (db.business as any).update({
+            where: { id: business.id },
+            data:  { state: evaluation.nextState },
+          })
+        }
+      } catch {
+        // stateMachine not yet available or update failed — never blocks the response
+      }
+    })()
     if (input.userId) {
       awardXP({
         type: 'first_audit',
