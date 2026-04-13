@@ -27,6 +27,7 @@ import outboundRoutes from './routes/outbound'
 import waitlistRoutes from './routes/waitlist'
 import outreachRoutes from './routes/outreach'
 import verticalPagesRoutes from './routes/vertical-pages'
+import learningRouter from './routes/learning'
 
 const app = express()
 
@@ -118,6 +119,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/waitlist', waitlistRoutes)
 app.use('/api/outreach', outreachRoutes)
 app.use('/api/vertical-pages', verticalPagesRoutes)
+app.use('/api/learning', learningRouter)
 
 // LayerViolationError handler — registered before the generic handler.
 // Catches guard violations from any layer and returns a structured 400.
