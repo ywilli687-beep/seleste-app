@@ -78,6 +78,17 @@ export async function upsertBusiness(params: {
   const name     = params.businessName ?? extractHostname(website)
   const industry = mapVerticalToIndustry(params.vertical)
 
+  // If userId is provided, ensure the User row exists first (FK requirement).
+  // We only have the Clerk userId at this point, not the email, so we use a
+  // placeholder email that can be updated later when the user signs in via Clerk.
+  if (params.userId) {
+    await db.user.upsert({
+      where:  { id: params.userId },
+      update: {},
+      create: { id: params.userId, email: `${params.userId}@pending.seleste.io` },
+    })
+  }
+
   // Prefer match on userId+website, then fall back to website alone
   let existing: any = null
   if (params.userId) {
