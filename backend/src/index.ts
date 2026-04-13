@@ -18,6 +18,7 @@ import claimRoutes from './routes/claim'
 import callbackRoutes from './routes/callback'
 import tasksRoutes from './routes/tasks'
 import businessRouter from './routes/business'
+import executeRouter from './routes/execute'
 import publicReportRoutes from './routes/public-report'
 import badgeRoutes from './routes/badge'
 import statsRoutes from './routes/stats'
@@ -110,6 +111,7 @@ app.use('/api/cron', cronRoutes)
 app.use('/api/callback', callbackRoutes) // Public callback for agents
 app.use('/api/tasks', requireAuth, tasksRoutes)
 app.use('/api/business', businessRouter)
+app.use('/api/execute', executeRouter)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'UP', port: PORT, env: process.env.NODE_ENV })
 })
