@@ -1,78 +1,117 @@
 // @ts-nocheck
 import { Router, Request, Response } from 'express'
-import { db } from '@/lib/db'
+import { z } from 'zod'
+import { db } from '../lib/db'
+import { guardAgent } from '../lib/stateMachine'
+import { rankActions, decideAutoExecute, computeUrgency, computeChannelSynergy } from '../lib/prioritization'
+import { ActionRiskTier, AgentType, AgentCycleStatus } from '@prisma/client'
+import crypto from 'crypto'
 
 const router = Router()
 
-/**
- * POST /api/agents/callback
- * Receives specialized output from n8n agents (e.g. drafted GBP posts).
- * Links the output to a WeeklyAction and marks it as 'pending' for Approval Inbox.
- */
-router.post('/', async (req: Request, res: Response) => {
-  console.log('[Callback] Received body:', JSON.stringify(req.body))
-  const { auditId, agentId, title, description, draftContent, category, estimatedLift } = req.body
-
-  if (!auditId || !title) {
-    return res.status(400).json({ success: false, error: 'Missing auditId or title' })
+function requireCronSecret(req: Request, res: Response, next: Function) {
+  if (req.headers['authorization'] !== `Bearer ${process.env.CRON_SECRET}`) {
+    return res.status(401).json({ error: 'UNAUTHORIZED' })
   }
+  next()
+}
 
-  try {
-    // 1. Find the audit snapshot to get business context
-    console.log('[Callback] Looking up auditId:', auditId)
-    const snapshot = await db.auditSnapshot.findUnique({
-      where: { id: auditId },
-      include: { business: true }
-    })
+const ActionSchema = z.object({
+  title:            z.string().min(1).max(200),
+  description:      z.string().min(1).max(2000),
+  pillar:           z.string().min(1),
+  goal:             z.string().min(1),
+  metric:           z.string().min(1),
+  targetValue:      z.number().int().min(0).max(100).optional(),
+  estimatedImpact:  z.number().int().min(0).max(100),
+  estimatedEffort:  z.number().int().min(1).max(5),
+  riskTier:         z.enum(['LOW', 'MEDIUM', 'HIGH']),
+  actionType:       z.string().min(1),
+  actionPayload:    z.record(z.unknown()),
+  channelSynergy:   z.array(z.string()).default([]),
+  urgencySignal:    z.number().int().min(0).max(100).default(50),
+})
 
-    if (!snapshot) {
-      console.log('[Callback] Snapshot not found for id:', auditId)
-      return res.status(404).json({ success: false, error: 'Audit snapshot not found' })
-    }
+const CallbackSchema = z.object({
+  audit_id:   z.string(),
+  cycle_id:   z.string(),
+  agent_type: z.enum(['SEO', 'CRO', 'REPUTATION', 'CONTENT', 'MEDIA_BUYER']),
+  status:     z.enum(['success', 'error']),
+  actions:    z.array(ActionSchema).default([]),
+  error:      z.string().optional(),
+})
 
-    // 2. Find or Create an Agent Cycle for this week if not exists
-    const currentWeekLabel = `2026-W${Math.ceil((new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24 * 7))}`
-    
-    let cycle = await db.agentCycle.findFirst({
-      where: { businessId: snapshot.businessId, weekLabel: currentWeekLabel },
-      orderBy: { createdAt: 'desc' }
-    })
+const VALID_ACTION_TYPES: Record<AgentType, string[]> = {
+  SEO:         ['UPDATE_META', 'ADD_SCHEMA', 'FIX_SITEMAP', 'UPDATE_ROBOTS', 'ADD_CITATION', 'OPTIMIZE_HEADINGS'],
+  CRO:         ['ADD_CTA', 'FIX_BOOKING_WIDGET', 'ADD_TRUST_BADGE', 'IMPROVE_FORM', 'ADD_TESTIMONIAL'],
+  REPUTATION:  ['GMB_UPDATE', 'REQUEST_REVIEW', 'RESPOND_REVIEW', 'UPDATE_LISTING'],
+  CONTENT:     ['PUBLISH_CONTENT', 'UPDATE_COPY', 'ADD_FAQ', 'ADD_LOCATION_PAGE', 'UPDATE_SERVICE_PAGE'],
+  MEDIA_BUYER: ['CREATE_CAMPAIGN', 'UPDATE_AD_COPY', 'ADJUST_BUDGET', 'ADD_KEYWORD', 'PAUSE_CAMPAIGN'],
+}
 
-    if (!cycle) {
-      cycle = await db.agentCycle.create({
-        data: {
-          businessId: snapshot.businessId,
-          status: 'partial',
-          trigger: 'webhook_agent',
-          weekLabel: currentWeekLabel
-        }
-      })
-    }
+async function updateCycleStatus(cycleId: string) {
+  const executions = await db.agentExecution.findMany({ where: { cycleId }, select: { status: true } })
+  const allComplete = executions.every((e) => ['COMPLETE', 'FAILED'].includes(e.status))
+  const allFailed   = executions.every((e) => e.status === 'FAILED')
+  let newStatus: AgentCycleStatus = 'PROCESSING'
+  if (allComplete && allFailed) newStatus = 'FAILED'
+  else if (allComplete) newStatus = 'COMPLETE'
+  else if (executions.some((e) => e.status === 'COMPLETE')) newStatus = 'PARTIAL'
+  await db.agentCycle.update({ where: { id: cycleId }, data: { status: newStatus, completedAt: allComplete ? new Date() : undefined } })
+}
 
-    // 3. Create the WeeklyAction (Proposal)
-    const action = await db.weeklyAction.create({
-      data: {
-        cycleId: cycle.id,
-        businessId: snapshot.businessId,
-        title,
-        description: description || 'AI specialist analysis',
-        draftContent,
-        category: category || 'reputation',
-        estimatedLift: parseInt(estimatedLift) || 5,
-        effort: 'Medium',
-        rank: 1,
-        status: 'pending',
-        agentVersion: '2.2.0'
-      }
-    })
+function getPillarScore(snapshot: any, pillar: string): number {
+  const map: Record<string, string> = { conversion: 'conversionScore', seo: 'seoScore', reputation: 'reputationScore', content: 'contentScore', technical: 'technicalScore', mobile: 'mobileScore', trust: 'trustScore', local: 'localScore', accessibility: 'accessibilityScore', performance: 'performanceScore', overall: 'overallScore' }
+  return snapshot[map[pillar.toLowerCase()] ?? 'overallScore'] ?? snapshot.overallScore ?? 0
+}
 
-    console.log(`[Callback] Created proposal for ${snapshot.business.businessName}: ${title}`)
-
-    res.json({ success: true, actionId: action.id })
-  } catch (err: any) {
-    console.error('[Callback Error]', err)
-    res.status(500).json({ success: false, error: err.message })
+router.post('/', requireCronSecret, async (req: Request, res: Response) => {
+  const parse = CallbackSchema.safeParse(req.body)
+  if (!parse.success) return res.status(400).json({ error: 'INVALID_PAYLOAD', details: parse.error.errors })
+  const payload = parse.data
+  const snapshot = await db.auditSnapshot.findUnique({ where: { id: payload.audit_id }, include: { business: { select: { id: true, state: true, industry: true } } } })
+  if (!snapshot) return res.status(400).json({ error: 'SNAPSHOT_NOT_FOUND' })
+  const cycle = await db.agentCycle.findUnique({ where: { id: payload.cycle_id }, select: { id: true, businessId: true, status: true } })
+  if (!cycle) return res.status(400).json({ error: 'CYCLE_NOT_FOUND' })
+  if (cycle.businessId !== snapshot.businessId) return res.status(400).json({ error: 'CYCLE_SNAPSHOT_MISMATCH' })
+  const agentType = payload.agent_type as AgentType
+  const business  = snapshot.business
+  const existingExecution = await db.agentExecution.findFirst({ where: { cycleId: payload.cycle_id, agentType, status: { in: ['COMPLETE', 'FAILED'] as AgentCycleStatus[] } }, select: { id: true } })
+  if (existingExecution) return res.json({ received: true, actionsCreated: 0, actionsRejected: 0, rejectionReasons: ['Duplicate callback'], cycleStatus: cycle.status })
+  const blocked = guardAgent(business.state, agentType)
+  if (blocked) {
+    await db.agentExecution.create({ data: { cycleId: payload.cycle_id, agentType, status: 'FAILED', validationStatus: 'FAILED_SCHEMA', validationErrors: [blocked], completedAt: new Date() } })
+    return res.json({ received: true, actionsCreated: 0, actionsRejected: payload.actions.length, rejectionReasons: [blocked], cycleStatus: cycle.status })
   }
+  if (payload.status === 'error') {
+    await db.agentExecution.create({ data: { cycleId: payload.cycle_id, agentType, status: 'FAILED', validationStatus: 'FAILED_SCHEMA', rawOutput: payload as any, validationErrors: [payload.error ?? 'Agent reported error'], completedAt: new Date() } })
+    await updateCycleStatus(payload.cycle_id)
+    return res.json({ received: true, actionsCreated: 0, actionsRejected: 0, rejectionReasons: [payload.error ?? 'Agent error'], cycleStatus: cycle.status })
+  }
+  const validActions: typeof payload.actions = []
+  const rejectionReasons: string[] = []
+  for (const action of payload.actions) {
+    if (!VALID_ACTION_TYPES[agentType].includes(action.actionType)) { rejectionReasons.push(`Invalid actionType "${action.actionType}" for ${agentType}`); continue }
+    validActions.push(action)
+  }
+  const execution = await db.agentExecution.create({ data: { cycleId: payload.cycle_id, agentType, status: 'COMPLETE', validationStatus: rejectionReasons.length > 0 ? 'FAILED_SCHEMA' : 'PASSED', rawOutput: payload as any, validationErrors: rejectionReasons.length > 0 ? rejectionReasons : undefined, startedAt: new Date(), completedAt: new Date() } })
+  const candidates = validActions.map((a, i) => ({ id: `tmp-${i}`, agentType, pillar: a.pillar, estimatedImpact: a.estimatedImpact, estimatedEffort: a.estimatedEffort, urgencySignal: a.urgencySignal, learningSignal: 0, learningConfidence: 0, channelSynergy: computeChannelSynergy(a.channelSynergy), moatScore: 0 }))
+  const ranked    = rankActions(candidates, business.state)
+  let actionsCreated = 0
+  for (let i = 0; i < validActions.length; i++) {
+    const action          = validActions[i]
+    const idempotencyKey  = crypto.createHash('sha256').update(`${payload.cycle_id}:${agentType}:${action.actionType}:${action.pillar}`).digest('hex')
+    const existing        = await db.weeklyAction.findUnique({ where: { idempotencyKey }, select: { id: true } })
+    if (existing) continue
+    const autoDecision    = decideAutoExecute(action.riskTier as 'LOW'|'MEDIUM'|'HIGH', business.state, 0, action.estimatedImpact)
+    const now             = new Date()
+    await db.weeklyAction.create({ data: { businessId: business.id, snapshotId: snapshot.id, cycleId: payload.cycle_id, executionId: execution.id, agentType, status: autoDecision.autoExecute ? 'EXECUTING' : 'PENDING', riskTier: action.riskTier as ActionRiskTier, title: action.title, description: action.description, pillar: action.pillar, goal: action.goal, metric: action.metric, baselineValue: getPillarScore(snapshot, action.pillar), targetValue: action.targetValue, estimatedImpact: action.estimatedImpact, estimatedEffort: action.estimatedEffort, priority: ranked[i]?.priority ?? 50, actionType: action.actionType, actionPayload: action.actionPayload, idempotencyKey, approvedAt: autoDecision.autoExecute ? now : undefined, executedAt: autoDecision.autoExecute ? now : undefined } })
+    actionsCreated++
+  }
+  await db.weeklyAction.updateMany({ where: { businessId: business.id, status: 'PENDING', snapshotId: { not: snapshot.id } }, data: { status: 'SUPERSEDED' } })
+  await updateCycleStatus(payload.cycle_id)
+  const updatedCycle = await db.agentCycle.findUnique({ where: { id: payload.cycle_id }, select: { status: true } })
+  return res.json({ received: true, actionsCreated, actionsRejected: rejectionReasons.length, rejectionReasons, cycleStatus: updatedCycle?.status ?? 'PROCESSING' })
 })
 
 export default router

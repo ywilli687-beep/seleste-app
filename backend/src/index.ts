@@ -16,6 +16,7 @@ import agentsRoutes from './routes/agents'
 import cronRoutes from './routes/cron'
 import claimRoutes from './routes/claim'
 import callbackRoutes from './routes/callback'
+import tasksRoutes from './routes/tasks'
 import publicReportRoutes from './routes/public-report'
 import badgeRoutes from './routes/badge'
 import statsRoutes from './routes/stats'
@@ -106,6 +107,7 @@ app.use('/api/stripe', stripeRoutes)
 app.use('/api/outbound', outboundRoutes)
 app.use('/api/cron', cronRoutes)
 app.use('/api/callback', callbackRoutes) // Public callback for agents
+app.use('/api/tasks', requireAuth, tasksRoutes)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'UP', port: PORT, env: process.env.NODE_ENV })
 })
