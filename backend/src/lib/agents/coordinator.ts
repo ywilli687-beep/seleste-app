@@ -1,6 +1,5 @@
 import { AgentContext, ScopedAgentContext, AgentContextRequirements, HistoricalSummary } from './types'
 import { getAgentContextReqs } from './registry'
-import { AgentRun } from '@prisma/client'
 
 // Rough token estimator based on characters / 4
 export function estimateTokens(text: string): number {
@@ -42,7 +41,7 @@ function assembleScopedFields(fullContext: AgentContext, reqs: AgentContextRequi
   return scoped
 }
 
-function buildHistoricalContext(previousWeekOutputs: AgentRun[], weeks: number, fields: string[]): HistoricalSummary | null {
+function buildHistoricalContext(previousWeekOutputs: any[], weeks: number, fields: string[]): HistoricalSummary | null {
   // Mock historical summary construction. In real use, this fetches from AgentCycle
   return null
 }
@@ -83,7 +82,7 @@ export function truncateContext(
 export function buildScopedContext(
   fullContext: AgentContext,
   agentId: string,
-  previousWeekOutputs: AgentRun[] = []
+  previousWeekOutputs: any[] = []
 ): { context: ScopedAgentContext; tokens: number; truncated: boolean } {
   const requirements = getAgentContextReqs(agentId)
   

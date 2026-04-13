@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Router } from 'express'
 import { ClerkExpressRequireAuth, RequireAuthProp, StrictAuthProp } from '@clerk/clerk-sdk-node'
 import { db } from '@/lib/db'

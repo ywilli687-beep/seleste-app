@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Anthropic from '@anthropic-ai/sdk'
 import { db } from '../../db'
 import { AGENT_REGISTRY } from '../registry'

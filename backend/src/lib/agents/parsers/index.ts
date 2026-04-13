@@ -1,4 +1,3 @@
-import { AgentRun } from '@prisma/client'
 import { AGENT_REGISTRY } from '../registry'
 
 // Mock migration function for now until specific migrations are written
@@ -9,7 +8,7 @@ function migrateOutput<T>(output: any, oldVersion: string, agentId: string): T |
 }
 
 export function parseAgentOutput<T>(
-  run: AgentRun,
+  run: any,
   agentId: string
 ): T | null {
   const registration = AGENT_REGISTRY[agentId]

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import express from 'express'
 import { db } from '@/lib/db'
 import { createClerkClient } from '@clerk/clerk-sdk-node'

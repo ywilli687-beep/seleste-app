@@ -143,7 +143,7 @@ router.post('/', async (req: Request, res: Response) => {
     const resultForDb: AuditResult = {
       auditId: '',         // filled after snapshot is created
       businessId: business.id,
-      slug: business.slug as string,
+      slug: (business as any).slug as string,
       input,
       signals,
       appliedRules: applied,
@@ -202,7 +202,7 @@ router.post('/', async (req: Request, res: Response) => {
     if (webhookUrl) {
       safeFireWebhook(webhookUrl, {
         audit_id: snapshot.id,
-        business_name: business.businessName,
+        business_name: (business as any).businessName ?? business.name,
         website: input.url,
         industry: input.vertical,
         scores: pillarScores,

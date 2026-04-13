@@ -1,4 +1,4 @@
-import { Business, AuditSnapshot, AgentCycle, AgentRun, WeeklyAction } from '@prisma/client'
+import { Business, AuditSnapshot, AgentCycle, WeeklyAction } from '@prisma/client'
 
 // Core Context Object passed around during the cycle
 export interface AgentContext {

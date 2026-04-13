@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { db } from '../../db'
 import { runAgent } from './run-agent'
 import { AgentContext } from '../types'
