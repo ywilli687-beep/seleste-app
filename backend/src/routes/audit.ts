@@ -197,40 +197,88 @@ router.post('/', async (req: Request, res: Response) => {
       console.error('[AUDIT] updateMarketSegment failed:', err)
     )
 
-    // Trigger n8n specialist agents
-    const webhookUrl = process.env.SEL_MASTER_AGENT_WEBHOOK
-    if (webhookUrl) {
-      safeFireWebhook(webhookUrl, {
-        audit_id: snapshot.id,
-        business_name: (business as any).businessName ?? business.name,
-        website: input.url,
-        industry: input.vertical,
-        scores: pillarScores,
-        overall_score: overallScore,
-        raw_results: resultForDb,
-      }).then(ok => {
-        if (!ok) console.error('[AUDIT] n8n webhook delivery failed')
-      })
-    }
-
-    // State machine evaluation (Phase 3 wiring — safe no-op until stateMachine exists)
     ;(async () => {
       try {
-        // Require via a runtime path so TS never tries to resolve the Phase 3 module
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const smPath = require('path').join(__dirname, '../lib/stateMachine')
-        const { evaluateState } = require(smPath)
-        const biz: any = await db.business.findUnique({ where: { id: business.id }, select: { state: true } as any })
-        const currentState: string = biz?.state ?? 'new'
-        const evaluation = evaluateState(currentState, pillarScores)
+        // Step 1: Evaluate and update business state
+        const { evaluateState } = await import('../lib/stateMachine')
+        const biz = await db.business.findUnique({
+          where:  { id: snapshot.businessId },
+          select: { state: true },
+        })
+        const scores = {
+          overall:       snapshot.overallScore,
+          conversion:    snapshot.conversionScore,
+          seo:           snapshot.seoScore,
+          reputation:    snapshot.reputationScore,
+          content:       snapshot.contentScore,
+          technical:     snapshot.technicalScore,
+          mobile:        snapshot.mobileScore,
+          trust:         snapshot.trustScore,
+          local:         snapshot.localScore,
+          accessibility: snapshot.accessibilityScore,
+          performance:   snapshot.performanceScore,
+        }
+        const evaluation = evaluateState(biz?.state ?? null, scores)
         if (evaluation.transitioned) {
-          await (db.business as any).update({
-            where: { id: business.id },
-            data:  { state: evaluation.nextState },
+          await db.business.update({
+            where: { id: snapshot.businessId },
+            data:  { state: evaluation.state },
+          })
+          console.log(`[Audit] Business ${snapshot.businessId} state → ${evaluation.state}`)
+        }
+
+        // Step 2: Create AgentCycle record
+        const idempotencyKey = `${snapshot.id}-${Date.now()}`
+        const timeoutAt      = new Date(Date.now() + 5 * 60 * 1000) // 5 min SLA
+        const cycle = await db.agentCycle.create({
+          data: {
+            businessId:     snapshot.businessId,
+            snapshotId:     snapshot.id,
+            idempotencyKey,
+            timeoutAt,
+            webhookPayload: {
+              audit_id:      snapshot.id,
+              overall_score: snapshot.overallScore,
+              scores,
+            },
+          },
+        })
+
+        // Step 3: Build cycle input for agent runner
+        const cycleInput = {
+          audit_id:       snapshot.id,
+          cycle_id:       cycle.id,
+          business_name:  (business as any).businessName ?? business.name ?? '',
+          website:        input.url ?? '',
+          industry:       input.vertical ?? 'OTHER',
+          business_state: evaluation.state,
+          scores,
+          score_delta:    (snapshot.scoreDelta as Record<string, number>) ?? null,
+          signals:        (snapshot.signals as Record<string, unknown>) ?? {},
+          vertical_avg:   snapshot.verticalAvgScore ?? null,
+          quick_wins:     (snapshot.quickWins as string[]) ?? [],
+          allowed_agents: evaluation.allowedAgents as any[],
+        }
+
+        // Step 4: Fire agent cluster (fire-and-forget)
+        const { fireCycleAsync } = await import('../lib/agents/runner')
+        fireCycleAsync(cycleInput)
+
+        // Step 5: Also fire existing n8n webhook if configured (backwards compat)
+        const webhookUrl = process.env.SEL_MASTER_AGENT_WEBHOOK
+        if (webhookUrl) {
+          safeFireWebhook(webhookUrl, {
+            audit_id:      snapshot.id,
+            business_name: (business as any).businessName ?? business.name ?? '',
+            website:       input.url,
+            industry:      input.vertical,
+            scores,
+            overall_score: snapshot.overallScore,
+            raw_results:   resultForDb,
           })
         }
-      } catch {
-        // stateMachine not yet available or update failed — never blocks the response
+      } catch (err) {
+        console.error('[Audit] Post-audit processing failed:', err)
       }
     })()
     if (input.userId) {
