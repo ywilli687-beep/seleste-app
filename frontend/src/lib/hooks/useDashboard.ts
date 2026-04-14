@@ -3,13 +3,34 @@ import { useAuth } from '@clerk/clerk-react'
 import { apiGet, apiPost } from '../api'
 
 export function useGlobalDashboard() {
-  const { getToken } = useAuth()
+  const { getToken, userId } = useAuth()
   return useQuery({
-    queryKey: ['dashboard'],
+    queryKey: ['dashboard', userId],
     queryFn:  async () => {
       const token = await getToken()
-      return apiGet('/api/dashboard', token!)
+      const res   = await apiGet<{ success: boolean; data: any; error?: string }>(`/api/dashboard/${userId}`, token!)
+      if (!res.success) throw new Error(res.error || 'Failed to load dashboard')
+      const d = res.data
+      // Normalize old single-business shape → Phase 8 businesses array
+      const businesses = d.totalAudits === 0 ? [] : [{
+        businessId:     d.id,
+        name:           d.businessName,
+        overallScore:   d.overallScore,
+        scoreDelta:     d.scoreDelta,
+        state:          d.state ?? null,
+        pendingActions: 0,
+      }]
+      return {
+        ...d,
+        businesses,
+        globalSummary: {
+          totalPendingActions: 0,
+          avgScore:            d.overallScore ?? null,
+          topMover:            null,
+        },
+      }
     },
+    enabled:         !!userId,
     refetchInterval: 30000,
   })
 }
