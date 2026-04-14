@@ -12,12 +12,16 @@ export function useGlobalDashboard() {
       if (!res.success) throw new Error(res.error || 'Failed to load dashboard')
       const d = res.data
       // Normalize old single-business shape → Phase 8 businesses array
+      // d.state is US state (e.g. "md"); d.businessState is the machine state
+      const displayName = d.businessName && !d.businessName.includes('.')
+        ? d.businessName
+        : (d.vertical ? `${d.vertical.replace(/_/g, ' ')} business` : d.businessName)
       const businesses = d.totalAudits === 0 ? [] : [{
         businessId:     d.id,
-        name:           d.businessName,
+        name:           displayName,
         overallScore:   d.overallScore,
         scoreDelta:     d.scoreDelta,
-        state:          d.state ?? null,
+        state:          d.businessState ?? null,
         pendingActions: 0,
       }]
       return {

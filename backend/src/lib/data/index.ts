@@ -387,6 +387,7 @@ export async function getDashboardData(userId: string, isPro: boolean = false) {
     vertical:         b.vertical,
     city:             b.city,
     state:            b.region,
+    businessState:    b.state,
     slug:             null,
     overallScore:     latestAudit.overallScore,
     scoreDelta:       (latestAudit.scoreDelta as any)?.overall ?? null,
