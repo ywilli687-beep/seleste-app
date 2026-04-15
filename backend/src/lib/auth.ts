@@ -9,7 +9,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     if (!token) {
       return res.status(401).json({ success: false, error: 'Unauthenticated' })
     }
-    await clerk.verifyToken(token)
+    const payload = await clerk.verifyToken(token)
+    ;(req as any).auth = { userId: payload.sub }
     next()
   } catch {
     return res.status(401).json({ success: false, error: 'Unauthenticated' })
