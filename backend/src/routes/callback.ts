@@ -119,7 +119,7 @@ router.post('/', requireCronSecret, async (req: Request, res: Response) => {
   let actionsCreated = 0
   for (let i = 0; i < validActions.length; i++) {
     const action          = validActions[i]
-    const idempotencyKey  = crypto.createHash('sha256').update(`${cycleId}:${agentType}:${action.actionType}:${action.pillar}`).digest('hex')
+    const idempotencyKey  = crypto.createHash('sha256').update(`${payload.cycle_id}:${agentType}:${action.actionType}:${action.pillar}:${action.title.slice(0, 40)}`).digest('hex')
     const existing        = await db.weeklyAction.findUnique({ where: { idempotencyKey }, select: { id: true } })
     if (existing) continue
     const autoDecision    = decideAutoExecute(action.riskTier as 'LOW'|'MEDIUM'|'HIGH', business.state, 0, action.estimatedImpact)
@@ -128,6 +128,20 @@ router.post('/', requireCronSecret, async (req: Request, res: Response) => {
     actionsCreated++
   }
   await db.weeklyAction.updateMany({ where: { businessId: business.id, status: 'PENDING', snapshotId: { not: snapshot.id } }, data: { status: 'SUPERSEDED' } })
+  // Supersede duplicate PENDING actions with same title from older cycles
+  await db.$executeRaw`
+    UPDATE weekly_actions wa1
+    SET status = 'SUPERSEDED'
+    WHERE status = 'PENDING'
+      AND business_id = ${business.id}
+      AND id NOT IN (
+        SELECT DISTINCT ON (title) id
+        FROM weekly_actions
+        WHERE business_id = ${business.id}
+          AND status = 'PENDING'
+        ORDER BY title, created_at DESC
+      )
+  `
   await updateCycleStatus(cycleId)
   const updatedCycle = await db.agentCycle.findUnique({ where: { id: cycleId }, select: { status: true } })
   return res.json({ received: true, actionsCreated, actionsRejected: rejectionReasons.length, rejectionReasons, cycleStatus: updatedCycle?.status ?? 'PROCESSING' })

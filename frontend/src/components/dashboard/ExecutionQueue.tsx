@@ -21,7 +21,10 @@ export function ExecutionQueue({ tasks, summary, businessId, industry }: Executi
   const { getToken } = useAuth()
   const queryClient  = useQueryClient()
 
-  const pendingTasks = tasks.filter((t) => t.status === 'PENDING')
+  const dedupedTasks = tasks.filter((task, index, self) =>
+    index === self.findIndex((t) => t.title === task.title && t.agentType === task.agentType)
+  )
+  const pendingTasks = dedupedTasks.filter((t) => t.status === 'PENDING')
   const totalRevLow  = pendingTasks.reduce((s, t) => s + estimateRevenue(t.pillar, t.estimatedImpact ?? 20, industry).revenuePerMonth.low,  0)
   const totalRevHigh = pendingTasks.reduce((s, t) => s + estimateRevenue(t.pillar, t.estimatedImpact ?? 20, industry).revenuePerMonth.high, 0)
 
@@ -68,10 +71,10 @@ export function ExecutionQueue({ tasks, summary, businessId, industry }: Executi
       )}
 
       <div className="exec-queue__list">
-        {tasks.length === 0 && (
+        {dedupedTasks.length === 0 && (
           <div className="exec-queue__empty">Queue clear — run an audit to generate actions</div>
         )}
-        {tasks.map((task) => {
+        {dedupedTasks.map((task) => {
           const cfg = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['PENDING']
           const est = estimateRevenue(task.pillar, task.estimatedImpact ?? 20, industry)
           return (

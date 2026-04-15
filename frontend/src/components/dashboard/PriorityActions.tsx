@@ -22,7 +22,10 @@ interface PriorityActionsProps { tasks: any[]; businessId: string; industry: str
 
 export function PriorityActions({ tasks, businessId, industry }: PriorityActionsProps) {
   const approve = useApproveTask(businessId)
-  const top3    = tasks.filter((t) => t.status === 'PENDING').sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0)).slice(0, 3)
+  const dedupedTasks = tasks.filter((task, index, self) =>
+    index === self.findIndex((t) => t.title === task.title && t.agentType === task.agentType)
+  )
+  const top3    = dedupedTasks.filter((t) => t.status === 'PENDING').sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0)).slice(0, 3)
   if (top3.length === 0) return null
 
   return (

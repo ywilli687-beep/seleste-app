@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth, useUser } from '@clerk/clerk-react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -13,7 +14,6 @@ import { PriorityActions }       from '@/components/dashboard/PriorityActions'
 import { ExecutionQueue }        from '@/components/dashboard/ExecutionQueue'
 import { ImpactTimeline }        from '@/components/dashboard/ImpactTimeline'
 import { BusinessCard }          from '@/components/dashboard/BusinessCard'
-import { OnboardingCard }        from '@/components/dashboard/OnboardingCard'
 import { AskSeleste }            from '@/components/dashboard/AskSeleste'
 import { CreateBusinessModal }   from '@/components/dashboard/CreateBusinessModal'
 import { TeamSettings }          from '@/components/dashboard/TeamSettings'
@@ -47,6 +47,7 @@ export default function Dashboard() {
   const { user, isLoaded: isUserLoaded } = useUser()
   const { getToken }  = useAuth()
   const queryClient   = useQueryClient()
+  const navigate      = useNavigate()
   const [tab, setTab]                     = useState<Tab>('today')
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | undefined>()
   const [showCreateModal, setShowCreateModal]        = useState(false)
@@ -126,15 +127,11 @@ export default function Dashboard() {
     )
   }
 
-  if (businesses.length === 0) {
-    return (
-      <div className="os-shell">
-        <OsSidebar tab={tab} setTab={setTab} initial={user?.firstName?.[0] ?? undefined} />
-        <div className="os-main os-main--center"><OnboardingCard /></div>
-        {showCreateModal && <CreateBusinessModal onClose={() => setShowCreateModal(false)} />}
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (!isLoading && businesses.length === 0) navigate('/onboarding')
+  }, [isLoading, businesses.length])
+
+  if (businesses.length === 0) return null
 
   const TAB_LABELS: Record<Tab, string> = {
     today: 'Today', inbox: 'Inbox', growth: 'Growth',

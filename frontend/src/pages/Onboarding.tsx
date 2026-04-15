@@ -1,575 +1,291 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useUser, useAuth } from '@clerk/clerk-react'
+import { useAuth } from '@clerk/clerk-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { apiPost } from '../lib/api'
 
-// ── Audit stages shown during the progress step ───────────────────────────────
-const STAGES = [
-  'Fetching your website...',
-  'Checking SSL & security...',
-  'Extracting AI signals...',
-  'Scoring 10 pillars...',
-  'Calculating revenue leakage...',
-  'Writing your report...',
+type Step = 'name' | 'industry' | 'website' | 'auditing' | 'reveal'
+
+const INDUSTRIES = [
+  { value: 'AUTO_REPAIR',   label: 'Auto Repair',    icon: '🔧' },
+  { value: 'DENTAL',        label: 'Dental',          icon: '🦷' },
+  { value: 'RESTAURANT',    label: 'Restaurant',      icon: '🍽️' },
+  { value: 'PLUMBING',      label: 'Plumbing',        icon: '🚿' },
+  { value: 'HVAC',          label: 'HVAC',            icon: '❄️' },
+  { value: 'LAW_FIRM',      label: 'Law Firm',        icon: '⚖️' },
+  { value: 'REAL_ESTATE',   label: 'Real Estate',     icon: '🏠' },
+  { value: 'MEDICAL',       label: 'Medical',         icon: '🏥' },
+  { value: 'VETERINARY',    label: 'Veterinary',      icon: '🐾' },
+  { value: 'SALON_SPA',     label: 'Salon & Spa',     icon: '✂️' },
+  { value: 'GYM_FITNESS',   label: 'Gym & Fitness',   icon: '💪' },
+  { value: 'ACCOUNTING',    label: 'Accounting',      icon: '📊' },
+  { value: 'INSURANCE',     label: 'Insurance',       icon: '🛡️' },
+  { value: 'ROOFING',       label: 'Roofing',         icon: '🏗️' },
+  { value: 'LANDSCAPING',   label: 'Landscaping',     icon: '🌿' },
+  { value: 'OTHER',         label: 'Other',           icon: '🏢' },
 ]
 
-const VERTICAL_OPTIONS = [
-  { label: 'Auto Repair', value: 'AUTO_REPAIR' },
-  { label: 'Dental', value: 'DENTAL' },
-  { label: 'Restaurant', value: 'RESTAURANT' },
-  { label: 'Legal', value: 'LEGAL' },
-  { label: 'Real Estate', value: 'REAL_ESTATE' },
-  { label: 'Plumbing / HVAC', value: 'PLUMBING' },
-  { label: 'Salon / Spa', value: 'BEAUTY_SALON' },
-  { label: 'Fitness', value: 'FITNESS' },
-  { label: 'Pet Services', value: 'PET_SERVICES' },
-  { label: 'Cleaning', value: 'CLEANING' },
-  { label: 'Other', value: 'LOCAL_SERVICE' },
+const AUDIT_STAGES = [
+  { label: 'Fetching your website',          duration: 3000 },
+  { label: 'Analysing technical foundation', duration: 4000 },
+  { label: 'Scoring SEO signals',            duration: 4000 },
+  { label: 'Evaluating conversion rate',     duration: 3000 },
+  { label: 'Checking reputation signals',    duration: 3000 },
+  { label: 'Generating your action plan',    duration: 5000 },
 ]
 
-// ── Pillar display labels ─────────────────────────────────────────────────────
-const PILLAR_LABELS: Record<string, string> = {
-  conversion: 'Conversion',
-  trust: 'Trust',
-  performance: 'Performance',
-  ux: 'Experience',
-  discoverability: 'Discoverability',
-  content: 'Content',
-  data: 'Data & Tracking',
-  technical: 'Technical',
-  brand: 'Brand',
-  scalability: 'Scalability',
+const SCORE_NARRATIVES: Record<string, { headline: string; sub: string; color: string }> = {
+  NO_FOUNDATION:     { headline: 'Your website needs urgent attention', sub: 'Critical issues are preventing customers from finding and contacting you.', color: '#ef4444' },
+  CONVERSION_BROKEN: { headline: 'Visitors arrive — but don\'t convert', sub: 'Traffic exists but your site is losing leads at the point of contact.', color: '#f59e0b' },
+  LOW_VISIBILITY:    { headline: 'Your site converts but nobody finds it', sub: 'Strong foundation hidden by low search visibility and local presence.', color: '#f59e0b' },
+  SCALING:           { headline: 'Solid foundation — ready to grow', sub: 'Your site performs well. Now it\'s time to accelerate across all channels.', color: '#3b82f6' },
+  OPTIMIZING:        { headline: 'You\'re ahead of 80% of competitors', sub: 'Marginal gains and compounding advantages are the focus now.', color: '#10b981' },
 }
 
-type Step = 'url' | 'auditing' | 'reveal'
-
-interface AuditResult {
-  overallScore?: number
-  overall_score?: number
-  estimatedRevenueLeak?: { totalPct: number; estimatedMonthlyLoss?: number }
-  estimated_revenue_leakage?: number
-  pillarScores?: Record<string, number>
-  scores?: Record<string, number>
-  aiQuickWins?: string[]
-  quick_wins?: string[]
-  businessId?: string
-}
-
-// ── Design tokens (dark theme) ────────────────────────────────────────────────
-const T = {
-  bg:          '#0a0a0f',
-  panel:       '#111118',
-  panelHover:  '#161622',
-  border:      'rgba(255,255,255,0.08)',
-  border2:     'rgba(255,255,255,0.12)',
-  ink:         '#f4f1ec',
-  inkMuted:    '#8a857e',
-  inkHint:     'rgba(138,133,126,0.6)',
-  accent:      '#c8a96e',
-  accentDim:   'rgba(200,169,110,0.12)',
-  green:       '#10B981',
-  greenDim:    'rgba(16,185,129,0.12)',
-  amber:       '#F59E0B',
-  amberDim:    'rgba(245,158,11,0.12)',
-  coral:       '#EF4444',
-  coralDim:    'rgba(239,68,68,0.12)',
-  r:           '12px',
-  rs:          '8px',
-}
+const FALLBACK_NARRATIVE = { headline: 'Your audit is ready', sub: 'We\'ve scored your site across 10 growth pillars and built your action plan.', color: '#3b82f6' }
 
 export default function Onboarding() {
-  const { user } = useUser()
-  const { getToken } = useAuth()
-  const navigate = useNavigate()
-  const [step, setStep] = useState<Step>('url')
-  const [url, setUrl] = useState('')
-  const [vertical, setVertical] = useState('')
-  const [stageIndex, setStageIndex] = useState(0)
-  const [result, setResult] = useState<AuditResult | null>(null)
-  const [error, setError] = useState('')
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [step,          setStep]         = useState<Step>('name')
+  const [businessName,  setBusinessName] = useState('')
+  const [industry,      setIndustry]     = useState('')
+  const [website,       setWebsite]      = useState('')
+  const [auditResult,   setAuditResult]  = useState<any>(null)
+  const [auditStage,    setAuditStage]   = useState(0)
+  const [error,         setError]        = useState('')
+  const { getToken }  = useAuth()
+  const navigate      = useNavigate()
+  const queryClient   = useQueryClient()
 
-  const apiBase = import.meta.env.VITE_API_URL || ''
-
+  // Progress through audit stages while real audit runs
   useEffect(() => {
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [])
+    if (step !== 'auditing') return
+    let total = 0
+    const timers: ReturnType<typeof setTimeout>[] = []
+    AUDIT_STAGES.forEach((stage, i) => {
+      const t = setTimeout(() => setAuditStage(i), total)
+      timers.push(t)
+      total += stage.duration
+    })
+    return () => timers.forEach(clearTimeout)
+  }, [step])
 
-  async function startAudit() {
-    const trimmed = url.trim()
-    if (!trimmed) { setError('Enter your website URL to continue.'); return }
+  const runAudit = useMutation({
+    mutationFn: async () => {
+      let url = website.trim()
+      if (!url) throw new Error('Enter your website URL')
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url
+      try { new URL(url) } catch { throw new Error('That doesn\'t look like a valid URL') }
+      const token = await getToken()
+      return apiPost<any>('/api/audit', token!, {
+        url,
+        businessName: businessName.trim() || undefined,
+        vertical:     industry || 'OTHER',
+        location:     'United States',
+      })
+    },
+    onSuccess: (data) => {
+      const audit = data?.result ?? data
+      setAuditResult(audit)
+      setStep('reveal')
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+    onError: (err: any) => {
+      setError(err.message || 'Something went wrong. Please try again.')
+      setStep('website')
+    },
+  })
 
-    // Normalise — add https:// if missing
-    const fullUrl = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`
-
-    try { new URL(fullUrl) } catch {
-      setError('That doesn\'t look like a valid URL. Try: https://yourbusiness.com')
-      return
-    }
-
+  function handleStartAudit() {
+    if (!website.trim()) { setError('Enter your website URL'); return }
     setError('')
     setStep('auditing')
-    setStageIndex(0)
-
-    // Animate stages while real call runs
-    let i = 0
-    intervalRef.current = setInterval(() => {
-      i++
-      if (i < STAGES.length - 1) setStageIndex(i)
-      else if (intervalRef.current) clearInterval(intervalRef.current)
-    }, 3500)
-
-    try {
-      const token = await getToken()
-      const res = await fetch(`${apiBase}/api/audit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          url: fullUrl,
-          vertical: vertical || 'LOCAL_SERVICE',
-          location: 'United States',
-        }),
-      })
-
-      if (intervalRef.current) clearInterval(intervalRef.current)
-      setStageIndex(STAGES.length - 1)
-
-      const text = await res.text()
-      let data: any
-      try { data = JSON.parse(text) } catch {
-        throw new Error('Your backend returned an unexpected response. Check that it\'s running.')
-      }
-
-      if (!res.ok) {
-        if (res.status === 429) throw new Error('You\'ve run several audits recently. Wait a few minutes and try again.')
-        throw new Error(data?.error || `Audit failed (${res.status})`)
-      }
-
-      // Support both response shapes: { result: AuditResult } and flat AuditResult
-      const audit: AuditResult = data?.result ?? data
-      await new Promise(r => setTimeout(r, 600))
-      setResult(audit)
-      setStep('reveal')
-    } catch (e: unknown) {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.')
-      setStep('url')
-    }
+    runAudit.mutate()
   }
 
-  // Normalise score fields from either response shape
-  const score = Math.round(result?.overallScore ?? result?.overall_score ?? 0)
-  const pillarScores: Record<string, number> = result?.pillarScores ?? result?.scores ?? {}
-  const quickWins: string[] = result?.aiQuickWins ?? result?.quick_wins ?? []
+  const stageProgress = ((auditStage + 1) / AUDIT_STAGES.length) * 100
+  const narrative     = SCORE_NARRATIVES[auditResult?.state ?? ''] ?? FALLBACK_NARRATIVE
 
-  const monthlyLoss = result?.estimatedRevenueLeak?.estimatedMonthlyLoss
-  const annualLoss = result?.estimated_revenue_leakage ?? (monthlyLoss != null ? monthlyLoss * 12 : null)
-
-  const scoreColor = score >= 70 ? T.green : score >= 45 ? T.amber : T.coral
-  const scoreDim   = score >= 70 ? T.greenDim : score >= 45 ? T.amberDim : T.coralDim
-  const scoreLabel = score >= 70 ? 'Good foundation' : score >= 45 ? 'Room to grow' : 'Needs attention'
+  const STEPS: Step[] = ['name', 'industry', 'website']
+  const stepIndex = STEPS.indexOf(step as any)
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '2rem 1rem',
-      background: T.bg,
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: 520,
-        background: T.panel,
-        border: `0.5px solid ${T.border2}`,
-        borderRadius: T.r,
-        padding: 'clamp(1.5rem, 5vw, 2.5rem)',
-      }}>
+    <div className="onboarding-page">
 
-        {/* ── Step: URL entry ─────────────────────────────────────────────── */}
-        {step === 'url' && (
-          <>
-            <div style={{ marginBottom: '2rem' }}>
-              <div style={{
-                fontSize: 11,
-                fontWeight: 500,
-                color: T.accent,
-                marginBottom: 10,
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-              }}>
-                Free audit — takes 30–60 seconds
-              </div>
-              <h1 style={{
-                fontSize: 'clamp(20px, 4vw, 26px)',
-                fontWeight: 500,
-                margin: '0 0 10px',
-                color: T.ink,
-                lineHeight: 1.3,
-                fontFamily: 'var(--ff-sans)',
-              }}>
-                See what your website is costing you
-              </h1>
-              <p style={{ fontSize: 14, color: T.inkMuted, margin: 0, lineHeight: 1.65 }}>
-                We score your site across 10 pillars and estimate how much revenue
-                your current digital presence leaves behind every year.
-              </p>
-            </div>
+      {/* Step indicator */}
+      {step !== 'auditing' && step !== 'reveal' && (
+        <div className="onboarding-steps">
+          {STEPS.map((s, i) => (
+            <div key={s} className={`onboarding-step-dot ${step === s ? 'active' : stepIndex > i ? 'done' : ''}`} />
+          ))}
+        </div>
+      )}
 
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{
-                display: 'block',
-                fontSize: 12,
-                fontWeight: 500,
-                color: T.inkMuted,
-                marginBottom: 6,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-              }}>
-                Your website
-              </label>
-              <input
-                type="url"
-                placeholder="https://yourbusiness.com"
-                value={url}
-                onChange={e => setUrl(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && startAudit()}
-                autoFocus
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  background: T.panelHover,
-                  border: `1px solid ${T.border2}`,
-                  borderRadius: T.rs,
-                  color: T.ink,
-                  fontSize: 14,
-                  padding: '10px 12px',
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                }}
-              />
-            </div>
+      {/* ── STEP 1: Name ── */}
+      {step === 'name' && (
+        <div className="onboarding-card onboarding-card--centered">
+          <div className="onboarding-eyebrow">Welcome to Seleste</div>
+          <h1 className="onboarding-heading">What's your business called?</h1>
+          <p className="onboarding-desc">We'll use this to personalise your command center.</p>
+          <input
+            className="onboarding-field"
+            type="text"
+            placeholder="e.g. Waldorf Ford, Smith's Plumbing..."
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && businessName.trim() && setStep('industry')}
+            autoFocus
+          />
+          <button
+            className="onboarding-cta"
+            onClick={() => setStep('industry')}
+            disabled={!businessName.trim()}
+          >
+            Continue →
+          </button>
+        </div>
+      )}
 
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{
-                display: 'block',
-                fontSize: 12,
-                fontWeight: 500,
-                color: T.inkMuted,
-                marginBottom: 6,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-              }}>
-                Industry <span style={{ color: T.inkHint, fontWeight: 400, textTransform: 'none' }}>(improves benchmarks)</span>
-              </label>
-              <select
-                value={vertical}
-                onChange={e => setVertical(e.target.value)}
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  background: T.panelHover,
-                  border: `1px solid ${T.border2}`,
-                  borderRadius: T.rs,
-                  color: vertical ? T.ink : T.inkMuted,
-                  fontSize: 14,
-                  padding: '10px 12px',
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                  cursor: 'pointer',
-                  appearance: 'none',
-                  WebkitAppearance: 'none',
-                }}
+      {/* ── STEP 2: Industry ── */}
+      {step === 'industry' && (
+        <div className="onboarding-card onboarding-card--wide">
+          <div className="onboarding-eyebrow">Step 2 of 3</div>
+          <h1 className="onboarding-heading">What type of business is {businessName}?</h1>
+          <p className="onboarding-desc">We benchmark you against competitors in your vertical.</p>
+          <div className="industry-grid">
+            {INDUSTRIES.map((ind) => (
+              <button
+                key={ind.value}
+                className={`industry-tile ${industry === ind.value ? 'industry-tile--selected' : ''}`}
+                onClick={() => { setIndustry(ind.value); setTimeout(() => setStep('website'), 200) }}
               >
-                <option value="">Select your industry...</option>
-                {VERTICAL_OPTIONS.map(v => (
-                  <option key={v.value} value={v.value} style={{ background: T.panelHover, color: T.ink }}>
-                    {v.label}
-                  </option>
-                ))}
-              </select>
+                <span className="industry-tile__icon">{ind.icon}</span>
+                <span className="industry-tile__label">{ind.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 3: Website ── */}
+      {step === 'website' && (
+        <div className="onboarding-card onboarding-card--centered">
+          <div className="onboarding-eyebrow">Step 3 of 3</div>
+          <h1 className="onboarding-heading">Where's {businessName}'s website?</h1>
+          <p className="onboarding-desc">
+            Seleste will audit it across 10 pillars — SEO, conversion, reputation, speed and more —
+            then build your personalised action plan.
+          </p>
+          <input
+            className="onboarding-field"
+            type="url"
+            placeholder="https://yourbusiness.com"
+            value={website}
+            onChange={(e) => { setWebsite(e.target.value); setError('') }}
+            onKeyDown={(e) => e.key === 'Enter' && handleStartAudit()}
+            autoFocus
+          />
+          {error && <div className="onboarding-error">{error}</div>}
+          <button className="onboarding-cta" onClick={handleStartAudit} disabled={!website.trim()}>
+            Analyse my website →
+          </button>
+          <div className="onboarding-trust">
+            Takes ~30 seconds · Free · No card required
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 4: Auditing ── */}
+      {step === 'auditing' && (
+        <div className="onboarding-card onboarding-card--centered onboarding-card--auditing">
+          <div className="audit-spinner">
+            <div className="audit-spinner__ring" />
+            <div className="audit-spinner__score">
+              {auditStage + 1}/{AUDIT_STAGES.length}
             </div>
-
-            {error && (
-              <div style={{
-                padding: '10px 14px',
-                background: T.coralDim,
-                color: T.coral,
-                borderRadius: T.rs,
-                fontSize: 13,
-                marginBottom: '1rem',
-                lineHeight: 1.5,
-              }}>
-                {error}
+          </div>
+          <h1 className="onboarding-heading">Analysing {businessName || 'your site'}</h1>
+          <div className="audit-stage-label">{AUDIT_STAGES[auditStage]?.label}...</div>
+          <div className="audit-progress">
+            <div className="audit-progress__bar" style={{ width: `${stageProgress}%` }} />
+          </div>
+          <div className="audit-stages-list">
+            {AUDIT_STAGES.map((stage, i) => (
+              <div key={i} className={`audit-stage ${i < auditStage ? 'done' : i === auditStage ? 'active' : ''}`}>
+                <span className="audit-stage__icon">{i < auditStage ? '✓' : i === auditStage ? '⟳' : '○'}</span>
+                <span className="audit-stage__label">{stage.label}</span>
               </div>
-            )}
+            ))}
+          </div>
+        </div>
+      )}
 
-            <button
-              onClick={startAudit}
-              style={{
-                width: '100%',
-                background: T.accent,
-                color: '#000',
-                border: 'none',
-                borderRadius: '100px',
-                fontWeight: 700,
-                fontSize: 14,
-                padding: '12px 0',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                letterSpacing: '0.01em',
-              }}
-            >
-              See my score →
-            </button>
+      {/* ── STEP 5: Reveal ── */}
+      {step === 'reveal' && auditResult && (
+        <div className="onboarding-card onboarding-card--centered onboarding-card--reveal">
+          <div className="reveal-score-ring">
+            <svg viewBox="0 0 120 120" width="120" height="120">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="#e5e7eb" strokeWidth="8" />
+              <circle
+                cx="60" cy="60" r="50"
+                fill="none"
+                stroke={narrative.color}
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={`${((auditResult.overallScore ?? 0) / 100) * 314} 314`}
+                transform="rotate(-90 60 60)"
+                style={{ transition: 'stroke-dasharray 1.2s ease' }}
+              />
+              <text x="60" y="68" textAnchor="middle" fontSize="28" fontWeight="700" fill="currentColor">
+                {auditResult.overallScore ?? 0}
+              </text>
+            </svg>
+          </div>
+          <h1 className="onboarding-heading" style={{ color: narrative.color }}>
+            {narrative.headline}
+          </h1>
+          <p className="onboarding-desc">{narrative.sub}</p>
 
-            <p style={{
-              fontSize: 12,
-              color: T.inkHint,
-              textAlign: 'center',
-              marginTop: 12,
-              marginBottom: 0,
-              lineHeight: 1.5,
-            }}>
-              No credit card. No signup required to see your score.
-            </p>
-          </>
-        )}
-
-        {/* ── Step: Auditing (animated progress) ────────────────────────── */}
-        {step === 'auditing' && (
-          <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
-            <style>{`
-              @keyframes sel-spin { to { transform: rotate(360deg); } }
-              @keyframes sel-pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-            `}</style>
-
-            {/* Spinner ring */}
-            <div style={{
-              width: 52,
-              height: 52,
-              borderRadius: '50%',
-              border: `2px solid ${T.border2}`,
-              borderTopColor: T.accent,
-              margin: '0 auto 1.75rem',
-              animation: 'sel-spin 0.9s linear infinite',
-            }} />
-
-            <h2 style={{
-              fontSize: 18,
-              fontWeight: 500,
-              margin: '0 0 8px',
-              color: T.ink,
-              fontFamily: 'inherit',
-            }}>
-              Analyzing your site
-            </h2>
-            <p style={{
-              fontSize: 14,
-              color: T.inkMuted,
-              margin: '0 0 2.25rem',
-              minHeight: 22,
-              animation: 'sel-pulse 3.5s ease-in-out infinite',
-            }}>
-              {STAGES[stageIndex]}
-            </p>
-
-            {/* Progress dots */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
-              {STAGES.map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: i === stageIndex ? 24 : 6,
-                    height: 6,
-                    borderRadius: 3,
-                    background:
-                      i < stageIndex ? T.inkMuted
-                      : i === stageIndex ? T.accent
-                      : T.border2,
-                    transition: 'all 0.4s ease',
-                  }}
-                />
+          {/* Quick wins */}
+          {(auditResult.recommendations?.quick_wins?.length > 0 || auditResult.quickWins?.length > 0) && (
+            <div className="reveal-quick-wins">
+              <div className="reveal-quick-wins__title">Your top opportunities</div>
+              {(auditResult.recommendations?.quick_wins ?? auditResult.quickWins ?? []).slice(0, 3).map((win: any, i: number) => (
+                <div key={i} className="reveal-win">
+                  <span className="reveal-win__num">{i + 1}</span>
+                  <span className="reveal-win__text">{typeof win === 'string' ? win : win.title}</span>
+                </div>
               ))}
             </div>
+          )}
 
-            <p style={{
-              fontSize: 12,
-              color: T.inkHint,
-              marginTop: '1.75rem',
-              marginBottom: 0,
-            }}>
-              Checking 60+ signals across your digital presence...
-            </p>
-          </div>
-        )}
-
-        {/* ── Step: Reveal ──────────────────────────────────────────────── */}
-        {step === 'reveal' && result && (
-          <>
-            {/* Score hero */}
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <div style={{
-                display: 'inline-flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                background: scoreDim,
-                borderRadius: 14,
-                padding: '20px 40px',
-                marginBottom: '1rem',
-                border: `1px solid ${scoreColor}22`,
-              }}>
-                <div style={{
-                  fontSize: 'clamp(48px, 10vw, 64px)',
-                  fontWeight: 500,
-                  lineHeight: 1,
-                  color: scoreColor,
-                  fontFamily: 'inherit',
-                }}>
-                  {score}
-                </div>
-                <div style={{ fontSize: 13, color: scoreColor, marginTop: 6, opacity: 0.85 }}>
-                  {scoreLabel}
-                </div>
-              </div>
-
-              <h2 style={{
-                fontSize: 17,
-                fontWeight: 500,
-                margin: '0 0 8px',
-                color: T.ink,
-                fontFamily: 'inherit',
-              }}>
-                Your digital presence score
-              </h2>
-
-              {annualLoss != null && annualLoss > 0 && (
-                <p style={{ fontSize: 14, color: T.inkMuted, margin: 0 }}>
-                  Estimated annual revenue leakage:{' '}
-                  <strong style={{ color: T.coral }}>
-                    ${Math.round(annualLoss).toLocaleString()}/yr
-                  </strong>
-                </p>
-              )}
-            </div>
-
-            {/* Pillar bars */}
-            {Object.keys(pillarScores).length > 0 && (
-              <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: T.inkHint,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  marginBottom: 10,
-                }}>
-                  Pillar breakdown
-                </div>
-                {Object.entries(pillarScores).slice(0, 6).map(([key, val]) => {
-                  const barColor = val >= 70 ? T.green : val >= 45 ? T.amber : T.coral
+          {/* Pillar scores preview */}
+          {auditResult.pillarScores && (
+            <div className="reveal-pillars">
+              {Object.entries(auditResult.pillarScores as Record<string, number>)
+                .slice(0, 4)
+                .map(([key, score]) => {
+                  const color = score >= 65 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444'
                   return (
-                    <div key={key} style={{
-                      display: 'grid',
-                      gridTemplateColumns: '110px 1fr 28px',
-                      alignItems: 'center',
-                      gap: 10,
-                      marginBottom: 8,
-                    }}>
-                      <div style={{ fontSize: 12, color: T.inkMuted }}>
-                        {PILLAR_LABELS[key] ?? key.replace(/_/g, ' ')}
+                    <div key={key} className="reveal-pillar">
+                      <div className="reveal-pillar__label">{key.charAt(0).toUpperCase() + key.slice(1)}</div>
+                      <div className="reveal-pillar__bar">
+                        <div className="reveal-pillar__fill" style={{ width: `${score}%`, background: color }} />
                       </div>
-                      <div style={{
-                        height: 5,
-                        background: T.border,
-                        borderRadius: 3,
-                        overflow: 'hidden',
-                      }}>
-                        <div style={{
-                          height: '100%',
-                          width: `${Math.max(0, Math.min(100, val))}%`,
-                          borderRadius: 3,
-                          background: barColor,
-                          transition: 'width 0.8s ease',
-                        }} />
-                      </div>
-                      <div style={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: barColor,
-                        textAlign: 'right',
-                      }}>
-                        {Math.round(val)}
-                      </div>
+                      <div className="reveal-pillar__score" style={{ color }}>{score}</div>
                     </div>
                   )
                 })}
-              </div>
-            )}
+            </div>
+          )}
 
-            {/* Quick wins teaser */}
-            {quickWins.length > 0 && (
-              <div style={{
-                background: T.panelHover,
-                borderRadius: T.rs,
-                border: `1px solid ${T.border}`,
-                padding: '14px 16px',
-                marginBottom: '1.5rem',
-              }}>
-                <div style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: T.inkHint,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  marginBottom: 10,
-                }}>
-                  Where to start
-                </div>
-                {quickWins.slice(0, 2).map((win, i) => (
-                  <div key={i} style={{
-                    fontSize: 13,
-                    color: T.inkMuted,
-                    lineHeight: 1.55,
-                    marginBottom: i < quickWins.slice(0, 2).length - 1 ? 8 : 0,
-                    paddingLeft: 12,
-                    borderLeft: `2px solid ${T.accent}44`,
-                  }}>
-                    {win}
-                  </div>
-                ))}
-                {quickWins.length > 2 && (
-                  <div style={{ fontSize: 12, color: T.inkHint, marginTop: 8 }}>
-                    + {quickWins.length - 2} more in your full report
-                  </div>
-                )}
-              </div>
-            )}
-
-            <button
-              onClick={() => navigate('/dashboard')}
-              style={{
-                width: '100%',
-                background: T.accent,
-                color: '#000',
-                border: 'none',
-                borderRadius: '100px',
-                fontWeight: 700,
-                fontSize: 14,
-                padding: '12px 0',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                letterSpacing: '0.01em',
-              }}
-            >
-              View my full report and action plan →
-            </button>
-          </>
-        )}
-      </div>
+          <button className="onboarding-cta" onClick={() => navigate('/dashboard')}>
+            Open my command center →
+          </button>
+          <div className="onboarding-trust">
+            Your inbox has been populated with AI-generated actions
+          </div>
+        </div>
+      )}
     </div>
   )
 }
