@@ -66,10 +66,13 @@ function getPillarScore(snapshot: any, pillar: string): number {
 }
 
 router.post('/', requireCronSecret, async (req: Request, res: Response) => {
+  try {
   const parse = CallbackSchema.safeParse(req.body)
   if (!parse.success) return res.status(400).json({ error: 'INVALID_PAYLOAD', details: parse.error.errors })
   const payload = parse.data
+  console.log('[Callback] step=parse audit_id=', payload.audit_id, 'agent_type=', payload.agent_type)
   const snapshot = await db.auditSnapshot.findUnique({ where: { id: payload.audit_id }, include: { business: { select: { id: true, state: true, industry: true } } } })
+  console.log('[Callback] step=snapshot found=', !!snapshot)
   if (!snapshot) return res.status(400).json({ error: 'SNAPSHOT_NOT_FOUND' })
   let cycle: any
   if (payload.cycle_id) {
@@ -128,6 +131,10 @@ router.post('/', requireCronSecret, async (req: Request, res: Response) => {
   await updateCycleStatus(cycleId)
   const updatedCycle = await db.agentCycle.findUnique({ where: { id: cycleId }, select: { status: true } })
   return res.json({ received: true, actionsCreated, actionsRejected: rejectionReasons.length, rejectionReasons, cycleStatus: updatedCycle?.status ?? 'PROCESSING' })
+  } catch (err: any) {
+    console.error('[Callback] CAUGHT ERROR:', err?.message, err?.stack)
+    return res.status(500).json({ error: 'CALLBACK_ERROR', detail: err?.message })
+  }
 })
 
 export default router
