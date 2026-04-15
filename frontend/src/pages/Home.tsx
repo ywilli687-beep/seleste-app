@@ -1,26 +1,46 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { useAuditFlow } from '@/lib/hooks/useAuditFlow'
-import type { AuditResult, AuditRequest, LoadingStage } from '@/types/audit'
 import Landing from '@/components/Landing'
 import IntakeForm from '@/components/IntakeForm'
 import LoadingScreen from '@/components/LoadingScreen'
 import ResultsView from '@/components/ResultsView'
 import { SEO } from '@/components/SEO'
-
-type View = 'landing' | 'intake' | 'loading' | 'results' | 'error'
+import { loadPendingAudit, clearPendingAudit } from '@/lib/pendingAudit'
 
 export default function Home() {
-  const { user } = useUser()
+  const { isSignedIn, isLoaded } = useUser()
+  const intentConsumed = useRef(false)
   const {
     view, setView,
-    result, setResult,
-    error, setError,
-    stage, setStage,
-    hardPreview, setHardPreview,
+    result,
+    error,
+    stage,
+    hardPreview,
     runAudit,
     reset
   } = useAuditFlow()
+
+  // ── Intent recovery: runs once when Clerk confirms the user is signed in ──
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return
+    if (intentConsumed.current) return
+
+    const intent = loadPendingAudit()
+    if (!intent) return
+
+    // Mark consumed BEFORE async work to prevent double execution
+    intentConsumed.current = true
+    clearPendingAudit()
+
+    runAudit({
+      url:            intent.url,
+      businessName:   intent.businessName,
+      location:       intent.location,
+      vertical:       intent.vertical as any,
+      monthlyRevenue: intent.monthlyRevenue,
+    })
+  }, [isLoaded, isSignedIn, runAudit])
 
   return (
     <>

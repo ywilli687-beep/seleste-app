@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { useNavigate } from 'react-router-dom'
 import type { AuditRequest, Vertical } from '@/types/audit'
+import { savePendingAudit } from '@/lib/pendingAudit'
 
 const VERTICALS: { value: Vertical; label: string }[] = [
   { value: 'AUTO_REPAIR',    label: 'Auto Repair' },
@@ -84,17 +85,13 @@ export default function IntakeForm({
 
     // SIGNUP GATE LOGIC
     if (!isSignedIn) {
-      // Save form data to sessionStorage, then redirect to sign-up
-      sessionStorage.setItem(
-        'seleste_pending_audit',
-        JSON.stringify({ 
-          url: u, 
-          businessName: name.trim() || undefined,
-          location: loc.trim(), 
-          vertical: vert as Vertical,
-          monthlyRevenue: rev ? parseInt(rev) : undefined,
-        })
-      )
+      savePendingAudit({
+        url:            u,
+        businessName:   name.trim() || undefined,
+        location:       loc.trim(),
+        vertical:       vert as string,
+        monthlyRevenue: rev ? parseInt(rev) : undefined,
+      })
       navigate('/sign-up')
       return
     }
