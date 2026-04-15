@@ -28,6 +28,33 @@ const T = {
 const gradeColor = (s: number) =>
   s >= 75 ? T.primary : s >= 60 ? T.secondary : s >= 45 ? T.tertiaryC : '#FFDDDA'
 
+// ── Plain-English explainers ──────────────────────────────────────────────────
+const PILLAR_EXPLAINERS: Record<string, string> = {
+  conversion:     'How well your site turns visitors into paying customers — calls, bookings, and form fills.',
+  trust:          'How credible and trustworthy your business looks to someone who has never heard of you.',
+  performance:    'How fast your site loads. Slow sites lose customers before they even see your offer.',
+  ux:             'How easy it is for visitors to find what they need and take the next step.',
+  discoverability:'How easily people can find you on Google, Maps, and other search tools.',
+  content:        'How well your copy and messaging match what your customers are searching for.',
+  data:           'Whether you have the tracking tools in place to know what\'s working and what isn\'t.',
+  technical:      'The behind-the-scenes health of your site — security, structure, and how Google crawls it.',
+  brand:          'How consistent and professional your brand appears across your site and online listings.',
+  scalability:    'How ready your business is to handle more growth without things falling apart.',
+}
+
+const SIGNAL_EXPLAINERS: Record<string, string> = {
+  hasCTA:            'A clear button that tells visitors what to do — "Book Now", "Call Us", "Get a Quote", etc.',
+  hasBooking:        'An online booking tool so customers can schedule without needing to call.',
+  hasSSL:            'The padlock in the browser bar that keeps your site secure. Google penalises sites without it.',
+  isMobileOptimized: 'Most people search on their phones — this checks if your site works well on small screens.',
+  hasGBP:            'Your Google Business Profile controls how you appear in local search and Google Maps.',
+  hasReviews:        'Customer reviews or testimonials on your site build trust with new visitors.',
+  hasPricing:        'Showing prices upfront reduces friction and helps customers decide faster.',
+  hasContactForm:    'A form visitors can fill out to reach you without having to pick up the phone.',
+  hasAnalytics:      'Tools like Google Analytics so you can see how many people visit and where they come from.',
+  wordCount:         'More content helps Google understand what your business does. Aim for 300+ words.',
+}
+
 // ── Responsive hook ───────────────────────────────────────────────────────────
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
@@ -37,6 +64,42 @@ function useIsMobile() {
     return () => window.removeEventListener('resize', fn)
   }, [])
   return isMobile
+}
+
+// ── Inline tooltip ────────────────────────────────────────────────────────────
+function InlineTooltip({ text }: { text: string }) {
+  const [show, setShow] = useState(false)
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: 5 }}>
+      <button
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        onFocus={() => setShow(true)}
+        onBlur={() => setShow(false)}
+        style={{
+          width: 15, height: 15, borderRadius: '50%',
+          background: T.surfaceTop, border: `1px solid ${T.outline}`,
+          color: T.onMuted, fontSize: 9, fontFamily: T.ff,
+          fontWeight: 700, cursor: 'default',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          padding: 0, lineHeight: 1, flexShrink: 0,
+        }}
+      >?</button>
+      {show && (
+        <div style={{
+          position: 'absolute', bottom: '130%', left: '50%', transform: 'translateX(-50%)',
+          background: T.surfaceTop, border: `1px solid ${T.outline}`,
+          borderRadius: 10, padding: '8px 12px', width: 220,
+          fontSize: 11, color: T.onMuted, lineHeight: 1.6,
+          zIndex: 200, pointerEvents: 'none',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.55)',
+          whiteSpace: 'normal' as const,
+        }}>
+          {text}
+        </div>
+      )}
+    </span>
+  )
 }
 
 // ── Growth ring ───────────────────────────────────────────────────────────────
@@ -70,13 +133,13 @@ function GrowthRing({ score, size = 190 }: { score: number; size?: number }) {
 }
 
 // ── Pillar bar (used in both layouts) ─────────────────────────────────────────
-function PillarBar({ icon, name, score }: { icon: string; name: string; score: number }) {
+function PillarBar({ icon, name, score, desc }: { icon: string; name: string; score: number; desc?: string }) {
   const col = gradeColor(score)
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
         <span style={{ fontSize: 13, color: T.onSurface, display: 'flex', alignItems: 'center', gap: 6 }}>
-          {icon} {name}
+          {icon} {name}{desc && <InlineTooltip text={desc} />}
         </span>
         <span style={{ fontFamily: T.ff, fontSize: 13, fontWeight: 700, color: col }}>{score}/100</span>
       </div>
@@ -91,7 +154,7 @@ function PillarBar({ icon, name, score }: { icon: string; name: string; score: n
 }
 
 // ── Horizontal pillar card (mobile swipe) ─────────────────────────────────────
-function PillarCard({ icon, name, score, weight, desc }: { icon: string; name: string; score: number; weight: number; desc: string }) {
+function PillarCard({ icon, name, score, desc }: { icon: string; name: string; score: number; desc: string }) {
   const col = gradeColor(score)
   return (
     <div style={{ flexShrink: 0, width: 220, background: T.surfaceHi, borderRadius: 24, padding: '18px', scrollSnapAlign: 'center' }}>
@@ -138,11 +201,11 @@ function InsightNugget({ type, title, body }: { type: NuggetType; title: string;
 }
 
 // ── Signal row ────────────────────────────────────────────────────────────────
-function SignalRow({ label, value, last }: { label: string; value: boolean | number; last?: boolean }) {
+function SignalRow({ label, value, last, explain }: { label: string; value: boolean | number; last?: boolean; explain?: string }) {
   const isPass = value === true || (typeof value === 'number' && value >= 300)
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: last ? 0 : 12, marginBottom: last ? 0 : 12 }}>
-      <span style={{ fontSize: 13, color: T.onSurface }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: last ? 0 : 12, marginBottom: last ? 0 : 12, borderBottom: last ? 'none' : `1px solid ${T.surfaceTop}` }}>
+      <span style={{ fontSize: 13, color: T.onSurface, display: 'flex', alignItems: 'center' }}>{label}{explain && <InlineTooltip text={explain} />}</span>
       {typeof value === 'number'
         ? <span style={{ fontFamily: T.ffBody, fontSize: 13, fontWeight: 600, color: isPass ? T.primary : T.tertiaryC }}>{value}</span>
         : <span style={{ fontSize: 15, color: isPass ? T.primary : T.tertiaryC }}>{isPass ? '✓' : '✗'}</span>}
@@ -212,7 +275,7 @@ function MobileLayout({
             <div style={{ position: 'absolute', top: -48, right: -48, width: 130, height: 130, background: `${col}18`, borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
               <div>
-                <p style={{ fontFamily: T.ff, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: T.onMuted, marginBottom: 4 }}>Growth Score</p>
+                <p style={{ fontFamily: T.ff, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: T.onMuted, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>Growth Score<InlineTooltip text="Your overall digital health score out of 100 — based on 10 areas of your online presence." /></p>
                 <div style={{ fontFamily: T.ff, fontSize: '3.5rem', fontWeight: 800, color: col, lineHeight: 1, display: 'flex', alignItems: 'baseline', gap: 4 }}>
                   {overallScore}<span style={{ fontSize: '1.2rem', color: `${T.onMuted}66` }}>%</span>
                 </div>
@@ -225,7 +288,7 @@ function MobileLayout({
               <div style={{ marginTop: 16, padding: '10px 14px', background: T.errorDim, borderRadius: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: 16 }}>⚠️</span>
                 <div>
-                  <span style={{ fontFamily: T.ff, fontSize: 13, fontWeight: 700, color: T.tertiaryC }}>{Math.max(revenueLeak.totalPct, 15)}% revenue leak detected</span>
+                  <span style={{ fontFamily: T.ff, fontSize: 13, fontWeight: 700, color: T.tertiaryC, display: 'flex', alignItems: 'center', gap: 4 }}>{Math.max(revenueLeak.totalPct, 15)}% revenue leak detected<InlineTooltip text="An estimate of the revenue you're missing due to gaps in your online presence — based on industry benchmarks for your business type." /></span>
                   <p style={{ fontSize: 11, color: T.onMuted, margin: '2px 0 0' }}>Daily growth opportunities being lost</p>
                 </div>
               </div>
@@ -238,7 +301,7 @@ function MobileLayout({
           <div style={{ padding: '18px 16px 10px' }}><SectionLabel>Performance by Area</SectionLabel></div>
           <div style={{ display: 'flex', overflowX: 'auto', gap: 10, padding: '0 16px 8px', scrollSnapType: 'x mandatory', msOverflowStyle: 'none', scrollbarWidth: 'none' } as React.CSSProperties}>
             {PILLARS.map(p => (
-              <PillarCard key={p.id} icon={p.icon} name={p.name} score={pillarScores[p.id] ?? 0} weight={p.weight} desc={getPillarDesc(p.id)} />
+              <PillarCard key={p.id} icon={p.icon} name={p.name} score={pillarScores[p.id] ?? 0} desc={getPillarDesc(p.id)} />
             ))}
           </div>
         </section>
@@ -257,16 +320,16 @@ function MobileLayout({
         <section style={{ padding: '12px 16px' }}>
           <SectionLabel>What We Found On Your Site</SectionLabel>
           <div style={{ background: T.surface, borderRadius: 22, padding: '18px' }}>
-            <SignalRow label="Main action button (CTA)"  value={signals.hasCTA} />
-            <SignalRow label="Online booking"             value={signals.hasBooking} />
-            <SignalRow label="Secure connection (HTTPS)"  value={signals.hasSSL} />
-            <SignalRow label="Mobile optimised"           value={signals.isMobileOptimized} />
-            <SignalRow label="Google Business linked"     value={signals.hasGBP} />
-            <SignalRow label="Reviews or testimonials"    value={signals.hasReviews} />
-            <SignalRow label="Prices or packages"         value={signals.hasPricing} />
-            <SignalRow label="Contact form"               value={signals.hasContactForm} />
-            <SignalRow label="Website analytics"          value={signals.hasAnalytics} />
-            <SignalRow label="Word count"                 value={signals.wordCount} last />
+            <SignalRow label="Main action button (CTA)"  value={signals.hasCTA}            explain={SIGNAL_EXPLAINERS.hasCTA} />
+            <SignalRow label="Online booking"             value={signals.hasBooking}         explain={SIGNAL_EXPLAINERS.hasBooking} />
+            <SignalRow label="Secure connection (HTTPS)"  value={signals.hasSSL}             explain={SIGNAL_EXPLAINERS.hasSSL} />
+            <SignalRow label="Mobile optimised"           value={signals.isMobileOptimized}  explain={SIGNAL_EXPLAINERS.isMobileOptimized} />
+            <SignalRow label="Google Business linked"     value={signals.hasGBP}             explain={SIGNAL_EXPLAINERS.hasGBP} />
+            <SignalRow label="Reviews or testimonials"    value={signals.hasReviews}         explain={SIGNAL_EXPLAINERS.hasReviews} />
+            <SignalRow label="Prices or packages"         value={signals.hasPricing}         explain={SIGNAL_EXPLAINERS.hasPricing} />
+            <SignalRow label="Contact form"               value={signals.hasContactForm}     explain={SIGNAL_EXPLAINERS.hasContactForm} />
+            <SignalRow label="Website analytics"          value={signals.hasAnalytics}       explain={SIGNAL_EXPLAINERS.hasAnalytics} />
+            <SignalRow label="Word count"                 value={signals.wordCount}          explain={SIGNAL_EXPLAINERS.wordCount} last />
           </div>
         </section>
 
@@ -321,11 +384,10 @@ function MobileLayout({
 // DESKTOP LAYOUT
 // ═══════════════════════════════════════════════════════════════════════════════
 function DesktopLayout({
-  result, onNewAudit, onShare, copied, nuggets, getPillarDesc,
+  result, onNewAudit, onShare, copied, nuggets,
 }: {
   result: AuditResult; onNewAudit: () => void; onShare: () => void
   copied: boolean; nuggets: { type: NuggetType; title: string; body: string }[]
-  getPillarDesc: (id: string) => string
 }) {
   const { pillarScores, overallScore, signals, roadmap, revenueLeak, input, recommendations } = result
   const biz = input.businessName || input.url.replace(/https?:\/\//, '').split('/')[0]
@@ -345,7 +407,7 @@ function DesktopLayout({
             {/* Score card */}
             <div style={{ background: T.surface, borderRadius: 28, padding: '32px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: -60, right: -60, width: 160, height: 160, background: `${col}15`, borderRadius: '50%', filter: 'blur(50px)', pointerEvents: 'none' }} />
-              <p style={{ fontFamily: T.ff, fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: T.onMuted, marginBottom: 16 }}>Growth Score</p>
+              <p style={{ fontFamily: T.ff, fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: T.onMuted, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>Growth Score<InlineTooltip text="Your overall digital health score out of 100 — based on 10 areas of your online presence." /></p>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
                 <GrowthRing score={overallScore} size={200} />
               </div>
@@ -353,7 +415,7 @@ function DesktopLayout({
               <div style={{ fontSize: 12, color: T.onMuted, marginTop: 4 }}>{input.vertical.replace('_', ' ').toLowerCase()} · {input.location}</div>
               {revenueLeak.totalPct > 0 && (
                 <div style={{ marginTop: 18, padding: '10px 14px', background: T.errorDim, borderRadius: 14, textAlign: 'left' }}>
-                  <span style={{ fontFamily: T.ff, fontSize: 13, fontWeight: 700, color: T.tertiaryC }}>⚠️ {Math.max(revenueLeak.totalPct, 15)}% revenue leak</span>
+                  <span style={{ fontFamily: T.ff, fontSize: 13, fontWeight: 700, color: T.tertiaryC, display: 'flex', alignItems: 'center', gap: 4 }}>⚠️ {Math.max(revenueLeak.totalPct, 15)}% revenue leak<InlineTooltip text="An estimate of the revenue you're missing due to gaps in your online presence — based on industry benchmarks for your business type." /></span>
                   <p style={{ fontSize: 11, color: T.onMuted, margin: '3px 0 0' }}>Daily growth opportunities lost</p>
                 </div>
               )}
@@ -373,16 +435,16 @@ function DesktopLayout({
             {/* Site signals */}
             <div style={{ background: T.surface, borderRadius: 24, padding: '22px' }}>
               <SectionLabel>What We Found</SectionLabel>
-              <SignalRow label="CTA / action button"       value={signals.hasCTA} />
-              <SignalRow label="Online booking"            value={signals.hasBooking} />
-              <SignalRow label="HTTPS secure"              value={signals.hasSSL} />
-              <SignalRow label="Mobile optimised"          value={signals.isMobileOptimized} />
-              <SignalRow label="Google Business"           value={signals.hasGBP} />
-              <SignalRow label="Reviews"                   value={signals.hasReviews} />
-              <SignalRow label="Pricing visible"           value={signals.hasPricing} />
-              <SignalRow label="Contact form"              value={signals.hasContactForm} />
-              <SignalRow label="Analytics"                 value={signals.hasAnalytics} />
-              <SignalRow label="Word count"                value={signals.wordCount} last />
+              <SignalRow label="CTA / action button"       value={signals.hasCTA}            explain={SIGNAL_EXPLAINERS.hasCTA} />
+              <SignalRow label="Online booking"            value={signals.hasBooking}         explain={SIGNAL_EXPLAINERS.hasBooking} />
+              <SignalRow label="HTTPS secure"              value={signals.hasSSL}             explain={SIGNAL_EXPLAINERS.hasSSL} />
+              <SignalRow label="Mobile optimised"          value={signals.isMobileOptimized}  explain={SIGNAL_EXPLAINERS.isMobileOptimized} />
+              <SignalRow label="Google Business"           value={signals.hasGBP}             explain={SIGNAL_EXPLAINERS.hasGBP} />
+              <SignalRow label="Reviews"                   value={signals.hasReviews}         explain={SIGNAL_EXPLAINERS.hasReviews} />
+              <SignalRow label="Pricing visible"           value={signals.hasPricing}         explain={SIGNAL_EXPLAINERS.hasPricing} />
+              <SignalRow label="Contact form"              value={signals.hasContactForm}     explain={SIGNAL_EXPLAINERS.hasContactForm} />
+              <SignalRow label="Analytics"                 value={signals.hasAnalytics}       explain={SIGNAL_EXPLAINERS.hasAnalytics} />
+              <SignalRow label="Word count"                value={signals.wordCount}          explain={SIGNAL_EXPLAINERS.wordCount} last />
             </div>
           </div>
 
@@ -394,7 +456,7 @@ function DesktopLayout({
               <SectionLabel>Performance by Area</SectionLabel>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                 {sorted.map(p => (
-                  <PillarBar key={p.id} icon={p.icon} name={p.name} score={pillarScores[p.id] ?? 0} />
+                  <PillarBar key={p.id} icon={p.icon} name={p.name} score={pillarScores[p.id] ?? 0} desc={PILLAR_EXPLAINERS[p.id]} />
                 ))}
               </div>
             </div>
@@ -527,14 +589,14 @@ export default function ResultsView({
     ...sorted.slice(0, 1).map(p => ({ type: 'win' as NuggetType, title: `${p.name} is a strength`, body: `Score ${pillarScores[p.id] ?? 0}/100 — outperforming most similar businesses in this area.` })),
   ].slice(0, 6)
 
-  const sharedProps = { result, onNewAudit, onShare: handleShare, copied, nuggets, getPillarDesc }
+  const baseProps = { result, onNewAudit, onShare: handleShare, copied, nuggets }
 
   return (
     <div style={{ background: T.bg, minHeight: '100vh', color: T.onSurface, fontFamily: T.ffBody }}>
       <TopBar biz={biz} onNewAudit={onNewAudit} onShare={handleShare} copied={copied} />
       {isMobile
-        ? <MobileLayout {...sharedProps} />
-        : <DesktopLayout {...sharedProps} />
+        ? <MobileLayout {...baseProps} getPillarDesc={getPillarDesc} />
+        : <DesktopLayout {...baseProps} />
       }
       <WaitlistModal
         isOpen={isWaitlistOpen}
