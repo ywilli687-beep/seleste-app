@@ -89,18 +89,19 @@ router.post('/', requireCronSecret, async (req: Request, res: Response) => {
       }
     })
   }
+  const cycleId   = cycle.id
   const agentType = payload.agent_type as AgentType
   const business  = snapshot.business
-  const existingExecution = await db.agentExecution.findFirst({ where: { cycleId: payload.cycle_id, agentType, status: { in: ['COMPLETE', 'FAILED'] as AgentCycleStatus[] } }, select: { id: true } })
+  const existingExecution = await db.agentExecution.findFirst({ where: { cycleId, agentType, status: { in: ['COMPLETE', 'FAILED'] as AgentCycleStatus[] } }, select: { id: true } })
   if (existingExecution) return res.json({ received: true, actionsCreated: 0, actionsRejected: 0, rejectionReasons: ['Duplicate callback'], cycleStatus: cycle.status })
   const blocked = guardAgent(business.state, agentType)
   if (blocked) {
-    await db.agentExecution.create({ data: { cycleId: payload.cycle_id, agentType, status: 'FAILED', validationStatus: 'FAILED_SCHEMA', validationErrors: [blocked], completedAt: new Date() } })
+    await db.agentExecution.create({ data: { cycleId, agentType, status: 'FAILED', validationStatus: 'FAILED_SCHEMA', validationErrors: [blocked], completedAt: new Date() } })
     return res.json({ received: true, actionsCreated: 0, actionsRejected: payload.actions.length, rejectionReasons: [blocked], cycleStatus: cycle.status })
   }
   if (payload.status === 'error') {
-    await db.agentExecution.create({ data: { cycleId: payload.cycle_id, agentType, status: 'FAILED', validationStatus: 'FAILED_SCHEMA', rawOutput: payload as any, validationErrors: [payload.error ?? 'Agent reported error'], completedAt: new Date() } })
-    await updateCycleStatus(payload.cycle_id)
+    await db.agentExecution.create({ data: { cycleId, agentType, status: 'FAILED', validationStatus: 'FAILED_SCHEMA', rawOutput: payload as any, validationErrors: [payload.error ?? 'Agent reported error'], completedAt: new Date() } })
+    await updateCycleStatus(cycleId)
     return res.json({ received: true, actionsCreated: 0, actionsRejected: 0, rejectionReasons: [payload.error ?? 'Agent error'], cycleStatus: cycle.status })
   }
   const validActions: typeof payload.actions = []
@@ -109,23 +110,23 @@ router.post('/', requireCronSecret, async (req: Request, res: Response) => {
     if (!VALID_ACTION_TYPES[agentType].includes(action.actionType)) { rejectionReasons.push(`Invalid actionType "${action.actionType}" for ${agentType}`); continue }
     validActions.push(action)
   }
-  const execution = await db.agentExecution.create({ data: { cycleId: payload.cycle_id, agentType, status: 'COMPLETE', validationStatus: rejectionReasons.length > 0 ? 'FAILED_SCHEMA' : 'PASSED', rawOutput: payload as any, validationErrors: rejectionReasons.length > 0 ? rejectionReasons : undefined, startedAt: new Date(), completedAt: new Date() } })
+  const execution = await db.agentExecution.create({ data: { cycleId, agentType, status: 'COMPLETE', validationStatus: rejectionReasons.length > 0 ? 'FAILED_SCHEMA' : 'PASSED', rawOutput: payload as any, validationErrors: rejectionReasons.length > 0 ? rejectionReasons : undefined, startedAt: new Date(), completedAt: new Date() } })
   const candidates = validActions.map((a, i) => ({ id: `tmp-${i}`, agentType, pillar: a.pillar, estimatedImpact: a.estimatedImpact, estimatedEffort: a.estimatedEffort, urgencySignal: a.urgencySignal, learningSignal: 0, learningConfidence: 0, channelSynergy: computeChannelSynergy(a.channelSynergy), moatScore: 0 }))
   const ranked    = rankActions(candidates, business.state)
   let actionsCreated = 0
   for (let i = 0; i < validActions.length; i++) {
     const action          = validActions[i]
-    const idempotencyKey  = crypto.createHash('sha256').update(`${payload.cycle_id}:${agentType}:${action.actionType}:${action.pillar}`).digest('hex')
+    const idempotencyKey  = crypto.createHash('sha256').update(`${cycleId}:${agentType}:${action.actionType}:${action.pillar}`).digest('hex')
     const existing        = await db.weeklyAction.findUnique({ where: { idempotencyKey }, select: { id: true } })
     if (existing) continue
     const autoDecision    = decideAutoExecute(action.riskTier as 'LOW'|'MEDIUM'|'HIGH', business.state, 0, action.estimatedImpact)
     const now             = new Date()
-    await db.weeklyAction.create({ data: { businessId: business.id, snapshotId: snapshot.id, cycleId: payload.cycle_id, executionId: execution.id, agentType, status: autoDecision.autoExecute ? 'EXECUTING' : 'PENDING', riskTier: action.riskTier as ActionRiskTier, title: action.title, description: action.description, pillar: action.pillar, goal: action.goal, metric: action.metric, baselineValue: getPillarScore(snapshot, action.pillar), targetValue: action.targetValue, estimatedImpact: action.estimatedImpact, estimatedEffort: action.estimatedEffort, priority: ranked[i]?.priority ?? 50, actionType: action.actionType, actionPayload: action.actionPayload, idempotencyKey, approvedAt: autoDecision.autoExecute ? now : undefined, executedAt: autoDecision.autoExecute ? now : undefined } })
+    await db.weeklyAction.create({ data: { businessId: business.id, snapshotId: snapshot.id, cycleId, executionId: execution.id, agentType, status: autoDecision.autoExecute ? 'EXECUTING' : 'PENDING', riskTier: action.riskTier as ActionRiskTier, title: action.title, description: action.description, pillar: action.pillar, goal: action.goal, metric: action.metric, baselineValue: getPillarScore(snapshot, action.pillar), targetValue: action.targetValue, estimatedImpact: action.estimatedImpact, estimatedEffort: action.estimatedEffort, priority: ranked[i]?.priority ?? 50, actionType: action.actionType, actionPayload: action.actionPayload, idempotencyKey, approvedAt: autoDecision.autoExecute ? now : undefined, executedAt: autoDecision.autoExecute ? now : undefined } })
     actionsCreated++
   }
   await db.weeklyAction.updateMany({ where: { businessId: business.id, status: 'PENDING', snapshotId: { not: snapshot.id } }, data: { status: 'SUPERSEDED' } })
-  await updateCycleStatus(payload.cycle_id)
-  const updatedCycle = await db.agentCycle.findUnique({ where: { id: payload.cycle_id }, select: { status: true } })
+  await updateCycleStatus(cycleId)
+  const updatedCycle = await db.agentCycle.findUnique({ where: { id: cycleId }, select: { status: true } })
   return res.json({ received: true, actionsCreated, actionsRejected: rejectionReasons.length, rejectionReasons, cycleStatus: updatedCycle?.status ?? 'PROCESSING' })
 })
 
