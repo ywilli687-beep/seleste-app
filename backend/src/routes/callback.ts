@@ -78,7 +78,16 @@ router.post('/', requireCronSecret, async (req: Request, res: Response) => {
     if (cycle.businessId !== snapshot.businessId) return res.status(400).json({ error: 'CYCLE_SNAPSHOT_MISMATCH' })
   } else {
     // No cycle_id provided — create one automatically for this n8n callback
-    cycle = await db.agentCycle.create({ data: { businessId: snapshot.businessId, status: 'PROCESSING', triggeredBy: 'MANUAL' } })
+    cycle = await db.agentCycle.create({
+      data: {
+        businessId:     snapshot.businessId,
+        snapshotId:     snapshot.id,
+        status:         'PROCESSING',
+        idempotencyKey: `n8n-${snapshot.id}-${payload.agent_type}-${Date.now()}`,
+        timeoutAt:      new Date(Date.now() + 30 * 60 * 1000), // 30 min timeout
+        webhookPayload: req.body,
+      }
+    })
   }
   const agentType = payload.agent_type as AgentType
   const business  = snapshot.business
