@@ -10,9 +10,15 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ success: false, error: 'Unauthenticated' })
     }
     const payload = await clerk.verifyToken(token)
-    ;(req as any).auth = { userId: payload.sub }
+    const userId = payload.sub
+    if (!userId) {
+      console.error('[requireAuth] verifyToken succeeded but sub is empty, payload keys:', Object.keys(payload))
+      return res.status(401).json({ success: false, error: 'Unauthenticated' })
+    }
+    ;(req as any).auth = { userId }
     next()
-  } catch {
+  } catch (err: any) {
+    console.error('[requireAuth] verifyToken failed:', err?.message)
     return res.status(401).json({ success: false, error: 'Unauthenticated' })
   }
 }
