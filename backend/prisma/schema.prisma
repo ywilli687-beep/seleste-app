@@ -104,6 +104,19 @@ enum NotificationEvent {
   AGENT_TIMEOUT
 }
 
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INVITED
+  REMOVED
+}
+
 model User {
   id        String   @id
   email     String   @unique
@@ -111,10 +124,49 @@ model User {
   updatedAt DateTime @updatedAt
 
   businesses        Business[]
+  memberships       Membership[]
   notificationPrefs NotificationPreference[]
   xpTotal           Int @default(0)
 
   @@map("users")
+}
+
+// ── Membership: join table for multi-user business access ──────────────────
+model Membership {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId String
+  business   Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  role       MembershipRole   @default(MEMBER)
+  status     MembershipStatus @default(ACTIVE)
+  invitedBy  String?          // userId of the inviter
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, businessId])
+  @@index([userId])
+  @@index([businessId])
+  @@map("memberships")
+}
+
+// ── BusinessInvite: pending email invitations ──────────────────────────────
+model BusinessInvite {
+  id         String         @id @default(cuid())
+  businessId String
+  business   Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  email      String
+  role       MembershipRole @default(MEMBER)
+  token      String         @unique @default(cuid())
+  invitedBy  String         // userId of the inviter
+  acceptedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime       @default(now())
+
+  @@index([businessId])
+  @@index([email])
+  @@map("business_invites")
 }
 
 model Business {
@@ -145,6 +197,8 @@ model Business {
   signals        BusinessSignals?
   marketSegment  MarketSegment?
   weeklyActions  WeeklyAction[]
+  memberships    Membership[]
+  invites        BusinessInvite[]
 
   @@index([userId])
   @@index([crawlerEnrolled, nextCrawlAt])

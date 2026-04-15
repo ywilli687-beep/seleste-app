@@ -29,6 +29,7 @@ import outreachRoutes from './routes/outreach'
 import verticalPagesRoutes from './routes/vertical-pages'
 import learningRouter from './routes/learning'
 import chatRouter from './routes/chat'
+import teamRouter from './routes/team'
 
 const app = express()
 
@@ -122,6 +123,7 @@ app.use('/api/outreach', outreachRoutes)
 app.use('/api/vertical-pages', verticalPagesRoutes)
 app.use('/api/learning', learningRouter)
 app.use('/api/chat', chatRouter)
+app.use('/api', teamRouter)       // handles /api/user/businesses, /api/business (POST), /api/business/:id/team/*, /api/invites/*
 
 // LayerViolationError handler — registered before the generic handler.
 // Catches guard violations from any layer and returns a structured 400.

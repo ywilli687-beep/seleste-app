@@ -8,29 +8,21 @@ export function useGlobalDashboard() {
     queryKey: ['dashboard', userId],
     queryFn:  async () => {
       const token = await getToken()
-      const res   = await apiGet<{ success: boolean; data: any; error?: string }>(`/api/dashboard/${userId}`, token!)
+      // Use new multi-business endpoint
+      const res = await apiGet<{ success: boolean; businesses: any[]; error?: string }>(
+        '/api/user/businesses', token!
+      )
       if (!res.success) throw new Error(res.error || 'Failed to load dashboard')
-      const d = res.data
-      // Normalize single-business shape → Phase 8 businesses array
-      const displayName = d.businessName && !d.businessName.includes('.')
-        ? d.businessName
-        : (d.vertical ? d.vertical.replace(/_/g, ' ').toLowerCase() : d.businessName)
-      const businesses = d.totalAudits === 0 ? [] : [{
-        businessId:     d.id,
-        name:           displayName,
-        overallScore:   d.overallScore,
-        scoreDelta:     d.scoreDelta,
-        state:          d.businessState ?? null,
-        industry:       d.vertical ?? 'OTHER',
-        pendingActions: 0,
-      }]
+      const businesses = res.businesses ?? []
+      const avgScore = businesses.length
+        ? Math.round(businesses.reduce((s: number, b: any) => s + (b.overallScore ?? 0), 0) / businesses.length)
+        : null
       return {
-        ...d,
         businesses,
         globalSummary: {
-          totalPendingActions: 0,
-          avgScore:            d.overallScore ?? null,
-          topMover:            null,
+          totalPendingActions: businesses.reduce((s: number, b: any) => s + (b.pendingActions ?? 0), 0),
+          avgScore,
+          topMover: null,
         },
       }
     },
@@ -111,5 +103,55 @@ export function useAllAuditHistories(businessIds: string[]) {
       return Object.fromEntries(results.map((r) => [r.id, r.scores]))
     },
     enabled: businessIds.length > 0,
+  })
+}
+
+// ── Team / multi-business hooks ───────────────────────────────────────────────
+
+export function useTeam(businessId: string | undefined) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: ['team', businessId],
+    queryFn:  async () => { const token = await getToken(); return apiGet(`/api/business/${businessId}/team`, token!) },
+    enabled:  !!businessId,
+  })
+}
+
+export function useCreateBusiness() {
+  const { getToken } = useAuth()
+  const queryClient  = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: { name: string; website: string; industry: string; city?: string; region?: string }) => {
+      const token = await getToken()
+      return apiPost('/api/business', token!, data)
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+  })
+}
+
+export function useInviteMember(businessId: string) {
+  const { getToken } = useAuth()
+  const queryClient  = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ email, role }: { email: string; role: string }) => {
+      const token = await getToken()
+      return apiPost(`/api/business/${businessId}/team/invite`, token!, { email, role })
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['team', businessId] }),
+  })
+}
+
+export function useRemoveMember(businessId: string) {
+  const { getToken } = useAuth()
+  const queryClient  = useQueryClient()
+  return useMutation({
+    mutationFn: async (memberId: string) => {
+      const token = await getToken()
+      return fetch(`/api/business/${businessId}/team/${memberId}`, {
+        method:  'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((r) => r.json())
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['team', businessId] }),
   })
 }

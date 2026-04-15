@@ -8,16 +8,18 @@ import {
   useInbox,
   useAllAuditHistories,
 } from '@/lib/hooks/useDashboard'
-import { useTabTitle }      from '@/lib/hooks/useTabTitle'
-import { PriorityActions }  from '@/components/dashboard/PriorityActions'
-import { ExecutionQueue }   from '@/components/dashboard/ExecutionQueue'
-import { ImpactTimeline }   from '@/components/dashboard/ImpactTimeline'
-import { BusinessCard }     from '@/components/dashboard/BusinessCard'
-import { OnboardingCard }   from '@/components/dashboard/OnboardingCard'
-import { AskSeleste }       from '@/components/dashboard/AskSeleste'
-import { estimateRevenue } from '@/lib/revenue'
+import { useTabTitle }           from '@/lib/hooks/useTabTitle'
+import { PriorityActions }       from '@/components/dashboard/PriorityActions'
+import { ExecutionQueue }        from '@/components/dashboard/ExecutionQueue'
+import { ImpactTimeline }        from '@/components/dashboard/ImpactTimeline'
+import { BusinessCard }          from '@/components/dashboard/BusinessCard'
+import { OnboardingCard }        from '@/components/dashboard/OnboardingCard'
+import { AskSeleste }            from '@/components/dashboard/AskSeleste'
+import { CreateBusinessModal }   from '@/components/dashboard/CreateBusinessModal'
+import { TeamSettings }          from '@/components/dashboard/TeamSettings'
+import { estimateRevenue }       from '@/lib/revenue'
 
-type Tab = 'today' | 'inbox' | 'growth' | 'assets' | 'command'
+type Tab = 'today' | 'inbox' | 'growth' | 'assets' | 'team' | 'command'
 
 const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -45,8 +47,9 @@ export default function Dashboard() {
   const { user, isLoaded: isUserLoaded } = useUser()
   const { getToken }  = useAuth()
   const queryClient   = useQueryClient()
-  const [tab, setTab] = useState<Tab>('today')
+  const [tab, setTab]                     = useState<Tab>('today')
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | undefined>()
+  const [showCreateModal, setShowCreateModal]        = useState(false)
 
   useEffect(() => {
     if (!isUserLoaded || !user) return
@@ -128,12 +131,20 @@ export default function Dashboard() {
       <div className="os-shell">
         <OsSidebar tab={tab} setTab={setTab} initial={user?.firstName?.[0] ?? undefined} />
         <div className="os-main os-main--center"><OnboardingCard /></div>
+        {showCreateModal && <CreateBusinessModal onClose={() => setShowCreateModal(false)} />}
       </div>
     )
   }
 
+  const TAB_LABELS: Record<Tab, string> = {
+    today: 'Today', inbox: 'Inbox', growth: 'Growth',
+    assets: 'Assets', team: 'Team', command: '✦ Command',
+  }
+
   return (
     <div className="os-shell">
+      {showCreateModal && <CreateBusinessModal onClose={() => setShowCreateModal(false)} />}
+
       {/* Sidebar */}
       <OsSidebar tab={tab} setTab={setTab} initial={user?.firstName?.[0] ?? undefined} />
 
@@ -141,9 +152,25 @@ export default function Dashboard() {
       <div className="os-main">
         {/* Header */}
         <div className="os-header">
-          <div>
-            <div className="os-header__greeting">{greet(user?.firstName ?? undefined)}</div>
-            <div className="os-header__date">{dateStr()}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Business switcher */}
+            <div className="biz-switcher">
+              <select
+                className="biz-switcher__select"
+                value={effectiveId ?? ''}
+                onChange={(e) => setSelectedBusinessId(e.target.value)}
+              >
+                {businesses.map((b: any) => (
+                  <option key={b.businessId} value={b.businessId}>{b.name}</option>
+                ))}
+              </select>
+              <span className="biz-switcher__chevron">▾</span>
+            </div>
+            <button
+              className="os-btn os-btn--ghost os-btn--sm"
+              onClick={() => setShowCreateModal(true)}
+              title="Add business"
+            >+</button>
           </div>
           <div className="os-header__actions">
             <button className="os-btn os-btn--ghost" onClick={() => (window.location.href = '/')}>New Audit</button>
@@ -151,11 +178,17 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Greeting sub-row */}
+        <div style={{ padding: '6px 24px 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{greet(user?.firstName ?? undefined)}</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-muted)', paddingBottom: 8 }}>{dateStr()}</div>
+        </div>
+
         {/* Tabs */}
         <div className="os-tabs">
-          {(['today','inbox','growth','assets','command'] as Tab[]).map(t => (
+          {(Object.keys(TAB_LABELS) as Tab[]).map(t => (
             <button key={t} className={`os-tab ${tab === t ? 'os-tab--active' : ''}`} onClick={() => setTab(t)}>
-              {t === 'command' ? '✦ Command' : t.charAt(0).toUpperCase() + t.slice(1)}
+              {TAB_LABELS[t]}
             </button>
           ))}
         </div>
@@ -220,6 +253,10 @@ export default function Dashboard() {
             </div>
           )}
 
+          {tab === 'team' && effectiveId && (
+            <TeamSettings businessId={effectiveId} />
+          )}
+
           {tab === 'command' && (
             <div className="os-command">
               <AskSeleste businessId={effectiveId} />
@@ -269,10 +306,6 @@ export default function Dashboard() {
             <span className="os-right__rev-key">Opportunity</span>
             <span className="os-right__rev-val os-right__rev-val--amber">{totalOpportunity > 0 ? `$${totalOpportunity.toLocaleString()}` : 'At risk'}</span>
           </div>
-          <div className="os-right__rev-row">
-            <span className="os-right__rev-key">At risk</span>
-            <span className="os-right__rev-val os-right__rev-val--muted">—</span>
-          </div>
         </div>
 
         {/* Agents */}
@@ -281,8 +314,8 @@ export default function Dashboard() {
           {AGENT_KEYS.map(name => {
             const type    = AGENT_TYPE_MAP[name]
             const agTasks = tasks.filter((t: any) => t.agentType === type)
-            const hasPending   = agTasks.some((t: any) => t.status === 'PENDING')
             const hasExecuting = agTasks.some((t: any) => t.status === 'EXECUTING')
+            const hasPending   = agTasks.some((t: any) => t.status === 'PENDING')
             const hasDone      = agTasks.some((t: any) => t.status === 'COMPLETED')
             const color = hasExecuting ? 'var(--purple)' : hasPending ? 'var(--amber)' : hasDone ? 'var(--green)' : 'var(--ink-muted)'
             return (
@@ -303,8 +336,20 @@ export default function Dashboard() {
             <button className="os-autopilot__btn">Auto</button>
           </div>
           <div className="os-right__muted" style={{ marginTop: 6 }}>
-            {crawlerEnrolled ? 'Agents draft actions, you approve before they go live.' : 'You control all actions manually.'}
+            {crawlerEnrolled ? 'Agents draft actions, you approve.' : 'You control all actions manually.'}
           </div>
+        </div>
+
+        {/* Team quick-access */}
+        <div className="os-right__section">
+          <div className="os-right__label">TEAM</div>
+          <button
+            className="os-btn os-btn--ghost os-btn--sm"
+            style={{ width: '100%', textAlign: 'left' }}
+            onClick={() => setTab('team')}
+          >
+            Manage team →
+          </button>
         </div>
       </aside>
     </div>
@@ -324,8 +369,11 @@ function OsSidebar({ tab, setTab, initial }: { tab: Tab; setTab: (t: Tab) => voi
         <button className={`os-nav-btn ${tab === 'growth' ? 'os-nav-btn--active' : ''}`} onClick={() => setTab('growth')} title="Growth">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="1,12 5,7 8,9 12,4 15,6" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <button className={`os-nav-btn ${tab === 'assets' ? 'os-nav-btn--active' : ''}`} onClick={() => setTab('assets')} title="Assets">
+        <button className={`os-nav-btn ${tab === 'assets' ? 'os-nav-btn--active' : ''}`} onClick={() => setTab('assets')} title="Businesses">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="4" rx="1" fill="currentColor" opacity=".4"/><rect x="1" y="6" width="14" height="4" rx="1" fill="currentColor" opacity=".7"/><rect x="1" y="11" width="14" height="4" rx="1" fill="currentColor"/></svg>
+        </button>
+        <button className={`os-nav-btn ${tab === 'team' ? 'os-nav-btn--active' : ''}`} onClick={() => setTab('team')} title="Team">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M1 13c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="12" cy="5" r="2" stroke="currentColor" strokeWidth="1.2" opacity=".6"/><path d="M14 12.5c0-1.5-1-2.5-2-2.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity=".6"/></svg>
         </button>
         <button className={`os-nav-btn ${tab === 'command' ? 'os-nav-btn--active' : ''}`} onClick={() => setTab('command')} title="Command">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/><path d="M5.5 8h5M8 5.5v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
