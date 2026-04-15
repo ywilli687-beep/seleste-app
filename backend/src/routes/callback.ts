@@ -34,7 +34,7 @@ const ActionSchema = z.object({
 
 const CallbackSchema = z.object({
   audit_id:   z.string(),
-  cycle_id:   z.string(),
+  cycle_id:   z.string().optional(),
   agent_type: z.enum(['SEO', 'CRO', 'REPUTATION', 'CONTENT', 'MEDIA_BUYER']),
   status:     z.enum(['success', 'error']),
   actions:    z.array(ActionSchema).default([]),
@@ -71,9 +71,15 @@ router.post('/', requireCronSecret, async (req: Request, res: Response) => {
   const payload = parse.data
   const snapshot = await db.auditSnapshot.findUnique({ where: { id: payload.audit_id }, include: { business: { select: { id: true, state: true, industry: true } } } })
   if (!snapshot) return res.status(400).json({ error: 'SNAPSHOT_NOT_FOUND' })
-  const cycle = await db.agentCycle.findUnique({ where: { id: payload.cycle_id }, select: { id: true, businessId: true, status: true } })
-  if (!cycle) return res.status(400).json({ error: 'CYCLE_NOT_FOUND' })
-  if (cycle.businessId !== snapshot.businessId) return res.status(400).json({ error: 'CYCLE_SNAPSHOT_MISMATCH' })
+  let cycle: any
+  if (payload.cycle_id) {
+    cycle = await db.agentCycle.findUnique({ where: { id: payload.cycle_id }, select: { id: true, businessId: true, status: true } })
+    if (!cycle) return res.status(400).json({ error: 'CYCLE_NOT_FOUND' })
+    if (cycle.businessId !== snapshot.businessId) return res.status(400).json({ error: 'CYCLE_SNAPSHOT_MISMATCH' })
+  } else {
+    // No cycle_id provided — create one automatically for this n8n callback
+    cycle = await db.agentCycle.create({ data: { businessId: snapshot.businessId, status: 'PROCESSING', triggeredBy: 'MANUAL' } })
+  }
   const agentType = payload.agent_type as AgentType
   const business  = snapshot.business
   const existingExecution = await db.agentExecution.findFirst({ where: { cycleId: payload.cycle_id, agentType, status: { in: ['COMPLETE', 'FAILED'] as AgentCycleStatus[] } }, select: { id: true } })
