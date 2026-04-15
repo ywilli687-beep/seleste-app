@@ -1,6 +1,4 @@
-interface LearningPanelProps {
-  learning: any
-}
+interface LearningPanelProps { learning: any }
 
 export function LearningPanel({ learning }: LearningPanelProps) {
   if (!learning) return null
@@ -8,9 +6,7 @@ export function LearningPanel({ learning }: LearningPanelProps) {
   return (
     <div className="learning-panel">
       {learning.coldStart && (
-        <div className="learning-panel__cold-start">
-          {learning.coldStartMessage}
-        </div>
+        <div className="learning-panel__cold-start">{learning.coldStartMessage}</div>
       )}
       <div className="learning-panel__stats">
         <div className="learning-stat">
@@ -19,7 +15,7 @@ export function LearningPanel({ learning }: LearningPanelProps) {
         </div>
         <div className="learning-stat">
           <div className="learning-stat__value">{learning.outcomes?.successRate ?? 0}%</div>
-          <div className="learning-stat__label">Action success rate</div>
+          <div className="learning-stat__label">Success rate</div>
         </div>
         <div className="learning-stat">
           <div className="learning-stat__value">{learning.signals?.highConfidence ?? 0}</div>

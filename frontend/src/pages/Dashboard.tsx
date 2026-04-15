@@ -1,39 +1,46 @@
-import { useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth, useUser } from '@clerk/clerk-react'
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { useAuditFlow } from '@/lib/hooks/useAuditFlow'
-import LoadingScreen from '@/components/LoadingScreen'
-import ResultsView from '@/components/ResultsView'
-import { DashboardShell } from '@/components/dashboard/DashboardShell'
-import type { DashboardData } from '@/types/dashboard'
-import type { WeeklyActionRaw, AgentOutput, CycleState } from '@/types/feed'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+  useGlobalDashboard,
+  useBusinessState,
+  useAuditHistory,
+  useInbox,
+  useLearningDashboard,
+  useAllAuditHistories,
+} from '@/lib/hooks/useDashboard'
+import { useTabTitle }       from '@/lib/hooks/useTabTitle'
+import { StatCards }         from '@/components/dashboard/StatCards'
+import { BusinessCard }      from '@/components/dashboard/BusinessCard'
+import { BusinessStatePanel } from '@/components/dashboard/BusinessStatePanel'
+import { AutopilotToggle }   from '@/components/dashboard/AutopilotToggle'
+import { StickyBanner }      from '@/components/dashboard/StickyBanner'
+import { PriorityActions }   from '@/components/dashboard/PriorityActions'
+import { ExecutionQueue }    from '@/components/dashboard/ExecutionQueue'
+import { AgentPanel }        from '@/components/dashboard/AgentPanel'
+import { ImpactTimeline }    from '@/components/dashboard/ImpactTimeline'
+import { LearningPanel }     from '@/components/dashboard/LearningPanel'
+import { OnboardingCard }    from '@/components/dashboard/OnboardingCard'
+import { AskSeleste }        from '@/components/dashboard/AskSeleste'
 
 export default function Dashboard() {
   const { user, isLoaded: isUserLoaded } = useUser()
-  const {
-    view,
-    result,
-    stage,
-    hardPreview,
-    triggerReaudit,
-    reset
-  } = useAuditFlow()
-  const { getToken } = useAuth()
-  const queryClient = useQueryClient()
+  const { getToken }   = useAuth()
+  const queryClient    = useQueryClient()
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | undefined>()
 
-  // 1. Claim anonymous audits on login
+  // Claim anonymous audits on login
   useEffect(() => {
     if (!isUserLoaded || !user) return
     const lastAnonId = localStorage.getItem('last_anonymous_audit')
     if (!lastAnonId) return
-
-    const claimAudit = async () => {
+    const claim = async () => {
       try {
         const token = await getToken()
         await fetch('/api/claim', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ auditId: lastAnonId, userId: user.id })
+          body: JSON.stringify({ auditId: lastAnonId, userId: user.id }),
         })
         localStorage.removeItem('last_anonymous_audit')
         queryClient.invalidateQueries({ queryKey: ['dashboard', user.id] })
@@ -41,205 +48,141 @@ export default function Dashboard() {
         console.error('[Claim Error]', e)
       }
     }
-    claimAudit()
+    claim()
   }, [isUserLoaded, user, getToken, queryClient])
 
-  // 2. Dashboard data
-  const { data, isLoading, error: queryError } = useQuery<DashboardData>({
-    queryKey: ['dashboard', user?.id],
-    queryFn: async () => {
-      const token = await getToken()
-      const res = await fetch(`/api/dashboard/${user?.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const resData = await res.json()
-      if (!resData.success) throw new Error(resData.error || 'Failed to load dashboard')
-      return resData.data
-    },
-    enabled: !!isUserLoaded && !!user
-  })
+  const { data: dashboard, isLoading, error: queryError } = useGlobalDashboard()
 
-  // 3. Agent data (runs in parallel — non-blocking if it fails)
-  const { data: agentsData } = useQuery<{
-    weeklyActions: WeeklyActionRaw[]
-    agentOutputs: AgentOutput[]
-    cycleState: CycleState
-    lastCycleAt: string | null
-  }>({
-    queryKey: ['agents', user?.id],
-    queryFn: async () => {
-      const token = await getToken()
-      const res = await fetch(`/api/agents/page/${user?.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const resData = await res.json()
-      if (!resData.success) return { weeklyActions: [], agentOutputs: [], cycleState: 'no_cycle' as CycleState, lastCycleAt: null }
-      return {
-        weeklyActions: resData.data?.weeklyActions ?? [],
-        agentOutputs: resData.data?.agentOutputs ?? [],
-        cycleState: (resData.data?.state ?? 'no_cycle') as CycleState,
-        lastCycleAt: resData.data?.latestCycle?.completedAt ?? null,
-      }
-    },
-    enabled: !!isUserLoaded && !!user,
-  })
+  const businesses  = dashboard?.businesses ?? []
+  const effectiveId = selectedBusinessId ?? businesses[0]?.businessId
 
-  // 4. Run cycle mutation
-  const runCycleMutation = useMutation({
-    mutationFn: async ({ businessId }: { businessId: string }) => {
-      const token = await getToken()
-      const res = await fetch('/api/agents/weekly', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessId }),
-      })
-      const resData = await res.json()
-      if (!resData.success) throw new Error(resData.error || 'Failed to run agents')
-      return resData
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['agents', user?.id] })
-    },
-  })
+  const { data: bizState }   = useBusinessState(effectiveId)
+  const { data: auditHistRaw } = useAuditHistory(effectiveId)
+  const { data: inboxRaw }   = useInbox(effectiveId)
+const { data: learning }   = useLearningDashboard()
+  const { data: sparklines } = useAllAuditHistories(businesses.map((b: any) => b.businessId))
 
-  const handleRunCycle = useCallback(async (businessId: string, _intent: string) => {
-    await runCycleMutation.mutateAsync({ businessId })
-  }, [runCycleMutation])
+  const tasks   = (inboxRaw as any)?.tasks ?? []
+  const audits  = (auditHistRaw as any)?.audits ?? []
+  const pending = tasks.filter((t: any) => t.status === 'PENDING')
 
-  // 5. Approve action mutation
-  const approveMutation = useMutation({
-    mutationFn: async (actionId: string) => {
-      const token = await getToken()
-      const res = await fetch(`/api/agents/approve/${actionId}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-      })
-      const resData = await res.json()
-      if (!resData.success) throw new Error(resData.error || 'Approval failed')
-      return resData
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['agents', user?.id] })
-    }
-  })
+  useTabTitle(pending.length)
 
-  // 6. Reject action mutation (optimistic — just marks as ignored locally)
-  const rejectMutation = useMutation({
-    mutationFn: async (actionId: string) => {
-      const token = await getToken()
-      await fetch(`/api/agents/reject/${actionId}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-      }).catch(() => { /* swallow — endpoint may not exist */ })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['agents', user?.id] })
-    }
-  })
+  const selectedBiz = businesses.find((b: any) => b.businessId === effectiveId) ?? businesses[0]
+  const industry    = selectedBiz?.industry ?? 'OTHER'
 
-  const handleApprove = useCallback((id: string) => {
-    approveMutation.mutate(id)
-  }, [approveMutation])
-
-  const handleReject = useCallback((id: string) => {
-    rejectMutation.mutate(id)
-  }, [rejectMutation])
-
-  const isProd = import.meta.env.PROD
-  const API_URL = import.meta.env.VITE_API_URL || ''
-
-  if (view === 'loading') return <LoadingScreen stage={stage} hard={hardPreview} />
-  if (view === 'results' && result) return <ResultsView result={result} onNewAudit={reset} />
-
-  if (isProd && !API_URL) {
+  // Loading
+  if (!isUserLoaded || isLoading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1.5rem', padding: '2rem', textAlign: 'center', background: 'var(--os-bg-tert)', color: 'var(--os-text-prim)' }}>
-        <div style={{ fontSize: '3rem' }}>⚙️</div>
-        <div style={{ fontFamily: 'var(--ff-sans)', fontSize: 18, fontWeight: 500 }}>Configuration Required</div>
-        <p style={{ color: 'var(--os-text-sec)', maxWidth: 500, lineHeight: 1.6, fontSize: 14 }}>
-          The <code style={{ background: 'var(--os-bg-sec)', padding: '2px 6px', borderRadius: 4 }}>VITE_API_URL</code> environment variable is missing.
-        </p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--ink-muted)', fontFamily: 'var(--ff-sans)', fontSize: 13 }}>
+        Loading…
       </div>
     )
   }
 
-  if (isLoading || !isUserLoaded) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--os-bg-tert)', color: 'var(--os-text-sec)', fontFamily: 'var(--ff-sans)', fontSize: 13 }}>
-        Loading...
-      </div>
-    )
-  }
-
+  // Error
   if (queryError) {
-    const errorMsg = queryError instanceof Error ? queryError.message : String(queryError)
+    const msg = queryError instanceof Error ? queryError.message : String(queryError)
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem', padding: '2rem', textAlign: 'center', background: 'var(--os-bg-tert)', color: 'var(--os-text-prim)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem', padding: '2rem', textAlign: 'center', background: 'var(--bg)', color: 'var(--ink)' }}>
         <div style={{ fontSize: '2rem' }}>📡</div>
         <div style={{ fontFamily: 'var(--ff-sans)', fontSize: 16, fontWeight: 500 }}>Dashboard offline</div>
-        <p style={{ color: 'var(--os-text-sec)', maxWidth: 480, lineHeight: 1.6, fontSize: 13 }}>
-          {errorMsg.includes('Unexpected token')
-            ? 'The API returned an invalid response. Check your backend URL.'
-            : errorMsg}
+        <p style={{ color: 'var(--ink-muted)', maxWidth: 480, lineHeight: 1.6, fontSize: 13 }}>
+          {msg.includes('Unexpected token') ? 'The API returned an invalid response.' : msg}
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => window.location.reload()} style={{ background: 'var(--os-text-prim)', color: 'var(--os-bg-tert)', border: 'none', padding: '8px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: 'var(--ff-sans)' }}>Retry</button>
-          <button onClick={() => window.location.href = '/'} style={{ color: 'var(--os-text-sec)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>Return Home</button>
+          <button onClick={() => window.location.reload()} style={{ background: 'var(--ink)', color: 'var(--bg)', border: 'none', padding: '8px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}>Retry</button>
+          <button onClick={() => (window.location.href = '/')} style={{ color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>Return Home</button>
         </div>
       </div>
     )
   }
 
-  const userName = user?.firstName ?? undefined
-  const allWeeklyActions = agentsData?.weeklyActions ?? []
-  const pendingActions = allWeeklyActions.filter(a => a.status === 'pending')
-
-  if (data?.totalAudits === 0) {
+  // Onboarding — no audits yet
+  if (businesses.length === 0) {
     return (
-      <DashboardShell
-        data={data}
-        userName={userName}
-        weeklyActions={[]}
-        allWeeklyActions={allWeeklyActions}
-        agentOutputs={agentsData?.agentOutputs ?? []}
-        cycleState={agentsData?.cycleState ?? 'no_cycle'}
-        lastCycleAt={agentsData?.lastCycleAt ?? null}
-        onReaudit={triggerReaudit}
-        onApprove={handleApprove}
-        onReject={handleReject}
-        onRunCycle={handleRunCycle}
-      >
-        <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🚀</div>
-          <div style={{ fontFamily: 'var(--ff-sans)', fontSize: 16, fontWeight: 500, color: 'var(--os-text-prim)', marginBottom: 10 }}>
-            Run your first audit
-          </div>
-          <p style={{ color: 'var(--os-text-sec)', maxWidth: 400, margin: '0 auto 28px', lineHeight: 1.6, fontSize: 13, fontFamily: 'var(--ff-sans)' }}>
-            Unlock your score, growth roadmap, and revenue intelligence by scanning your website.
-          </p>
-          <button
-            onClick={() => window.location.href = '/'}
-            style={{ background: 'var(--os-text-prim)', color: 'var(--os-bg-tert)', padding: '10px 28px', borderRadius: 7, border: 'none', fontWeight: 500, cursor: 'pointer', fontSize: 13, fontFamily: 'var(--ff-sans)' }}
-          >
-            Start First Scan →
-          </button>
-        </div>
-      </DashboardShell>
+      <div className="cc-onboarding">
+        <OnboardingCard />
+      </div>
     )
   }
 
   return (
-    <DashboardShell
-      data={data!}
-      userName={userName}
-      weeklyActions={pendingActions}
-      allWeeklyActions={allWeeklyActions}
-      agentOutputs={agentsData?.agentOutputs ?? []}
-      cycleState={agentsData?.cycleState ?? 'no_cycle'}
-      lastCycleAt={agentsData?.lastCycleAt ?? null}
-      onReaudit={triggerReaudit}
-      onApprove={handleApprove}
-      onReject={handleReject}
-    />
+    <div className="cc-root">
+      {/* Top bar */}
+      <header className="cc-topbar">
+        <div className="cc-topbar__brand">
+          <span className="cc-topbar__logo">Seleste</span>
+          <span className="cc-topbar__tag">Command Center</span>
+        </div>
+        <div className="cc-topbar__biz-list">
+          {businesses.map((b: any) => (
+            <button
+              key={b.businessId}
+              className={`cc-biz-tab ${b.businessId === effectiveId ? 'cc-biz-tab--active' : ''}`}
+              onClick={() => setSelectedBusinessId(b.businessId)}
+            >
+              {b.name}
+            </button>
+          ))}
+        </div>
+        <div className="cc-topbar__right">
+          <span className="cc-topbar__user">{user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress}</span>
+        </div>
+      </header>
+
+      {/* Sticky banner — top pending task */}
+      <StickyBanner tasks={tasks} businessId={effectiveId ?? ''} industry={industry} />
+
+      <main className="cc-main">
+        {/* Stat row */}
+        <StatCards dashboard={dashboard} />
+
+        {/* Priority actions */}
+        <PriorityActions
+          tasks={tasks}
+          businessId={effectiveId ?? ''}
+          industry={industry}
+        />
+
+        {/* Two-column content area */}
+        <div className="cc-columns">
+          {/* Left column */}
+          <div className="cc-col cc-col--left">
+            {businesses.map((b: any) => (
+              <BusinessCard
+                key={b.businessId}
+                business={b}
+                sparklineScores={sparklines?.[b.businessId] ?? []}
+                selected={b.businessId === effectiveId}
+                onSelect={(id: string) => setSelectedBusinessId(id)}
+              />
+            ))}
+            <ExecutionQueue
+              tasks={tasks}
+              summary={dashboard?.globalSummary}
+              businessId={effectiveId ?? ''}
+              industry={industry}
+            />
+          </div>
+
+          {/* Right column */}
+          <div className="cc-col cc-col--right">
+            <BusinessStatePanel businessState={bizState} />
+            <AutopilotToggle
+              businessId={effectiveId ?? ''}
+              crawlerEnrolled={(bizState as any)?.crawlerEnrolled ?? false}
+              nextCrawlAt={(bizState as any)?.nextCrawlAt ?? null}
+            />
+            <AgentPanel tasks={tasks} bizState={bizState} industry={industry} />
+            <ImpactTimeline audits={audits} industry={industry} />
+            <LearningPanel learning={learning} />
+          </div>
+        </div>
+      </main>
+
+      {/* Floating chat */}
+      <AskSeleste businessId={effectiveId} />
+    </div>
   )
 }
