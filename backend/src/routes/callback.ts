@@ -27,7 +27,7 @@ const ActionSchema = z.object({
   estimatedEffort:  z.number().int().min(1).max(5),
   riskTier:         z.enum(['LOW', 'MEDIUM', 'HIGH']),
   actionType:       z.string().min(1),
-  actionPayload:    z.record(z.unknown()),
+  actionPayload:    z.record(z.string(), z.unknown()),
   channelSynergy:   z.array(z.string()).default([]),
   urgencySignal:    z.number().int().min(0).max(100).default(50),
 })
