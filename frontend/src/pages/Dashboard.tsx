@@ -102,6 +102,12 @@ export default function Dashboard() {
   // Pillar scores from bizState
   const pillars = (bizState as any)?.pillars ?? {}
 
+  // Redirect new users to onboarding — must be before any early return
+  useEffect(() => {
+    if (!isUserLoaded || isLoading) return
+    if (businesses.length === 0) navigate('/onboarding')
+  }, [isUserLoaded, isLoading, businesses.length, navigate])
+
   if (!isUserLoaded || isLoading) {
     return (
       <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--bg)', color:'var(--ink-muted)', fontFamily:'var(--ff-sans)', fontSize:13 }}>
@@ -126,10 +132,6 @@ export default function Dashboard() {
       </div>
     )
   }
-
-  useEffect(() => {
-    if (!isLoading && businesses.length === 0) navigate('/onboarding')
-  }, [isLoading, businesses.length])
 
   if (businesses.length === 0) return null
 
