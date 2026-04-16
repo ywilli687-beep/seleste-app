@@ -3,6 +3,8 @@ import type { PageSignals, PillarScores, AuditRequest, AppliedRule } from '@/typ
 import type { HardSignals } from './fetcher'
 
 import { getBenchmarkContext } from './benchmarks'
+import { buildVerticalSystemPrompt } from './verticalContext'
+import { validateAndLog } from './narrativeValidator'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -321,14 +323,17 @@ Keep it under 80 words. Write in second person ("Your conversion score..."). Pla
 If industry average is n/a, skip the comparison sentence and focus on the pillar gap and action.`
 
   try {
+    const verticalPrompt  = buildVerticalSystemPrompt(industry ?? 'OTHER')
+    const benchmarkSystem = `${verticalPrompt}\n\nYou are a data analyst writing benchmark summaries for local business owners. Be specific, use numbers, end with one clear priority action.`
     const msg = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 200,
       temperature: 0.4,
-      system: 'You are a data analyst writing benchmark summaries for local business owners. Be specific, use numbers, end with one clear priority action.',
+      system: benchmarkSystem,
       messages: [{ role: 'user', content: prompt }],
     })
-    return msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim()
+    const raw = msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim()
+    return validateAndLog(raw, industry ?? 'OTHER', 'writeBenchmarkNarrative')
   } catch {
     return ''
   }
@@ -368,14 +373,17 @@ Do NOT use bullet points — write as prose.
 Under 120 words total.`
 
   try {
+    const verticalPrompt = buildVerticalSystemPrompt(industry ?? 'OTHER')
+    const teaserSystem   = `${verticalPrompt}\n\nYou write teaser audit summaries for local business owners who have not yet signed up. Lead with revenue implication. Name 3 specific issues. End with urgency. Under 120 words.`
     const msg = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 200,
       temperature: 0.5,
-      system: 'You write teaser audit summaries for local business owners who have not yet signed up. Lead with revenue implication. Name 3 specific issues. End with urgency. Under 120 words.',
+      system: teaserSystem,
       messages: [{ role: 'user', content: prompt }],
     })
-    return msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim()
+    const raw = msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim()
+    return validateAndLog(raw, industry ?? 'OTHER', 'writeAuditTeaser')
   } catch {
     return ''
   }
@@ -594,15 +602,19 @@ Key hard signals:
 Benchmark context:
 ${benchmarkContextJson}`
 
+  const verticalPrompt = buildVerticalSystemPrompt(vertical ?? 'OTHER')
+  const enhancedSystemPrompt = `${verticalPrompt}\n\n${NARRATIVE_SYSTEM_PROMPT}`
+
   const msg = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 3000,
     temperature: 0.7,
-    system: NARRATIVE_SYSTEM_PROMPT,
+    system: enhancedSystemPrompt,
     messages: [{ role: 'user', content: userMessage }],
   })
 
-  const text = msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim()
+  const rawText = msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim()
+  const text    = validateAndLog(rawText, vertical ?? 'OTHER', 'writeNarrative')
 
   // Extract quick wins and top issues from applied rules
   const quickWins = applied.slice(0, 3).map(a => a.rule.label)
